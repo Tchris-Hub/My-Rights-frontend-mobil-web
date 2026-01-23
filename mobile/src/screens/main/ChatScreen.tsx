@@ -12,13 +12,14 @@ import {
     ScrollView,
     Alert,
     Switch,
+    Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
-import { Audio } from 'expo-av';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
@@ -42,12 +43,27 @@ export const ChatScreen: React.FC = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
     const [isIncognito, setIsIncognito] = useState(false);
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [showEscalateModal, setShowEscalateModal] = useState(false);
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        const showSubscription = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => setIsKeyboardVisible(true)
+        );
+        const hideSubscription = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => setIsKeyboardVisible(false)
+        );
+
+        return () => {
+            showSubscription.remove();
+            hideSubscription.remove();
+        };
+    }, []);
 
     // Ephemeral logic: Clear chat if guest leaves the screen
     useFocusEffect(
@@ -84,14 +100,12 @@ export const ChatScreen: React.FC = () => {
         }
     }, [messages, isIncognito, isAuthenticated]);
 
-    // Clean up recording on unmount
+    // Scroll to end when messages change
     useEffect(() => {
-        return () => {
-            if (recording) {
-                recording.stopAndUnloadAsync();
-            }
-        };
-    }, [recording]);
+        if (messages.length > 0) {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }
+    }, [messages]);
 
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim();
@@ -155,74 +169,23 @@ export const ChatScreen: React.FC = () => {
         }
     };
 
-    const startRecording = async () => {
-        try {
-            const permission = await Audio.requestPermissionsAsync();
-            if (permission.status !== 'granted') {
-                Alert.alert('Permission Denied', 'Please enable microphone access to use voice-to-text.');
-                return;
-            }
-
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
-            });
-
-            const { recording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
-            setRecording(recording);
-            setIsRecording(true);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch (err) {
-            console.error('Failed to start recording', err);
-            Alert.alert('Error', 'Could not start recording. Please try again.');
-        }
-    };
-
-    const stopRecording = async () => {
-        if (!recording) return;
-
-        setIsRecording(false);
-        setIsLoading(true); // Show loading while transcribing
-
-        try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
-            setRecording(null);
-
-            if (uri) {
-                const result = await chatService.transcribeAudio(uri);
-                if (result.text) {
-                    setInputText(result.text);
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to stop recording', err);
-            Alert.alert('Transcription Failed', 'Could not process your voice. Please try typing or try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const toggleRecording = () => {
-        if (isRecording) {
-            stopRecording();
-        } else {
-            startRecording();
-        }
-    };
+    const { isRecording, isTranscribing, toggleRecording } = useVoiceInput((text) => {
+        setInputText(prev => (prev ? prev + ' ' : '') + text);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             {/* Premium Header */}
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.navigate('Home' as never)}
+                    style={styles.headerIconButton}
+                    onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        navigation.navigate('Tools' as never);
+                    }}
                 >
-                    <Ionicons name="chevron-back" size={24} color={colors.text} />
+                    <Ionicons name="apps-outline" size={24} color={colors.primary} />
                 </TouchableOpacity>
 
                 <View style={styles.headerCentered}>
@@ -238,41 +201,39 @@ export const ChatScreen: React.FC = () => {
                 </View>
 
                 {isAuthenticated ? (
-                    <View style={styles.incognitoContainer}>
-                        <Ionicons
-                            name={isIncognito ? "eye-off" : "eye"}
-                            size={18}
-                            color={isIncognito ? colors.primary : colors.textTertiary}
-                            style={{ marginRight: 4 }}
-                        />
-                        <Switch
-                            value={isIncognito}
-                            onValueChange={(val) => {
-                                setIsIncognito(val);
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                if (val) {
-                                    Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
-                                }
+                                navigation.navigate('Profile' as never);
                             }}
-                            trackColor={{ false: colors.border, true: colors.primary + '40' }}
-                            thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
-                            ios_backgroundColor={colors.border}
-                            style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-                        />
-                        {messages.length > 0 && !isIncognito && (
-                            <TouchableOpacity
-                                onPress={() => {
+                            style={styles.headerIconButton}
+                        >
+                            <Ionicons name="person-circle-outline" size={26} color={colors.textSecondary} />
+                        </TouchableOpacity>
+
+                        <View style={styles.incognitoToggle}>
+                            <Switch
+                                value={isIncognito}
+                                onValueChange={(val) => {
+                                    setIsIncognito(val);
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                    setShowEscalateModal(true);
+                                    if (val) {
+                                        Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
+                                    }
                                 }}
-                                style={styles.escalateButton}
-                            >
-                                <Ionicons name="call-outline" size={18} color={theme.colors.error} />
-                            </TouchableOpacity>
-                        )}
+                                trackColor={{ false: colors.border, true: colors.primary + '40' }}
+                                thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
+                                ios_backgroundColor={colors.border}
+                                style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
+                            />
+                        </View>
                     </View>
                 ) : (
-                    <TouchableOpacity style={styles.historyButton} onPress={() => Alert.alert("Guest Session", "Login to save chat history and get personalized legal documents.")}>
+                    <TouchableOpacity
+                        style={styles.headerIconButton}
+                        onPress={() => Alert.alert("Guest Session", "Login to save chat history and get personalized legal documents.")}
+                    >
                         <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 )}
@@ -281,7 +242,7 @@ export const ChatScreen: React.FC = () => {
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.keyboardView}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
             >
                 {/* Suggestions List */}
                 {messages.length === 0 && (
@@ -318,10 +279,12 @@ export const ChatScreen: React.FC = () => {
                         style={{ flex: 1 }}
                         data={messages}
                         renderItem={({ item }) => (
-                            item.isLoading ? (
+                            item.isLoading || isTranscribing ? (
                                 <View style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
-                                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Reviewing laws...</Text>
+                                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                                        {isTranscribing ? "Transcribing voice..." : "Reviewing laws..."}
+                                    </Text>
                                 </View>
                             ) : <MessageBubble message={item} />
                         )}
@@ -332,7 +295,13 @@ export const ChatScreen: React.FC = () => {
                 )}
 
                 {/* Input Area - Now Relative */}
-                <BlurView intensity={isDark ? 40 : 80} style={[styles.inputBlur, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+                <BlurView
+                    intensity={isDark ? 40 : 80}
+                    style={[
+                        styles.inputBlur,
+                        { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 12) + 12 }
+                    ]}
+                >
                     <View style={styles.inputContainer}>
                         <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated1 }]}>
                             <TouchableOpacity
@@ -401,13 +370,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderBottomWidth: 1,
     },
-    backButton: {
+    headerIconButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
@@ -440,20 +410,13 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    historyButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    incognitoContainer: {
+    headerRight: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(148, 163, 184, 0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 20,
+        gap: 4,
+    },
+    incognitoToggle: {
+        marginLeft: -4,
     },
     keyboardView: {
         flex: 1,

@@ -28,11 +28,12 @@ import { documentService } from '../../services/document.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type ArchitectStep = 'SELECT' | 'INTAKE' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
+type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
 
 interface TemplateField {
     key: string;
@@ -91,10 +92,8 @@ const TEMPLATES: Template[] = [
         id: 'custom',
         title: 'Custom AI Draft',
         category: '4',
-        description: 'Describe any document you need.',
-        fields: [
-            { key: 'description', label: 'What do you need?', placeholder: 'Describe the agreement, parties, and specific terms in detail...' },
-        ]
+        description: 'Interactive AI consultation for any unique document.',
+        fields: []
     },
 ];
 
@@ -110,16 +109,91 @@ export const DocumentGeneratorScreen: React.FC = () => {
     const [documentContent, setDocumentContent] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [activeField, setActiveField] = useState<string | null>(null);
+
+    // Consultation Chat State
+    const [consultMessages, setConsultMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const [currentConsultInput, setCurrentConsultInput] = useState('');
+    const consultScrollViewRef = useRef<ScrollView>(null);
+
+    // Voice Hooks
+    const consultVoice = useVoiceInput((text) => setCurrentConsultInput(prev => (prev ? prev + ' ' : '') + text));
+    const intakeVoice = useVoiceInput((text) => {
+        if (activeField) {
+            setFormData(prev => ({ ...prev, [activeField]: (prev[activeField] || '') + ' ' + text }));
+        }
+    });
 
     const handleSelectTemplate = (template: Template) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setSelectedTemplate(template);
         setFormData({});
-        setStep('INTAKE');
+
+        if (template.id === 'custom') {
+            setStep('CONSULT');
+            setConsultMessages([
+                { role: 'assistant', content: 'What kind of document do you need help architecting today? Please describe the situation or the parties involved.' }
+            ]);
+        } else {
+            setStep('INTAKE');
+        }
     };
 
     const handleUpdateForm = (key: string, value: string) => {
         setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleConsultSubmit = async () => {
+        if (!currentConsultInput.trim()) return;
+
+        const userMsg = currentConsultInput.trim();
+        const updatedMessages = [...consultMessages, { role: 'user', content: userMsg }];
+        setConsultMessages(updatedMessages as any);
+        setCurrentConsultInput('');
+        setIsArchitecting(true);
+
+        try {
+            // Use chat service to get next question or refine context
+            const response = await chatService.sendMessage(userMsg, updatedMessages as any);
+            setConsultMessages([...updatedMessages, { role: 'assistant', content: response.content }] as any);
+
+            // Check if the AI thinks it has enough info to generate
+            if (response.content.toLowerCase().includes('ready to generate') ||
+                response.content.toLowerCase().includes('architect the document now')) {
+                // If the AI says it's ready, we could show a "Generate" button or transition
+            }
+        } catch (error) {
+            console.error('Consult error:', error);
+        } finally {
+            setIsArchitecting(false);
+        }
+    };
+
+    const handleFinalizeConsultation = async () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setIsArchitecting(true);
+
+        try {
+            const context = consultMessages.map(m => `${m.role}: ${m.content}`).join('\n');
+            const response = await documentService.generateDocument("Custom Consultation Document", context);
+            setDocumentContent(response.content);
+            setStep('BUILD');
+        } catch (error) {
+            Alert.alert("Error", "Could not finalize document. Please try again.");
+        } finally {
+            setIsArchitecting(false);
+        }
+    };
+
+    const handleDownload = async (format: string) => {
+        setIsExporting(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        // Simulate export process
+        setTimeout(() => {
+            setIsExporting(false);
+            Alert.alert("Success", `${selectedTemplate?.title} saved as ${format}.`);
+        }, 2000);
     };
 
     const handleGenerate = async () => {
@@ -135,7 +209,6 @@ export const DocumentGeneratorScreen: React.FC = () => {
         setIsArchitecting(true);
 
         try {
-            // Conver form data to a descriptive string for the RAG service
             const userDetails = Object.entries(formData)
                 .map(([key, val]) => `${key}: ${val}`)
                 .join('. ');
@@ -147,27 +220,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         } catch (error) {
             console.error('Generation error:', error);
-            Alert.alert(
-                "Reviewing Request...",
-                "The AI is taking a bit longer than usual to think. Please wait a moment and try again—it's crafting something custom for you.",
-                [{ text: "OK" }]
-            );
+            Alert.alert("Reviewing Request...", "AI generation failed. Please try again.");
         } finally {
             setIsArchitecting(false);
         }
-    };
-
-    const handleDownload = (format: string) => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setIsExporting(true);
-        setTimeout(() => {
-            setIsExporting(false);
-            Alert.alert(
-                "Export Successful",
-                `Your document has been generated as a ${format} and saved to your library.`,
-                [{ text: "View Dashboard", onPress: () => navigation.navigate('Home' as never) }]
-            );
-        }, 2000);
     };
 
     const renderHeader = () => {
@@ -177,6 +233,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
         if (step === 'INTAKE') {
             title = "Smart Intake";
             subtitle = `Context for ${selectedTemplate?.title}`;
+        } else if (step === 'CONSULT') {
+            title = "Legal Consultation";
+            subtitle = "Gaining context for custom draft";
         } else if (step === 'BUILD') {
             title = "Drafting Room";
             subtitle = "Refining AI architecture";
@@ -194,12 +253,12 @@ export const DocumentGeneratorScreen: React.FC = () => {
                     <TouchableOpacity
                         onPress={() => {
                             if (step === 'SELECT') navigation.goBack();
-                            else if (step === 'INTAKE') setStep('SELECT');
-                            else if (step === 'BUILD') setStep('INTAKE');
+                            else if (step === 'INTAKE' || step === 'CONSULT') setStep('SELECT');
+                            else if (step === 'BUILD') setStep(selectedTemplate?.id === 'custom' ? 'CONSULT' : 'INTAKE');
                             else if (step === 'PREVIEW') setStep('BUILD');
                             else if (step === 'FINALIZE') setStep('PREVIEW');
                         }}
-                        style={styles.backBtn}
+                        style={[styles.backBtn, { backgroundColor: colors.surfaceElevated1 }]}
                     >
                         <Ionicons name="chevron-back" size={24} color={colors.text} />
                     </TouchableOpacity>
@@ -211,14 +270,16 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
                 {/* Step Indicator */}
                 <View style={styles.stepContainer}>
-                    {['SELECT', 'INTAKE', 'BUILD', 'FINALIZE'].map((s, i) => (
+                    {['SELECT', 'CONTEXT', 'BUILD', 'FINALIZE'].map((s, i) => (
                         <View key={s} style={styles.stepIndicatorWrapper}>
                             <View style={[
                                 styles.stepDot,
-                                { backgroundColor: step === s ? colors.primary : colors.surfaceElevated1 },
-                                (['SELECT', 'INTAKE', 'BUILD', 'PREVIEW', 'FINALIZE'].indexOf(step) > i + 1) && { backgroundColor: theme.colors.success }
+                                { backgroundColor: (step === 'SELECT' && i === 0) || ((step === 'INTAKE' || step === 'CONSULT') && i === 1) || (step === 'BUILD' && i === 2) || (step === 'FINALIZE' && i === 3) ? colors.primary : colors.surfaceElevated2 },
+                                (i === 0 && (step !== 'SELECT')) && { backgroundColor: theme.colors.success },
+                                (i === 1 && (step === 'BUILD' || step === 'FINALIZE')) && { backgroundColor: theme.colors.success },
+                                (i === 2 && (step === 'FINALIZE')) && { backgroundColor: theme.colors.success },
                             ]} />
-                            {i < 3 && <View style={[styles.stepLine, { backgroundColor: colors.surfaceElevated1 }]} />}
+                            {i < 3 && <View style={[styles.stepLine, { backgroundColor: colors.surfaceElevated2 }]} />}
                         </View>
                     ))}
                 </View>
@@ -235,7 +296,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 {renderHeader()}
 
                 {step === 'SELECT' && (
-                    <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         <Text style={[styles.sectionTitle, { color: colors.text }]}>Template Library</Text>
                         <View style={styles.templateGrid}>
                             {TEMPLATES.map(item => (
@@ -244,7 +305,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                     style={[styles.templateCard, { backgroundColor: colors.surfaceElevated1 }]}
                                     onPress={() => handleSelectTemplate(item)}
                                 >
-                                    <View style={[styles.iconBox, { backgroundColor: item.id === 'custom' ? '#D4AF3720' : '#3B82F620' }]}>
+                                    <View style={[styles.iconBox, { backgroundColor: item.id === 'custom' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 34, 68, 0.05)' }]}>
                                         <Ionicons
                                             name={item.id === 'custom' ? "sparkles" : "document-text"}
                                             size={24}
@@ -269,20 +330,33 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                 {selectedTemplate.fields.map(field => (
                                     <View key={field.key} style={styles.inputGroup}>
                                         <Text style={[styles.inputLabel, { color: colors.text }]}>{field.label}</Text>
-                                        <TextInput
-                                            style={[styles.formInput, {
-                                                backgroundColor: colors.surfaceElevated1,
-                                                color: colors.text,
-                                                borderColor: colors.border
-                                            }]}
-                                            placeholder={field.placeholder}
-                                            placeholderTextColor={colors.textTertiary}
-                                            value={formData[field.key] || ''}
-                                            onChangeText={(val) => handleUpdateForm(field.key, val)}
-                                            keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                                            multiline={field.key === 'description'}
-                                            numberOfLines={field.key === 'description' ? 4 : 1}
-                                        />
+                                        <View style={styles.inputWrapper}>
+                                            <TextInput
+                                                style={[styles.formInput, {
+                                                    backgroundColor: colors.surfaceElevated1,
+                                                    color: colors.text,
+                                                    borderColor: colors.border
+                                                }]}
+                                                placeholder={field.placeholder}
+                                                placeholderTextColor={colors.textTertiary}
+                                                value={formData[field.key] || ''}
+                                                onChangeText={(val) => handleUpdateForm(field.key, val)}
+                                                keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                                            />
+                                            <TouchableOpacity
+                                                style={[styles.micBtn, activeField === field.key && intakeVoice.isRecording && { backgroundColor: theme.colors.error + '20' }]}
+                                                onPress={() => {
+                                                    setActiveField(field.key);
+                                                    intakeVoice.toggleRecording();
+                                                }}
+                                            >
+                                                <Ionicons
+                                                    name={activeField === field.key && intakeVoice.isRecording ? "mic" : "mic-outline"}
+                                                    size={20}
+                                                    color={activeField === field.key && intakeVoice.isRecording ? theme.colors.error : colors.primary}
+                                                />
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
                                 ))}
                             </View>
@@ -296,11 +370,70 @@ export const DocumentGeneratorScreen: React.FC = () => {
                     </View>
                 )}
 
+                {step === 'CONSULT' && (
+                    <View style={styles.stepContent}>
+                        <ScrollView
+                            ref={consultScrollViewRef}
+                            style={styles.chatArea}
+                            contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+                            onContentSizeChange={() => consultScrollViewRef.current?.scrollToEnd({ animated: true })}
+                        >
+                            {consultMessages.map((m, idx) => (
+                                <View key={idx} style={[
+                                    styles.msgBubble,
+                                    m.role === 'user' ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: colors.surfaceElevated1 }]
+                                ]}>
+                                    <Text style={[
+                                        styles.msgText,
+                                        m.role === 'user' ? { color: '#FFF' } : { color: colors.text }
+                                    ]}>{m.content}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+
+                        <View style={styles.consultFooter}>
+                            <View style={[styles.consultInputBox, { backgroundColor: colors.surfaceElevated1 }]}>
+                                <TextInput
+                                    style={[styles.consultInput, { color: colors.text }]}
+                                    placeholder="Type your requirements..."
+                                    placeholderTextColor={colors.textTertiary}
+                                    value={currentConsultInput}
+                                    onChangeText={setCurrentConsultInput}
+                                    multiline
+                                />
+                                <TouchableOpacity
+                                    style={styles.consultMicBtn}
+                                    onPress={consultVoice.toggleRecording}
+                                >
+                                    <Ionicons
+                                        name={consultVoice.isRecording ? "mic" : "mic-outline"}
+                                        size={20}
+                                        color={consultVoice.isRecording ? theme.colors.error : colors.primary}
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.sendBtn}
+                                    onPress={handleConsultSubmit}
+                                >
+                                    <Ionicons name="send" size={20} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity
+                                style={[styles.finalizeBtn, { backgroundColor: 'rgba(212, 175, 55, 0.1)' }]}
+                                onPress={handleFinalizeConsultation}
+                            >
+                                <Ionicons name="sparkles" size={16} color={theme.colors.secondary} />
+                                <Text style={[styles.finalizeText, { color: theme.colors.secondary }]}>Draft Document Now</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
                 {step === 'BUILD' && (
                     <View style={styles.stepContent}>
                         <View style={styles.editorToolbar}>
                             <TouchableOpacity
-                                style={[styles.toolbarBtn, isEditing && { backgroundColor: theme.colors.primary }]}
+                                style={[styles.toolbarBtn, isEditing && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
                                 onPress={() => setIsEditing(!isEditing)}
                             >
                                 <Ionicons name={isEditing ? "checkmark" : "create"} size={20} color={isEditing ? "#FFF" : colors.text} />
@@ -333,10 +466,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                 onPress={() => setStep('PREVIEW')}
                             >
                                 <Ionicons name="eye" size={20} color={colors.primary} />
-                                <Text style={[styles.previewText, { color: colors.primary }]}>HTML</Text>
+                                <Text style={[styles.previewText, { color: colors.primary }]}>Live View</Text>
                             </TouchableOpacity>
                             <Button
-                                title="Finalize Document"
+                                title="Finalize Draft"
                                 onPress={() => setStep('FINALIZE')}
                                 style={[styles.mainBtn, { flex: 2 }]}
                             />
@@ -344,69 +477,63 @@ export const DocumentGeneratorScreen: React.FC = () => {
                     </View>
                 )}
 
-                {step === 'PREVIEW' && (
+                {/* Rest of the steps (PREVIEW, FINALIZE) remain largely the same but with UI tweaks */}
+                {(step === 'PREVIEW' || step === 'FINALIZE') && (
                     <View style={styles.stepContent}>
-                        <View style={styles.htmlPreviewContainer}>
-                            <ScrollView contentContainerStyle={{ padding: 32 }}>
-                                <Text style={styles.htmlH1}>{selectedTemplate?.title.toUpperCase()}</Text>
-                                <View style={styles.htmlDivider} />
-                                <Text style={styles.htmlP}>{documentContent}</Text>
-                            </ScrollView>
-                        </View>
+                        {step === 'PREVIEW' ? (
+                            <View style={styles.htmlPreviewContainer}>
+                                <ScrollView contentContainerStyle={{ padding: 32 }}>
+                                    <Text style={styles.htmlH1}>{selectedTemplate?.title.toUpperCase()}</Text>
+                                    <View style={styles.htmlDivider} />
+                                    <Text style={styles.htmlP}>{documentContent}</Text>
+                                </ScrollView>
+                            </View>
+                        ) : (
+                            <View style={styles.finalizeView}>
+                                <View style={styles.successHeader}>
+                                    <Ionicons name="checkmark-circle" size={80} color={theme.colors.success} />
+                                    <Text style={[styles.successTitle, { color: colors.text }]}>Draft Ready</Text>
+                                    <Text style={[styles.successSub, { color: colors.textSecondary }]}>
+                                        Your {selectedTemplate?.title} has been custom architected.
+                                    </Text>
+                                </View>
+
+                                <View style={styles.exportGrid}>
+                                    <TouchableOpacity
+                                        style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }]}
+                                        onPress={() => handleDownload('PDF')}
+                                    >
+                                        <Ionicons name="document-text" size={32} color="#EF4444" />
+                                        <Text style={[styles.exportText, { color: colors.text }]}>Export PDF</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }]}
+                                        onPress={() => handleDownload('DOCX')}
+                                    >
+                                        <Ionicons name="document" size={32} color="#3B82F6" />
+                                        <Text style={[styles.exportText, { color: colors.text }]}>Save Word</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
                         <Button
-                            title="Proceed to Export"
-                            onPress={() => setStep('FINALIZE')}
+                            title={step === 'PREVIEW' ? "Proceed to Export" : "Back to Tool Library"}
+                            onPress={() => step === 'PREVIEW' ? setStep('FINALIZE') : navigation.goBack()}
                             style={styles.mainBtn}
-                        />
-                    </View>
-                )}
-
-                {step === 'FINALIZE' && (
-                    <View style={styles.stepContent}>
-                        <View style={styles.successHeader}>
-                            <Ionicons name="document-attach" size={64} color={theme.colors.primary} />
-                            <Text style={[styles.successTitle, { color: colors.text }]}>Draft Ready</Text>
-                            <Text style={[styles.successSub, { color: colors.textSecondary }]}>
-                                Your document has been tailored with the provided context and is ready for export.
-                            </Text>
-                        </View>
-
-                        <View style={styles.exportGrid}>
-                            <TouchableOpacity
-                                style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }, theme.shadows.sm]}
-                                onPress={() => handleDownload('PDF')}
-                            >
-                                <Ionicons name="document-text" size={32} color="#EF4444" />
-                                <Text style={[styles.exportText, { color: colors.text }]}>PDF</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }, theme.shadows.sm]}
-                                onPress={() => handleDownload('DOCX')}
-                            >
-                                <Ionicons name="document" size={32} color="#3B82F6" />
-                                <Text style={[styles.exportText, { color: colors.text }]}>Word</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <Button
-                            title="Back to Dashboard"
-                            onPress={() => navigation.navigate('Home' as never)}
-                            variant="outline"
-                            style={[styles.mainBtn, { borderColor: colors.border }]}
                         />
                     </View>
                 )}
             </KeyboardAvoidingView>
 
             {(isArchitecting || isExporting) && (
-                <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
                     <BlurView intensity={30} style={StyleSheet.absoluteFill} />
                     <View style={styles.loadingBox}>
                         <ActivityIndicator size="large" color={theme.colors.primary} />
-                        <Text style={[styles.loadingText, { color: '#000' }]}>
-                            {isExporting ? 'Exporting...' : 'AI Architecting...'}
+                        <Text style={[styles.loadingText, { color: '#002244' }]}>
+                            {isExporting ? 'Exporting Files...' : 'AI Architecting...'}
                         </Text>
-                        <Text style={styles.loadingSub}>Analyzing context & laws</Text>
+                        <Text style={styles.loadingSub}>Analyzing Nigerian Case Law & Context</Text>
                     </View>
                 </View>
             )}
@@ -429,9 +556,9 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -453,12 +580,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     stepDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
     },
     stepLine: {
-        width: 50,
+        width: 40,
         height: 2,
     },
     scrollContent: {
@@ -469,31 +596,31 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     templateGrid: {
-        gap: 12,
+        gap: 14,
     },
     templateCard: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 20,
-        borderRadius: 24,
+        borderRadius: 28,
         gap: 16,
         ...theme.shadows.sm,
     },
     iconBox: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+        width: 54,
+        height: 54,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
     },
     itemTitle: {
-        fontWeight: '700',
+        fontWeight: '800',
         fontSize: 16,
         marginBottom: 4,
     },
     itemSub: {
-        fontSize: 11,
-        lineHeight: 14,
+        fontSize: 12,
+        lineHeight: 16,
     },
     stepContent: {
         flex: 1,
@@ -508,18 +635,87 @@ const styles = StyleSheet.create({
     },
     inputLabel: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: '800',
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
     formInput: {
+        flex: 1,
         padding: 16,
-        borderRadius: 16,
+        borderRadius: 18,
         borderWidth: 1,
-        fontSize: 14,
+        fontSize: 15,
+    },
+    micBtn: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 34, 68, 0.05)',
     },
     mainBtn: {
-        height: 60,
-        borderRadius: 30,
+        height: 64,
+        borderRadius: 32,
         ...theme.shadows.md,
+    },
+    /* Consultation Chat */
+    chatArea: {
+        flex: 1,
+    },
+    msgBubble: {
+        padding: 16,
+        borderRadius: 20,
+        maxWidth: '85%',
+    },
+    userBubble: {
+        alignSelf: 'flex-end',
+        borderBottomRightRadius: 4,
+    },
+    aiBubble: {
+        alignSelf: 'flex-start',
+        borderBottomLeftRadius: 4,
+    },
+    msgText: {
+        fontSize: 14,
+        lineHeight: 20,
+    },
+    consultFooter: {
+        gap: 12,
+    },
+    consultInputBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 24,
+        gap: 12,
+    },
+    consultInput: {
+        flex: 1,
+        fontSize: 14,
+        maxHeight: 100,
+    },
+    consultMicBtn: {
+        padding: 4,
+    },
+    sendBtn: {
+        padding: 4,
+    },
+    finalizeBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 24,
+        gap: 8,
+    },
+    finalizeText: {
+        fontWeight: '800',
+        fontSize: 14,
     },
     /* Editor */
     editorToolbar: {
@@ -531,43 +727,42 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         paddingHorizontal: 16,
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
         gap: 8,
     },
     toolbarText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '800',
     },
     documentViewer: {
         flex: 1,
-        borderRadius: 28,
+        borderRadius: 32,
         padding: 24,
-        ...theme.shadows.lg,
+        ...theme.shadows.md,
     },
     documentText: {
         fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
         fontSize: 14,
-        lineHeight: 22,
+        lineHeight: 24,
     },
     editingInput: {
         flex: 1,
         fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
         fontSize: 14,
         textAlignVertical: 'top',
-        lineHeight: 22,
+        lineHeight: 24,
     },
     actionRow: {
         flexDirection: 'row',
         gap: 12,
     },
     previewToggle: {
-        flex: 1,
+        flex: 1.2,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 30,
+        borderRadius: 32,
         gap: 8,
     },
     previewText: {
@@ -577,43 +772,48 @@ const styles = StyleSheet.create({
     htmlPreviewContainer: {
         flex: 1,
         backgroundColor: '#FFF',
-        borderRadius: 24,
+        borderRadius: 32,
         borderWidth: 1,
         borderColor: '#EEE',
         overflow: 'hidden',
     },
     htmlH1: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '900',
         textAlign: 'center',
         marginBottom: 10,
+        color: '#1A1A1A',
     },
     htmlDivider: {
-        height: 3,
-        width: 60,
-        backgroundColor: '#000',
+        height: 4,
+        width: 80,
+        backgroundColor: '#D4AF37',
         alignSelf: 'center',
-        marginBottom: 24,
+        marginBottom: 32,
     },
     htmlP: {
-        fontSize: 14,
-        lineHeight: 24,
-        color: '#444',
+        fontSize: 15,
+        lineHeight: 26,
+        color: '#2D3748',
     },
     /* Finalize */
+    finalizeView: {
+        flex: 1,
+        justifyContent: 'center',
+        gap: 40,
+    },
     successHeader: {
         alignItems: 'center',
-        paddingVertical: 32,
-        gap: 12,
+        gap: 16,
     },
     successTitle: {
-        fontSize: 24,
-        fontWeight: '800',
+        fontSize: 28,
+        fontWeight: '900',
     },
     successSub: {
         textAlign: 'center',
-        fontSize: 14,
-        paddingHorizontal: 20,
+        fontSize: 15,
+        paddingHorizontal: 24,
     },
     exportGrid: {
         flexDirection: 'row',
@@ -623,11 +823,13 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         paddingVertical: 32,
-        borderRadius: 24,
+        borderRadius: 32,
         gap: 12,
+        ...theme.shadows.sm,
     },
     exportText: {
         fontWeight: '800',
+        fontSize: 13,
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
@@ -637,17 +839,19 @@ const styles = StyleSheet.create({
     },
     loadingBox: {
         backgroundColor: '#FFF',
-        padding: 32,
-        borderRadius: 32,
+        padding: 40,
+        borderRadius: 40,
         alignItems: 'center',
-        gap: 12,
+        gap: 16,
+        ...theme.shadows.lg,
     },
     loadingText: {
         fontWeight: '900',
-        fontSize: 18,
+        fontSize: 20,
     },
     loadingSub: {
         fontSize: 12,
         color: '#666',
+        textAlign: 'center',
     },
 });

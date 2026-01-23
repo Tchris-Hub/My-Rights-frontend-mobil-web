@@ -65,8 +65,16 @@ export const ToolsHomeScreen: React.FC = () => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>Legal Power Tools</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>World-class legal support at your fingertips</Text>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name="chevron-back" size={28} color={colors.text} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={[styles.title, { color: colors.text }]}>Legal Power Tools</Text>
+                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>World-class legal support at your fingertips</Text>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -112,11 +120,22 @@ const styles = StyleSheet.create({
     header: {
         padding: 24,
         paddingBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: -12,
     },
     title: {
         ...theme.typography.h2,
         fontSize: 28,
-        marginBottom: 4,
+        marginBottom: 2,
     },
     subtitle: {
         ...theme.typography.bodySmall,

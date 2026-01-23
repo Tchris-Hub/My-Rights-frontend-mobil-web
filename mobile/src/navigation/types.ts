@@ -9,21 +9,15 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type RootStackParamList = {
     Onboarding: undefined;
     Auth: NavigatorScreenParams<AuthStackParamList>;
-    Main: NavigatorScreenParams<MainTabParamList>;
+    Chat: { initialMessage?: string } | undefined;
+    Tools: NavigatorScreenParams<ToolsStackParamList>;
+    Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 // Auth Stack (Login, Signup)
 export type AuthStackParamList = {
     Login: undefined;
     Signup: undefined;
-};
-
-// Main Tab Navigator
-export type MainTabParamList = {
-    Home: undefined;
-    Chat: undefined;
-    Tools: NavigatorScreenParams<ToolsStackParamList>;
-    Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 // Tools Stack (Document Review, Generate)

@@ -56,23 +56,24 @@ export interface ChatResponse {
 }
 
 // Document types
-export interface DangerousClause {
-    clause: string;
-    risk_level: string;
-    explanation: string;
-    simplified_explanation: string;
-    long_term_implications: string;
-    pros: string[];
-    cons: string[];
-    recommendation: string;
+export interface AnalysisResult {
+    clause_title: string;
+    clause_text: string;
+    risk_level: 'Low' | 'Medium' | 'High';
+    explanation_ei: string;
+    legal_principle: string;
+    long_term_risk: string;
+    action_step: string;
 }
 
 export interface DocumentAnalysisResponse {
-    risk_score: number;
-    verdict: 'Safe' | 'Caution' | 'Do Not Sign';
-    dangerous_clauses: DangerousClause[];
+    document_type: string;
+    confidence_score: number;
     summary: string;
-    legal_disclaimer: string;
+    risk_score: number;
+    analysis_results: AnalysisResult[];
+    overall_verdict: string;
+    disclaimer: string;
 }
 
 export interface DocumentGenerationResponse {

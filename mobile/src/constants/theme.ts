@@ -6,10 +6,10 @@
 import { Platform } from 'react-native';
 
 export const colors = {
-    // Primary - Deep Royal Blue (Trust, Authority)
-    primary: '#002244',
-    primaryLight: '#003366',
-    primaryDark: '#001122',
+    // Primary - Nigerian Emerald (Land, Prosperity, Flag)
+    primary: '#006B3F',
+    primaryLight: '#008751',
+    primaryDark: '#004529',
     onPrimary: '#FFFFFF',
 
     // Secondary - Gold (Premium, Excellence)
@@ -62,11 +62,11 @@ export const colors = {
 
     // Borders
     border: '#E5E7EB',
-    borderFocus: '#002244',
+    borderFocus: '#006B3F',
     borderDark: '#374151',
 
-    // Glassmorphic Tab Bar
-    tabBarBackground: 'rgba(0, 34, 68, 0.45)', // Reduced alpha for better glass effect
+    // Glassmorphic Tab Bar - Subtle Emerald Tint
+    tabBarBackground: 'rgba(0, 75, 41, 0.45)', // Emerald-Green tint
     tabBarBorder: 'rgba(255, 255, 255, 0.15)', // Crisp edge
     tabBarIconInactive: 'rgba(255, 255, 255, 0.6)',
     tabBarIconActive: '#FFFFFF',

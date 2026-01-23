@@ -14,7 +14,7 @@
 // --------------------------------------------------
 // Environment Configuration
 // --------------------------------------------------
-const LOCAL_NETWORK_IP = '172.20.10.4'; // <-- UPDATE THIS for local development
+const LOCAL_NETWORK_IP = '192.168.0.138'; // Detected via ipconfig
 const LOCAL_PORT = 8000;
 
 const PRODUCTION_API_URL = 'https://api.myrights.ng'; // Update when production is available
@@ -61,6 +61,7 @@ export const API_ENDPOINTS = {
     // Documents (Authenticated & Anonymous)
     DOCUMENTS: {
         ANALYZE: '/api/v1/chat/analyze-document',
+        EXTRACT_TEXT: '/api/v1/chat/public/extract-text',
         GENERATE: '/api/v1/chat/generate-document',
     },
 };

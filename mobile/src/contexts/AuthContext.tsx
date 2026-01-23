@@ -54,31 +54,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             setIsLoading(true);
 
-            // Check onboarding status
-            const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-            setOnboardingCompleted(onboardingStatus === 'true');
+            // Run initialization logic
+            await (async () => {
+                // Check onboarding status
+                const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+                setOnboardingCompleted(onboardingStatus === 'true');
 
-            // Check for stored access token
-            const accessToken = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+                // Check for stored access token
+                const accessToken = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
 
-            if (accessToken) {
-                // Try to load user data from storage first (faster)
-                const storedUserData = await SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA);
-                if (storedUserData) {
-                    setUser(JSON.parse(storedUserData));
+                if (accessToken) {
+                    // Try to load user data from storage first (faster)
+                    const storedUserData = await SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA);
+                    if (storedUserData) {
+                        setUser(JSON.parse(storedUserData));
+                    }
+
+                    // Then fetch fresh user data from API
+                    try {
+                        const userData = await authService.getCurrentUser();
+                        setUser(userData);
+                        await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+                    } catch (error) {
+                        console.error('Failed to fetch user data:', error);
+                    }
                 }
-
-                // Then fetch fresh user data from API
-                try {
-                    const userData = await authService.getCurrentUser();
-                    setUser(userData);
-                    await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-                } catch (error) {
-                    // If fetching user fails, token might be expired
-                    // The API interceptor will handle token refresh
-                    console.error('Failed to fetch user data:', error);
-                }
-            }
+            })();
         } catch (error) {
             console.error('Failed to initialize auth:', error);
         } finally {

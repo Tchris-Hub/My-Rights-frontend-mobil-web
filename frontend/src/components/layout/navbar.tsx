@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Scale, FileSearch, FileText, MessageSquare, Menu, X, User } from "lucide-react";
+import { Logo } from "@/components/common/Logo";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,16 +24,13 @@ export function Navbar() {
         <header className="sticky top-0 z-50 w-full border-b border-muted bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <nav className="container mx-auto flex h-16 items-center justify-between px-4 lg:px-8">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2">
-                    <Image
-                        src="/assets/logo.png"
-                        alt="My Rights Logo"
-                        width={40}
-                        height={40}
-                        className="rounded-lg"
+                <Link href="/" className="flex items-center gap-2 group">
+                    <Logo
+                        size={40}
+                        className="transition-transform duration-300 group-hover:scale-110"
                     />
-                    <span className="text-xl font-semibold text-primary hidden sm:block">
-                        My Rights
+                    <span className="text-xl font-bold text-primary hidden sm:block tracking-tight">
+                        My <span className="text-secondary">Rights</span>
                     </span>
                 </Link>
 

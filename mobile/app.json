@@ -16,12 +16,20 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#002244"
+        "backgroundColor": "#006B3F"
       },
       "package": "com.myrights.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#006B3F"
+    },
+    "plugins": [
+      "react-native-document-scanner-plugin"
+    ]
   }
 }
