@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "My Rights",
+    "slug": "my-rights",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.myrights.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#006B3F"
+      },
+      "package": "com.myrights.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#006B3F"
+    },
+    "plugins": [
+      "react-native-document-scanner-plugin"
+    ]
+  }
+}

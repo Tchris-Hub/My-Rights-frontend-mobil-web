@@ -17,11 +17,15 @@ import {
     Platform,
     Alert,
 } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
 import { chatService } from '../../services/chat.service';
 import { documentService } from '../../services/document.service';
@@ -30,10 +34,20 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
+import { useAuth } from '../../contexts/AuthContext';
+import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
+
+interface ConsultMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 interface TemplateField {
     key: string;
@@ -100,6 +114,7 @@ const TEMPLATES: Template[] = [
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
     const navigation = useNavigation();
+    const { isAuthenticated, isGuest } = useAuth();
 
     // Architect State
     const [step, setStep] = useState<ArchitectStep>('SELECT');
@@ -112,9 +127,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
     const [activeField, setActiveField] = useState<string | null>(null);
 
     // Consultation Chat State
-    const [consultMessages, setConsultMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const [consultMessages, setConsultMessages] = useState<ConsultMessage[]>([]);
     const [currentConsultInput, setCurrentConsultInput] = useState('');
     const consultScrollViewRef = useRef<ScrollView>(null);
+    const [consultConversationId, setConsultConversationId] = useState<string | null>(null);
 
     // Voice Hooks
     const consultVoice = useVoiceInput((text) => setCurrentConsultInput(prev => (prev ? prev + ' ' : '') + text));
@@ -132,8 +148,13 @@ export const DocumentGeneratorScreen: React.FC = () => {
         if (template.id === 'custom') {
             setStep('CONSULT');
             setConsultMessages([
-                { role: 'assistant', content: 'What kind of document do you need help architecting today? Please describe the situation or the parties involved.' }
+                {
+                    id: createMessageId('assistant'),
+                    role: 'assistant',
+                    content: 'What kind of document do you need help architecting today? Please describe the situation or the parties involved.'
+                }
             ]);
+            setConsultConversationId(null);
         } else {
             setStep('INTAKE');
         }
@@ -147,23 +168,65 @@ export const DocumentGeneratorScreen: React.FC = () => {
         if (!currentConsultInput.trim()) return;
 
         const userMsg = currentConsultInput.trim();
-        const updatedMessages = [...consultMessages, { role: 'user', content: userMsg }];
-        setConsultMessages(updatedMessages as any);
+        const useAuthEndpoint = isAuthenticated && !isGuest;
+        const newUserMessage: ConsultMessage = {
+            id: createMessageId('user'),
+            role: 'user',
+            content: userMsg,
+        };
+
+        const nextMessages = [...consultMessages, newUserMessage];
+        setConsultMessages(nextMessages);
         setCurrentConsultInput('');
         setIsArchitecting(true);
 
         try {
-            // Use chat service to get next question or refine context
-            const response = await chatService.sendMessage(userMsg, updatedMessages as any);
-            setConsultMessages([...updatedMessages, { role: 'assistant', content: response.content }] as any);
+            const response = await chatService.sendMessage(userMsg, {
+                useAuthenticatedEndpoint: useAuthEndpoint,
+                conversationId: useAuthEndpoint ? consultConversationId ?? undefined : undefined,
+            });
 
-            // Check if the AI thinks it has enough info to generate
-            if (response.content.toLowerCase().includes('ready to generate') ||
-                response.content.toLowerCase().includes('architect the document now')) {
-                // If the AI says it's ready, we could show a "Generate" button or transition
+            const lowerContent = (content: string) => content.toLowerCase();
+            const appendAssistantMessage = (content: string) => {
+                const assistantMessage: ConsultMessage = {
+                    id: createMessageId('assistant'),
+                    role: 'assistant',
+                    content,
+                };
+                setConsultMessages((prev) => [...prev, assistantMessage]);
+
+                if (consultScrollViewRef.current) {
+                    consultScrollViewRef.current.scrollToEnd({ animated: true });
+                }
+
+                if (lowerContent(content).includes('ready to generate') ||
+                    lowerContent(content).includes('architect the document now')) {
+                    // Placeholder hook: could enable a CTA to jump to build step.
+                }
+            };
+
+            if (useAuthEndpoint) {
+                const authResponse = response as AuthenticatedChatResponse;
+                setConsultConversationId(authResponse.conversation_id);
+
+                const responseContent = authResponse.message.content;
+                const disclaimer = authResponse.disclaimer ? `\n\n${authResponse.disclaimer}` : '';
+                appendAssistantMessage(`${responseContent}${disclaimer}`);
+            } else {
+                const publicResponse = response as PublicChatResponse;
+                const disclaimer = publicResponse.legal_disclaimer ? `\n\n${publicResponse.legal_disclaimer}` : '';
+                appendAssistantMessage(`${publicResponse.content}${disclaimer}`);
             }
         } catch (error) {
             console.error('Consult error:', error);
+            setConsultMessages((prev) => [
+                ...prev,
+                {
+                    id: createMessageId('assistant'),
+                    role: 'assistant',
+                    content: 'I could not process that request right now. Please try again in a moment.',
+                },
+            ]);
         } finally {
             setIsArchitecting(false);
         }
@@ -189,11 +252,49 @@ export const DocumentGeneratorScreen: React.FC = () => {
         setIsExporting(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // Simulate export process
-        setTimeout(() => {
+        try {
+            // 1. Generate HTML for the PDF
+            const htmlContent = `
+                <html>
+                <head>
+                    <style>
+                        body { font-family: 'Helvetica', sans-serif; padding: 40px; }
+                        h1 { color: #002244; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+                        p { line-height: 1.6; font-size: 14px; margin-bottom: 15px; }
+                        .footer { margin-top: 50px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>${selectedTemplate?.title.toUpperCase()}</h1>
+                    <div>${documentContent.replace(/\n/g, '<br/>')}</div>
+                    <div class="footer">
+                        Generated by INJUSTICE AI Advisor • ${new Date().toLocaleDateString()}
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // 2. Create PDF
+            const { uri } = await Print.printToFileAsync({
+                html: htmlContent,
+                base64: false
+            });
+
+            // 3. Share / Save
+            await Sharing.shareAsync(uri, {
+                UTI: '.pdf',
+                mimeType: 'application/pdf',
+                dialogTitle: `Save ${selectedTemplate?.title}`
+            });
+
+            Alert.alert("Success", "Document exported successfully. You can find it where you saved it via the share sheet.");
+
+        } catch (error) {
+            console.error('Export error:', error);
+            Alert.alert("Export Failed", "Could not save the document. Please try again.");
+        } finally {
             setIsExporting(false);
-            Alert.alert("Success", `${selectedTemplate?.title} saved as ${format}.`);
-        }, 2000);
+        }
     };
 
     const handleGenerate = async () => {
@@ -296,35 +397,37 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 {renderHeader()}
 
                 {step === 'SELECT' && (
-                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Template Library</Text>
-                        <View style={styles.templateGrid}>
-                            {TEMPLATES.map(item => (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    style={[styles.templateCard, { backgroundColor: colors.surfaceElevated1 }]}
-                                    onPress={() => handleSelectTemplate(item)}
-                                >
-                                    <View style={[styles.iconBox, { backgroundColor: item.id === 'custom' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 34, 68, 0.05)' }]}>
-                                        <Ionicons
-                                            name={item.id === 'custom' ? "sparkles" : "document-text"}
-                                            size={24}
-                                            color={item.id === 'custom' ? theme.colors.secondary : theme.colors.primary}
-                                        />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.itemTitle, { color: colors.text }]}>{item.title}</Text>
-                                        <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.description}</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </ScrollView>
+                    <Animated.View style={{ flex: 1 }} entering={FadeInRight.springify()}>
+                        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Template Library</Text>
+                            <View style={styles.templateGrid}>
+                                {TEMPLATES.map(item => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={[styles.templateCard, { backgroundColor: colors.surfaceElevated1 }]}
+                                        onPress={() => handleSelectTemplate(item)}
+                                    >
+                                        <View style={[styles.iconBox, { backgroundColor: item.id === 'custom' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 34, 68, 0.05)' }]}>
+                                            <Ionicons
+                                                name={item.id === 'custom' ? "sparkles" : "document-text"}
+                                                size={24}
+                                                color={item.id === 'custom' ? theme.colors.secondary : theme.colors.primary}
+                                            />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.itemTitle, { color: colors.text }]}>{item.title}</Text>
+                                            <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.description}</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    </Animated.View>
                 )}
 
                 {step === 'INTAKE' && selectedTemplate && (
-                    <View style={styles.stepContent}>
+                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
                         <ScrollView showsVerticalScrollIndicator={false}>
                             <View style={styles.formContainer}>
                                 {selectedTemplate.fields.map(field => (
@@ -367,11 +470,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                             style={styles.mainBtn}
                             loading={isArchitecting}
                         />
-                    </View>
+                    </Animated.View>
                 )}
 
                 {step === 'CONSULT' && (
-                    <View style={styles.stepContent}>
+                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
                         <ScrollView
                             ref={consultScrollViewRef}
                             style={styles.chatArea}
@@ -426,11 +529,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                 <Text style={[styles.finalizeText, { color: theme.colors.secondary }]}>Draft Document Now</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
 
                 {step === 'BUILD' && (
-                    <View style={styles.stepContent}>
+                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
                         <View style={styles.editorToolbar}>
                             <TouchableOpacity
                                 style={[styles.toolbarBtn, isEditing && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
@@ -474,12 +577,12 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                 style={[styles.mainBtn, { flex: 2 }]}
                             />
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
 
                 {/* Rest of the steps (PREVIEW, FINALIZE) remain largely the same but with UI tweaks */}
                 {(step === 'PREVIEW' || step === 'FINALIZE') && (
-                    <View style={styles.stepContent}>
+                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
                         {step === 'PREVIEW' ? (
                             <View style={styles.htmlPreviewContainer}>
                                 <ScrollView contentContainerStyle={{ padding: 32 }}>
@@ -521,7 +624,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                             onPress={() => step === 'PREVIEW' ? setStep('FINALIZE') : navigation.goBack()}
                             style={styles.mainBtn}
                         />
-                    </View>
+                    </Animated.View>
                 )}
             </KeyboardAvoidingView>
 
