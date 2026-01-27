@@ -39,11 +39,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                                 Sources
                             </Text>
                         </View>
-                        {message.sources.map((source, idx) => (
-                            <Text key={idx} style={[styles.source, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
-                                • {source}
-                            </Text>
-                        ))}
+                        {message.sources.map((source, idx) => {
+                            const sourceText = typeof source === 'string'
+                                ? source
+                                : [source.title, source.section, source.document_type]
+                                    .filter(Boolean)
+                                    .join(' • ');
+
+                            return (
+                                <Text
+                                    key={`${sourceText}-${idx}`}
+                                    style={[styles.source, { color: isUser ? colors.onPrimary : colors.textSecondary }]}
+                                >
+                                    • {sourceText}
+                                </Text>
+                            );
+                        })}
                     </View>
                 )}
 

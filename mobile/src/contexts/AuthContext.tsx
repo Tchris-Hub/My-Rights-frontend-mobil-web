@@ -60,6 +60,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
                 setOnboardingCompleted(onboardingStatus === 'true');
 
+                // Check guest status
+                const guestStatus = await AsyncStorage.getItem(STORAGE_KEYS.IS_GUEST);
+                setIsGuest(guestStatus === 'true');
+
                 // Check for stored access token
                 const accessToken = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
 
@@ -102,6 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
         await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
         await SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA);
+        await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
         setUser(null);
         setIsGuest(false);
     };
@@ -125,7 +130,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
             await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
         } catch (err: any) {
-            const errorMessage = err.response?.data?.detail || 'Login failed. Please check your credentials.';
+            let errorMessage = 'Login failed. Please check your credentials.';
+            if (err.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                errorMessage = Array.isArray(detail)
+                    ? detail.map(d => d.msg || d).join(', ')
+                    : typeof detail === 'string' ? detail : errorMessage;
+            }
             setError(errorMessage);
             throw new Error(errorMessage);
         } finally {
@@ -152,7 +163,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
             await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
         } catch (err: any) {
-            const errorMessage = err.response?.data?.detail || 'Registration failed. Please try again.';
+            let errorMessage = 'Registration failed. Please try again.';
+            if (err.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                errorMessage = Array.isArray(detail)
+                    ? detail.map(d => d.msg || d).join(', ')
+                    : typeof detail === 'string' ? detail : errorMessage;
+            }
             setError(errorMessage);
             throw new Error(errorMessage);
         } finally {
@@ -225,8 +242,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     /**
      * Set user as guest to allow app access
      */
-    const continueAsGuest = () => {
-        setIsGuest(true);
+    const continueAsGuest = async () => {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.IS_GUEST, 'true');
+            setIsGuest(true);
+        } catch (error) {
+            console.error('Failed to save guest status:', error);
+        }
     };
 
     const value: AuthContextType = {

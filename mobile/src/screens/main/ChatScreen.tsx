@@ -2,23 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
-    StyleSheet,
-    FlatList,
     TextInput,
     TouchableOpacity,
+    FlatList,
+    ScrollView,
+    StyleSheet,
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
-    ScrollView,
     Alert,
-    Switch,
     Keyboard,
+    TouchableWithoutFeedback,
+    Switch,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
@@ -26,7 +29,7 @@ import { chatService } from '../../services/chat.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
-import type { ChatMessage } from '../../types';
+import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 const SUGGESTIONS = [
     { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
@@ -37,8 +40,8 @@ const SUGGESTIONS = [
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { isAuthenticated, isGuest } = useAuth();
-    const navigation = useNavigation();
+    const { isAuthenticated, isGuest, logout } = useAuth();
+    const navigation = useNavigation<any>();
     const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
@@ -47,6 +50,9 @@ export const ChatScreen: React.FC = () => {
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [showEscalateModal, setShowEscalateModal] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [guestMessageCount, setGuestMessageCount] = useState(0);
+    const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [inputFocused, setInputFocused] = useState(false);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
@@ -79,14 +85,15 @@ export const ChatScreen: React.FC = () => {
 
     useEffect(() => {
         if (isAuthenticated) {
-            loadCachedMessages();
+            loadCachedConversation();
         }
     }, [isAuthenticated]);
 
-    const loadCachedMessages = async () => {
-        const cached = await chatService.getCachedMessages();
-        if (cached.length > 0) {
-            setMessages(cached);
+    const loadCachedConversation = async () => {
+        const { messages: cachedMessages, conversationId: cachedConversationId } = await chatService.getCachedConversation();
+        if (cachedMessages.length > 0) {
+            setMessages(cachedMessages);
+            setConversationId(cachedConversationId);
         }
     };
 
@@ -94,11 +101,11 @@ export const ChatScreen: React.FC = () => {
         if (messages.length > 0) {
             // Only cache if authenticated and NOT in incognito mode
             if (isAuthenticated && !isIncognito) {
-                chatService.cacheMessages(messages, true);
+                chatService.cacheMessages(messages, true, conversationId);
             }
             flatListRef.current?.scrollToEnd({ animated: true });
         }
-    }, [messages, isIncognito, isAuthenticated]);
+    }, [messages, isIncognito, isAuthenticated, conversationId]);
 
     // Scroll to end when messages change
     useEffect(() => {
@@ -110,6 +117,24 @@ export const ChatScreen: React.FC = () => {
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim();
         if (!messageText || isLoading) return;
+
+        // Guest limit logic
+        if (isGuest && guestMessageCount >= 5) {
+            Alert.alert(
+                "Experience More",
+                "You've sent several messages as a guest. Sign up now to save your legal conversations and access premium drafting tools.",
+                [
+                    { text: "Later", style: "cancel" },
+                    {
+                        text: "Sign Up", onPress: () => {
+                            // We reset isGuest in context to force the RootNavigator to show AuthStack
+                            logout();
+                        }
+                    }
+                ]
+            );
+            return;
+        }
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -133,24 +158,53 @@ export const ChatScreen: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Use authenticated endpoint only if logged in AND NOT in incognito
             const useAuthenticatedEndpoint = isAuthenticated && !isIncognito;
-            const response = await chatService.sendMessage(messageText, useAuthenticatedEndpoint);
+            const response = await chatService.sendMessage(messageText, {
+                useAuthenticatedEndpoint,
+                conversationId: useAuthenticatedEndpoint ? conversationId ?? undefined : undefined,
+            });
 
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg.id === loadingMessage.id
-                        ? {
+            setMessages((prev) => {
+                return prev.map((msg) => {
+                    if (msg.id !== loadingMessage.id) return msg;
+
+                    if (useAuthenticatedEndpoint) {
+                        const authResponse = response as AuthenticatedChatResponse;
+
+                        return {
                             ...msg,
-                            content: response.content,
-                            sources: response.sources,
-                            confidence_score: response.confidence_score,
-                            legal_disclaimer: response.legal_disclaimer,
+                            content: authResponse.message.content,
+                            sources: authResponse.message.sources,
+                            confidence_score: authResponse.message.confidence_score
+                                ? Number(authResponse.message.confidence_score)
+                                : undefined,
+                            legal_disclaimer: authResponse.disclaimer,
                             isLoading: false,
-                        }
-                        : msg
-                )
-            );
+                        };
+                    }
+
+                    const publicResponse = response as PublicChatResponse;
+
+                    return {
+                        ...msg,
+                        content: publicResponse.content,
+                        sources: publicResponse.sources,
+                        confidence_score: publicResponse.confidence_score
+                            ? Number(publicResponse.confidence_score)
+                            : undefined,
+                        legal_disclaimer: publicResponse.legal_disclaimer,
+                        isLoading: false,
+                    };
+                });
+            });
+
+            if (useAuthenticatedEndpoint) {
+                const authResponse = response as AuthenticatedChatResponse;
+                setConversationId(authResponse.conversation_id);
+            } else if (isGuest) {
+                // Increment guest message counter
+                setGuestMessageCount(prev => prev + 1);
+            }
         } catch (error) {
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -169,6 +223,93 @@ export const ChatScreen: React.FC = () => {
         }
     };
 
+    const closeMenu = () => setIsMenuVisible(false);
+
+    const handleNewChat = () => {
+        if (messages.length === 0) return;
+
+        Alert.alert(
+            "New Conversation",
+            "This will clear the current session and start a fresh chat. Continue?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Start New",
+                    style: "destructive",
+                    onPress: async () => {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        setMessages([]);
+                        setConversationId(null);
+                        setGuestMessageCount(0);
+                        // Clear local cache
+                        await chatService.cacheMessages([], isAuthenticated);
+                    }
+                }
+            ]
+        );
+    };
+
+    const pickDocument = async () => {
+        try {
+            Alert.alert(
+                "Add Attachment",
+                "Choose attachment type",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Photo Library", onPress: pickImage },
+                    { text: "Document", onPress: pickFile },
+                ]
+            );
+        } catch (error) {
+            console.error('Error picking document:', error);
+            Alert.alert('Error', 'Failed to pick document');
+        }
+    };
+
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission needed', 'Please grant camera roll permissions to attach photos.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                setInputText(prev => prev + `\n[Image: ${asset.fileName || 'photo.jpg'}]`);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const pickFile = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['application/pdf', 'image/*', 'text/plain'],
+                copyToCacheDirectory: true,
+            });
+
+            if (!result.canceled && result.assets && result.assets[0]) {
+                const asset = result.assets[0];
+                setInputText(prev => prev + `\n[Document: ${asset.name}]`);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+        } catch (error) {
+            console.error('Error picking file:', error);
+            Alert.alert('Error', 'Failed to pick document');
+        }
+    };
+
     const { isRecording, isTranscribing, toggleRecording } = useVoiceInput((text) => {
         setInputText(prev => (prev ? prev + ' ' : '') + text);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -182,7 +323,7 @@ export const ChatScreen: React.FC = () => {
                     style={styles.headerIconButton}
                     onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        navigation.navigate('Tools' as never);
+                        navigation.navigate('Tools');
                     }}
                 >
                     <Ionicons name="apps-outline" size={24} color={colors.primary} />
@@ -200,44 +341,98 @@ export const ChatScreen: React.FC = () => {
                     </Text>
                 </View>
 
-                {isAuthenticated ? (
-                    <View style={styles.headerRight}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                navigation.navigate('Profile' as never);
-                            }}
-                            style={styles.headerIconButton}
-                        >
-                            <Ionicons name="person-circle-outline" size={26} color={colors.textSecondary} />
-                        </TouchableOpacity>
-
-                        <View style={styles.incognitoToggle}>
-                            <Switch
-                                value={isIncognito}
-                                onValueChange={(val) => {
-                                    setIsIncognito(val);
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                    if (val) {
-                                        Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
-                                    }
-                                }}
-                                trackColor={{ false: colors.border, true: colors.primary + '40' }}
-                                thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
-                                ios_backgroundColor={colors.border}
-                                style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
-                            />
-                        </View>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={styles.headerIconButton}
-                        onPress={() => Alert.alert("Guest Session", "Login to save chat history and get personalized legal documents.")}
-                    >
-                        <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={styles.headerIconButton}
+                    onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        setIsMenuVisible(prev => !prev);
+                    }}
+                >
+                    <Ionicons
+                        name={isMenuVisible ? 'close-circle-outline' : 'ellipsis-horizontal-circle-outline'}
+                        size={26}
+                        color={colors.primary}
+                    />
+                </TouchableOpacity>
             </View>
+
+            {isMenuVisible && (
+                <TouchableWithoutFeedback onPress={closeMenu}>
+                    <View style={[styles.menuOverlay, { paddingTop: insets.top + theme.spacing.md }]}>
+                        <TouchableWithoutFeedback>
+                            <View style={[styles.menuContainer, { backgroundColor: colors.surfaceElevated1, borderColor: colors.border }]}>
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        closeMenu();
+                                        handleNewChat();
+                                    }}
+                                >
+                                    <View style={styles.menuItemLabelWrap}>
+                                        <Ionicons name="refresh-circle" size={20} color={colors.primary} />
+                                        <Text style={[styles.menuItemLabel, { color: colors.text }]}>Start New Chat</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                </TouchableOpacity>
+
+                                {isAuthenticated && (
+                                    <View style={[styles.menuItem, styles.menuItemDivider]}>
+                                        <View style={styles.menuItemLabelWrap}>
+                                            <Ionicons name="eye-off" size={20} color={isIncognito ? colors.primary : colors.textSecondary} />
+                                            <Text style={[styles.menuItemLabel, { color: colors.text }]}>Incognito Mode</Text>
+                                        </View>
+                                        <Switch
+                                            value={isIncognito}
+                                            onValueChange={(val: boolean) => {
+                                                closeMenu();
+                                                setIsIncognito(val);
+                                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                                if (val) {
+                                                    Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
+                                                }
+                                            }}
+                                            trackColor={{ false: colors.border, true: colors.primary + '40' }}
+                                            thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
+                                            ios_backgroundColor={colors.border}
+                                            style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
+                                        />
+                                    </View>
+                                )}
+
+                                <TouchableOpacity
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        closeMenu();
+                                        navigation.navigate('Profile');
+                                    }}
+                                >
+                                    <View style={styles.menuItemLabelWrap}>
+                                        <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
+                                        <Text style={[styles.menuItemLabel, { color: colors.text }]}>Account</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                </TouchableOpacity>
+
+                                {isAuthenticated && (
+                                    <TouchableOpacity
+                                        style={styles.menuItem}
+                                        onPress={() => {
+                                            closeMenu();
+                                            navigation.navigate('Profile', { screen: 'ChatHistory' });
+                                        }}
+                                    >
+                                        <View style={styles.menuItemLabelWrap}>
+                                            <Ionicons name="time-outline" size={20} color={colors.primary} />
+                                            <Text style={[styles.menuItemLabel, { color: colors.text }]}>Chat History</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            )}
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -289,29 +484,35 @@ export const ChatScreen: React.FC = () => {
                             ) : <MessageBubble message={item} />
                         )}
                         keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.messagesList}
+                        contentContainerStyle={[styles.messagesList, isKeyboardVisible && { paddingBottom: theme.spacing.lg }]}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                     />
                 )}
 
-                {/* Input Area - Now Relative */}
                 <BlurView
                     intensity={isDark ? 40 : 80}
                     style={[
                         styles.inputBlur,
-                        { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 12) + 12 }
+                        {
+                            paddingBottom: Math.max(insets.bottom, theme.spacing.sm),
+                        }
                     ]}
                 >
                     <View style={styles.inputContainer}>
-                        <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated1 }]}>
+                        <View
+                            style={[
+                                styles.inputWrapper,
+                                {
+                                    backgroundColor: colors.surfaceElevated1,
+                                    borderColor: inputFocused ? colors.primary : colors.border,
+                                }
+                            ]}
+                        >
                             <TouchableOpacity
-                                style={styles.inputIconButton}
-                                onPress={() => {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    Alert.alert("Add Attachment", "Upload documents, ID, or evidence for legal review.");
-                                }}
+                                style={styles.inputLeftIcon}
+                                onPress={pickDocument}
                             >
-                                <Ionicons name="add-circle" size={26} color={colors.primary} />
+                                <Ionicons name="add-circle" size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
 
                             <TextInput
@@ -322,15 +523,21 @@ export const ChatScreen: React.FC = () => {
                                 onChangeText={setInputText}
                                 multiline
                                 maxLength={1000}
+                                textAlignVertical="center"
+                                onFocus={() => setInputFocused(true)}
+                                onBlur={() => setInputFocused(false)}
+                                blurOnSubmit={false}
+                                autoCorrect
+                                returnKeyType="send"
                             />
 
                             <TouchableOpacity
                                 onPress={toggleRecording}
-                                style={[styles.inputIconButton, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 20 }]}
+                                style={[styles.inputRightIcon, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 12 }]}
                             >
                                 <Ionicons
                                     name={isRecording ? 'mic' : 'mic-outline'}
-                                    size={22}
+                                    size={18}
                                     color={isRecording ? theme.colors.error : colors.textSecondary}
                                 />
                             </TouchableOpacity>
@@ -340,7 +547,7 @@ export const ChatScreen: React.FC = () => {
                             style={[
                                 styles.sendButton,
                                 {
-                                    backgroundColor: (inputText.trim() && !isLoading) ? colors.primary : colors.border
+                                    backgroundColor: (inputText.trim() && !isLoading) ? colors.primary : colors.border,
                                 }
                             ]}
                             onPress={() => handleSend()}
@@ -349,9 +556,16 @@ export const ChatScreen: React.FC = () => {
                             <Ionicons name="send" size={20} color={colors.onPrimary} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={[styles.disclaimer, { color: colors.textTertiary }]}>
-                        Always verify legal actions with a professional lawyer.
-                    </Text>
+
+                    {!isKeyboardVisible && (
+                        <Text
+                            style={[styles.disclaimer, { color: colors.textTertiary }]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                        >
+                            Always verify legal actions with a professional lawyer.
+                        </Text>
+                    )}
                 </BlurView>
             </KeyboardAvoidingView>
 
@@ -501,11 +715,18 @@ const styles = StyleSheet.create({
         minHeight: 48,
         maxHeight: 120,
         borderRadius: 24,
-        paddingHorizontal: 6,
+        borderWidth: 1,
+        paddingHorizontal: 4,
     },
-    inputIconButton: {
-        width: 36,
-        height: 36,
+    inputLeftIcon: {
+        width: 32,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    inputRightIcon: {
+        width: 32,
+        height: 32,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -513,8 +734,8 @@ const styles = StyleSheet.create({
         flex: 1,
         minHeight: 40,
         maxHeight: 100,
-        paddingHorizontal: 8,
-        paddingVertical: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 10,
         ...theme.typography.body,
     },
     sendButton: {
@@ -535,5 +756,45 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
     },
+    menuOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        paddingHorizontal: theme.spacing.lg,
+        zIndex: 10,
+    },
+    menuContainer: {
+        alignSelf: 'flex-end',
+        width: 250,
+        borderRadius: 20,
+        paddingVertical: 8,
+        borderWidth: 1,
+        ...theme.shadows.md,
+        overflow: 'hidden',
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 12,
+    },
+    menuItemDivider: {
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(148, 163, 184, 0.15)',
+    },
+    menuItemLabelWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    menuItemLabel: {
+        ...theme.typography.bodySmall,
+        fontWeight: '600',
+    },
 });
-

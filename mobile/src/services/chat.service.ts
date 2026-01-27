@@ -1,19 +1,46 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './api';
 import { API_ENDPOINTS, STORAGE_KEYS } from '../constants/config';
-import type { ChatResponse, ChatMessage, EscalationResponse } from '../types';
+import type {
+    ChatMessage,
+    ChatResponse,
+    AuthenticatedChatResponse,
+    PublicChatResponse,
+    EscalationResponse,
+} from '../types';
+
+type SendMessageOptions = {
+    useAuthenticatedEndpoint?: boolean;
+    conversationId?: string;
+};
+
+interface CachedConversationPayload {
+    conversation_id: string | null;
+    messages: ChatMessage[];
+}
 
 export const chatService = {
     /**
      * Send a chat message and get AI response
      * Switches between authenticated and public endpoints
      */
-    async sendMessage(message: string, isAuthenticated: boolean = false): Promise<ChatResponse> {
-        const endpoint = isAuthenticated
-            ? API_ENDPOINTS.CHAT.MESSAGE
-            : API_ENDPOINTS.CHAT.PUBLIC_MESSAGE;
+    async sendMessage(message: string, options: SendMessageOptions = {}): Promise<ChatResponse> {
+        const { useAuthenticatedEndpoint = false, conversationId } = options;
 
-        const response = await api.post<ChatResponse>(endpoint, {
+        if (useAuthenticatedEndpoint) {
+            const payload: Record<string, unknown> = {
+                content: message,
+            };
+
+            if (conversationId) {
+                payload.conversation_id = conversationId;
+            }
+
+            const response = await api.post<AuthenticatedChatResponse>(API_ENDPOINTS.CHAT.MESSAGE, payload);
+            return response.data;
+        }
+
+        const response = await api.post<PublicChatResponse>(API_ENDPOINTS.CHAT.PUBLIC_MESSAGE, {
             message,
             content: message, // Backward compatibility for some schemas
         });
@@ -24,25 +51,47 @@ export const chatService = {
     /**
      * Store chat messages locally only if authenticated
      */
-    async cacheMessages(messages: ChatMessage[], isAuthenticated: boolean): Promise<void> {
+    async cacheMessages(messages: ChatMessage[], isAuthenticated: boolean, conversationId?: string | null): Promise<void> {
         if (!isAuthenticated) return; // Never cache guest messages
 
         try {
-            await AsyncStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(messages));
+            const payload: CachedConversationPayload = {
+                conversation_id: conversationId ?? null,
+                messages,
+            };
+            await AsyncStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(payload));
         } catch (error) {
             console.error('Failed to cache messages:', error);
         }
     },
 
+    async getCachedMessages(): Promise<ChatMessage[]> {
+        const { messages } = await this.getCachedConversation();
+        return messages;
+    },
+
     /**
      * Get cached messages
      */
-    async getCachedMessages(): Promise<ChatMessage[]> {
+    async getCachedConversation(): Promise<{ conversationId: string | null; messages: ChatMessage[] }> {
         try {
             const cached = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
-            return cached ? JSON.parse(cached) : [];
+            if (!cached) {
+                return { conversationId: null, messages: [] };
+            }
+
+            const parsed = JSON.parse(cached) as ChatMessage[] | CachedConversationPayload;
+
+            if (Array.isArray(parsed)) {
+                return { conversationId: null, messages: parsed };
+            }
+
+            return {
+                conversationId: parsed.conversation_id ?? null,
+                messages: parsed.messages ?? [],
+            };
         } catch (error) {
-            return [];
+            return { conversationId: null, messages: [] };
         }
     },
 
@@ -106,5 +155,48 @@ export const chatService = {
         );
 
         return { text: response.data.text };
+    },
+
+    /**
+     * Delete a conversation (Authenticated only)
+     */
+    async deleteConversation(conversationId: string): Promise<void> {
+        await api.delete(API_ENDPOINTS.CHAT.DETAILS(conversationId));
+
+        // If the deleted conversation is the one cached locally, clear it
+        const { conversationId: cachedId } = await this.getCachedConversation();
+        if (cachedId === conversationId) {
+            await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
+        }
+    },
+
+    /**
+     * Store generated documents/reviews locally
+     */
+    async saveDocument(doc: { type: string; title: string; content: string }): Promise<void> {
+        try {
+            const saved = await AsyncStorage.getItem('myrights_saved_documents');
+            const docs = saved ? JSON.parse(saved) : [];
+            docs.unshift({
+                ...doc,
+                id: Date.now().toString(),
+                created_at: new Date().toISOString(),
+            });
+            await AsyncStorage.setItem('myrights_saved_documents', JSON.stringify(docs.slice(0, 50)));
+        } catch (error) {
+            console.error('Failed to save document:', error);
+        }
+    },
+
+    /**
+     * Get saved documents
+     */
+    async getSavedDocuments(): Promise<any[]> {
+        try {
+            const saved = await AsyncStorage.getItem('myrights_saved_documents');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            return [];
+        }
     },
 };

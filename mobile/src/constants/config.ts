@@ -12,24 +12,41 @@
  */
 
 // --------------------------------------------------
-// Environment Configuration
+// Environment Configuration (driven by Expo manifest extras)
 // --------------------------------------------------
-const LOCAL_NETWORK_IP = '192.168.0.138'; // Detected via ipconfig
-const LOCAL_PORT = 8000;
+import Constants from 'expo-constants';
 
-const PRODUCTION_API_URL = 'https://api.myrights.ng'; // Update when production is available
-const STAGING_API_URL = 'https://staging-api.myrights.ng'; // Optional staging environment
+type ApiEnvironment = 'development' | 'staging' | 'production';
 
-/**
- * Determines the correct API URL based on the environment.
- * In __DEV__ mode, it uses the local network IP.
- * In production, it uses the deployed API.
- */
-const getApiBaseUrl = (): string => {
-    if (__DEV__) {
-        return `http://${LOCAL_NETWORK_IP}:${LOCAL_PORT}`;
+type ExpoExtraConfig = {
+    devApiUrl?: string;
+    stagingApiUrl?: string;
+    prodApiUrl?: string;
+    apiEnvironment?: ApiEnvironment;
+};
+
+const extra = (Constants.expoConfig?.extra ?? {}) as ExpoExtraConfig;
+
+const resolveEnvironment = (): ApiEnvironment => {
+    if (extra.apiEnvironment) {
+        return extra.apiEnvironment;
     }
-    return PRODUCTION_API_URL;
+
+    return __DEV__ ? 'development' : 'production';
+};
+
+const getApiBaseUrl = (): string => {
+    const environment = resolveEnvironment();
+
+    switch (environment) {
+        case 'staging':
+            return extra.stagingApiUrl ?? extra.prodApiUrl ?? 'https://api.myrights.ng';
+        case 'production':
+            return extra.prodApiUrl ?? 'https://api.myrights.ng';
+        case 'development':
+        default:
+            return extra.devApiUrl ?? 'http://127.0.0.1:8000';
+    }
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -77,6 +94,7 @@ export const STORAGE_KEYS = {
     THEME_MODE: 'myrights_theme_mode',
     ONBOARDING_COMPLETED: 'myrights_onboarding_completed',
     CHAT_HISTORY: 'myrights_chat_history',
+    IS_GUEST: 'myrights_is_guest',
 };
 
 // --------------------------------------------------

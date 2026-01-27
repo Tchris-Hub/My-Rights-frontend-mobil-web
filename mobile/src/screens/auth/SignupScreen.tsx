@@ -12,7 +12,7 @@ import {
     Platform,
     ScrollView,
     TouchableOpacity,
-    } from 'react-native';
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { TermsModal } from '../../components/modals/TermsModal';
 
 export const SignupScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -34,6 +35,15 @@ export const SignupScreen: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    // Modal states
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [termsType, setTermsType] = useState<'terms' | 'privacy'>('terms');
+
+    const openTerms = (type: 'terms' | 'privacy') => {
+        setTermsType(type);
+        setShowTermsModal(true);
+    };
 
     const [errors, setErrors] = useState({
         fullName: '',
@@ -88,6 +98,12 @@ export const SignupScreen: React.FC = () => {
         } else if (password.length < 8) {
             newErrors.password = 'Password must be at least 8 characters';
             hasError = true;
+        } else if (!/[A-Z]/.test(password)) {
+            newErrors.password = 'Password must contain at least one uppercase letter';
+            hasError = true;
+        } else if (!/[0-9]/.test(password)) {
+            newErrors.password = 'Password must contain at least one digit';
+            hasError = true;
         }
 
         if (password !== confirmPassword) {
@@ -108,6 +124,7 @@ export const SignupScreen: React.FC = () => {
                 email: email.trim(),
                 password,
                 full_name: fullName.trim(),
+                accept_terms: acceptedTerms,
             });
         } catch (err) {
             // Error displayed via AuthContext
@@ -217,8 +234,19 @@ export const SignupScreen: React.FC = () => {
                             </View>
                             <Text style={[styles.termsText, { color: colors.textSecondary }]}>
                                 I agree to the{' '}
-                                <Text style={{ color: colors.primary }}>Terms of Service</Text> and{' '}
-                                <Text style={{ color: colors.primary }}>Privacy Policy</Text>
+                                <Text
+                                    style={{ color: colors.primary }}
+                                    onPress={() => openTerms('terms')}
+                                >
+                                    Terms of Service
+                                </Text>{' '}
+                                and{' '}
+                                <Text
+                                    style={{ color: colors.primary }}
+                                    onPress={() => openTerms('privacy')}
+                                >
+                                    Privacy Policy
+                                </Text>
                             </Text>
                         </TouchableOpacity>
 
@@ -250,6 +278,12 @@ export const SignupScreen: React.FC = () => {
             </KeyboardAvoidingView>
 
             {isLoading && <LoadingSpinner overlay />}
+
+            <TermsModal
+                visible={showTermsModal}
+                onClose={() => setShowTermsModal(false)}
+                type={termsType}
+            />
         </SafeAreaView>
     );
 };

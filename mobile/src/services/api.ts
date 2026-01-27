@@ -30,7 +30,10 @@ api.interceptors.request.use(
 
         // Log request in development
         if (__DEV__) {
-            console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+            console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+                data: config.data,
+                headers: config.headers
+            });
         }
 
         return config;

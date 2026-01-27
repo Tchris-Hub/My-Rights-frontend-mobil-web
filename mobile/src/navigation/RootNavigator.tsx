@@ -23,9 +23,17 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export const RootNavigator: React.FC = () => {
     const { isAuthenticated, isLoading, onboardingCompleted, isGuest } = useAuth();
     const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
+    const [isInitialBoot, setIsInitialBoot] = useState(true);
 
-    // Show animated splash screen while checking onboarding/auth status OR while animation is still playing
-    if (isLoading || !isSplashAnimationFinished) {
+    // Once the first loading is done, we mark initial boot as complete
+    useEffect(() => {
+        if (!isLoading && isInitialBoot) {
+            setIsInitialBoot(false);
+        }
+    }, [isLoading, isInitialBoot]);
+
+    // Show animated splash screen ONLY on initial boot OR while its animation is still playing
+    if (isInitialBoot || !isSplashAnimationFinished) {
         return (
             <SplashScreen
                 onAnimationFinish={() => setIsSplashAnimationFinished(true)}

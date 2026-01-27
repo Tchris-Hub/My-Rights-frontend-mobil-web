@@ -36,11 +36,29 @@ export interface AuthTokens {
 }
 
 // Chat types
+export interface SourceCitation {
+    title: string;
+    section?: string;
+    excerpt: string;
+    document_type: string;
+    relevance_score?: number;
+}
+
+export interface MessageResponse {
+    id: string;
+    conversation_id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    sources?: SourceCitation[];
+    confidence_score?: string;
+    created_at: string;
+}
+
 export interface ChatMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    sources?: string[];
+    sources?: (SourceCitation | string)[];
     confidence_score?: number;
     legal_disclaimer?: string;
     timestamp: number;
@@ -48,12 +66,23 @@ export interface ChatMessage {
     error?: string;
 }
 
-export interface ChatResponse {
+export interface PublicChatResponse {
     content: string;
     sources: string[];
-    confidence_score: number;
+    confidence_score?: string | number;
     legal_disclaimer: string;
 }
+
+export interface AuthenticatedChatResponse {
+    message: MessageResponse;
+    conversation_id: string;
+    conversation_title?: string;
+    risk_level?: string;
+    escalation_recommended: boolean;
+    disclaimer: string;
+}
+
+export type ChatResponse = PublicChatResponse | AuthenticatedChatResponse;
 
 // Document types
 export interface AnalysisResult {
