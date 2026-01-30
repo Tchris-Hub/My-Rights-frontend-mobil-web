@@ -10,11 +10,21 @@ import { API_BASE_URL, STORAGE_KEYS } from '../constants/config';
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 120000, // 120 seconds for AI processing (RAG heavy lifting)
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 120000, // Explicitly set timeout to match the error message
 });
+
+// Debug Logging
+console.log('configured API_BASE_URL:', API_BASE_URL);
+
+// Add request interceptor
+api.interceptors.request.use(request => {
+    console.log('Starting Request:', request.method, request.url, 'to', request.baseURL);
+    return request;
+});
+
 
 // Request interceptor - Add auth token to requests
 api.interceptors.request.use(

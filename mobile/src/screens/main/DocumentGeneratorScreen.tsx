@@ -238,7 +238,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
         try {
             const context = consultMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-            const response = await documentService.generateDocument("Custom Consultation Document", context);
+            const response = await documentService.generateDocument(
+                "Custom Consultation Document",
+                context,
+                { useAuthenticated: isAuthenticated && !isGuest }
+            );
             setDocumentContent(response.content);
             setStep('BUILD');
         } catch (error) {
@@ -314,7 +318,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 .map(([key, val]) => `${key}: ${val}`)
                 .join('. ');
 
-            const response = await documentService.generateDocument(selectedTemplate.title, userDetails);
+            const response = await documentService.generateDocument(
+                selectedTemplate.title,
+                userDetails,
+                { useAuthenticated: isAuthenticated && !isGuest }
+            );
 
             setDocumentContent(response.content);
             setStep('BUILD');

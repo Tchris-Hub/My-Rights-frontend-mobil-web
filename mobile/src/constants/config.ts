@@ -36,17 +36,8 @@ const resolveEnvironment = (): ApiEnvironment => {
 };
 
 const getApiBaseUrl = (): string => {
-    const environment = resolveEnvironment();
-
-    switch (environment) {
-        case 'staging':
-            return extra.stagingApiUrl ?? extra.prodApiUrl ?? 'https://api.myrights.ng';
-        case 'production':
-            return extra.prodApiUrl ?? 'https://api.myrights.ng';
-        case 'development':
-        default:
-            return extra.devApiUrl ?? 'http://127.0.0.1:8000';
-    }
+    // FORCE PRODUCTION URL
+    return 'https://injustice-production.up.railway.app';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -78,8 +69,10 @@ export const API_ENDPOINTS = {
     // Documents (Authenticated & Anonymous)
     DOCUMENTS: {
         ANALYZE: '/api/v1/chat/analyze-document',
+        AUTH_ANALYZE: '/api/v1/chat/documents/analyze',
         EXTRACT_TEXT: '/api/v1/chat/public/extract-text',
         GENERATE: '/api/v1/chat/generate-document',
+        AUTH_GENERATE: '/api/v1/chat/documents/generate',
     },
 };
 

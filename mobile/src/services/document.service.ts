@@ -11,9 +11,13 @@ export const documentService = {
     /**
      * Analyze a contract or document for risks
      */
-    async analyzeDocument(documentText: string): Promise<DocumentAnalysisResponse> {
+    async analyzeDocument(documentText: string, options?: { useAuthenticated?: boolean }): Promise<DocumentAnalysisResponse> {
+        const endpoint = options?.useAuthenticated
+            ? API_ENDPOINTS.DOCUMENTS.AUTH_ANALYZE
+            : API_ENDPOINTS.DOCUMENTS.ANALYZE;
+
         const response = await api.post<DocumentAnalysisResponse>(
-            API_ENDPOINTS.DOCUMENTS.ANALYZE,
+            endpoint,
             { document_text: documentText }
         );
         return response.data;
@@ -22,9 +26,13 @@ export const documentService = {
     /**
      * Generate a legal document template
      */
-    async generateDocument(docType: string, userDetails: string): Promise<DocumentGenerationResponse> {
+    async generateDocument(docType: string, userDetails: string, options?: { useAuthenticated?: boolean }): Promise<DocumentGenerationResponse> {
+        const endpoint = options?.useAuthenticated
+            ? API_ENDPOINTS.DOCUMENTS.AUTH_GENERATE
+            : API_ENDPOINTS.DOCUMENTS.GENERATE;
+
         const response = await api.post<DocumentGenerationResponse>(
-            API_ENDPOINTS.DOCUMENTS.GENERATE,
+            endpoint,
             {
                 doc_type: docType,
                 user_details: userDetails,

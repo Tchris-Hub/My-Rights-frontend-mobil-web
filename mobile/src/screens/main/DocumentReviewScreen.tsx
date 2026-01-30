@@ -52,12 +52,14 @@ import { Card } from '../../components/ui/Card';
 import { documentService } from '../../services/document.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { isAuthenticated, isGuest } = useAuth();
     const [documentText, setDocumentText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
@@ -82,7 +84,10 @@ export const DocumentReviewScreen: React.FC = () => {
             setTimeout(() => setLoadingPhase('Cross-referencing Constitutional Principles...'), 2500);
             setTimeout(() => setLoadingPhase('Finalizing Safety Audit...'), 4000);
 
-            const analysis = await documentService.analyzeDocument(targetText);
+            const analysis = await documentService.analyzeDocument(
+                targetText,
+                { useAuthenticated: isAuthenticated && !isGuest }
+            );
             setResult(analysis);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
