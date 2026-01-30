@@ -30,6 +30,12 @@
     },
     "plugins": [
       "react-native-document-scanner-plugin"
-    ]
+    ],
+    "extra": {
+      "apiEnvironment": "production",
+      "prodApiUrl": "https://injustice-production.up.railway.app",
+      "stagingApiUrl": "https://injustice-production.up.railway.app",
+      "devApiUrl": "http://127.0.0.1:8000"
+    }
   }
 }
