@@ -7,6 +7,7 @@ export interface User {
     id: string;
     email: string;
     full_name: string | null;
+    avatar_url: string | null;
     phone_number: string | null;
     is_active: boolean;
     is_verified: boolean;
@@ -103,6 +104,15 @@ export interface DocumentAnalysisResponse {
     analysis_results: AnalysisResult[];
     overall_verdict: string;
     disclaimer: string;
+    // Error handling
+    error?: string;
+    details?: string;
+    // Visual Stamp Detection
+    authenticity_markers?: {
+        has_stamp: boolean;
+        has_signature?: boolean;
+        details: string;
+    };
 }
 
 export interface DocumentGenerationResponse {

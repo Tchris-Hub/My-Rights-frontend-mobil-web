@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -26,7 +26,14 @@ import { useAuth } from '../../contexts/AuthContext';
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation();
     const { colors } = useTheme();
-    const { login, isLoading, error, clearError, continueAsGuest } = useAuth();
+    const { login, signInWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
+
+    // Clear error when screen is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            clearError();
+        }, [])
+    );
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -145,7 +152,33 @@ export const LoginScreen: React.FC = () => {
                             fullWidth
                             style={styles.loginButton}
                         />
+
+                        <TouchableOpacity
+                            style={styles.forgotPasswordContainer}
+                            onPress={() => navigation.navigate('ForgotPassword' as never)}
+                        >
+                            <Text style={[styles.linkText, { color: colors.primary, fontSize: 14 }]}>
+                                Forgot Password?
+                            </Text>
+                        </TouchableOpacity>
                     </View>
+
+                    {/* OAuth Section */}
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    </View>
+
+                    <Button
+                        title="Sign In with Google"
+                        variant="outline"
+                        onPress={() => signInWithGoogle('home')}
+                        disabled={isLoading}
+                        fullWidth
+                        icon={<Ionicons name="logo-google" size={20} color={colors.primary} />}
+                        style={styles.googleButton}
+                    />
 
                     {/* Footer */}
                     <View style={styles.footer}>
@@ -223,6 +256,26 @@ const styles = StyleSheet.create({
     },
     loginButton: {
         marginTop: theme.spacing.md,
+    },
+    forgotPasswordContainer: {
+        alignItems: 'center',
+        marginTop: theme.spacing.md,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: theme.spacing.lg,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        ...theme.typography.caption,
+        marginHorizontal: theme.spacing.md,
+    },
+    googleButton: {
+        marginBottom: theme.spacing.xl,
     },
     footer: {
         flexDirection: 'row',

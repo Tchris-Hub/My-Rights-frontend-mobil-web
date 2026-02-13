@@ -12,6 +12,7 @@ import type {
 type SendMessageOptions = {
     useAuthenticatedEndpoint?: boolean;
     conversationId?: string;
+    suppressStorage?: boolean;
 };
 
 interface CachedConversationPayload {
@@ -25,7 +26,7 @@ export const chatService = {
      * Switches between authenticated and public endpoints
      */
     async sendMessage(message: string, options: SendMessageOptions = {}): Promise<ChatResponse> {
-        const { useAuthenticatedEndpoint = false, conversationId } = options;
+        const { useAuthenticatedEndpoint = false, conversationId, suppressStorage = false } = options;
 
         if (useAuthenticatedEndpoint) {
             const payload: Record<string, unknown> = {
@@ -34,6 +35,10 @@ export const chatService = {
 
             if (conversationId) {
                 payload.conversation_id = conversationId;
+            }
+
+            if (suppressStorage) {
+                payload.suppress_storage = true;
             }
 
             const response = await api.post<AuthenticatedChatResponse>(API_ENDPOINTS.CHAT.MESSAGE, payload);
@@ -105,6 +110,30 @@ export const chatService = {
             return response.data.conversations || [];
         } catch (error) {
             return [];
+        }
+    },
+
+    /**
+     * Get details of a specific conversation (messages)
+     */
+    async getConversationDetails(conversationId: string): Promise<{ messages: ChatMessage[], conversationId: string }> {
+        try {
+            const response = await api.get<{ messages: any[] }>(API_ENDPOINTS.CHAT.DETAILS(conversationId));
+
+            // Map backend messages to frontend ChatMessage format
+            const messages: ChatMessage[] = response.data.messages.map((msg: any) => ({
+                id: msg.id,
+                role: msg.role === 'system' ? 'assistant' : (msg.role as 'user' | 'assistant'),
+                content: msg.content,
+                timestamp: new Date(msg.created_at).getTime(),
+                sources: msg.sources,
+                confidence_score: msg.confidence_score ? Number(msg.confidence_score) : undefined,
+            }));
+
+            return { messages, conversationId };
+        } catch (error) {
+            console.error('Failed to fetch conversation details:', error);
+            throw error;
         }
     },
 

@@ -37,6 +37,8 @@ import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
+import { useJobs } from '../../contexts/JobContext';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
@@ -113,8 +115,9 @@ const TEMPLATES: Template[] = [
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const { isAuthenticated, isGuest } = useAuth();
+    const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
 
     // Architect State
     const [step, setStep] = useState<ArchitectStep>('SELECT');
@@ -139,6 +142,15 @@ export const DocumentGeneratorScreen: React.FC = () => {
             setFormData(prev => ({ ...prev, [activeField]: (prev[activeField] || '') + ' ' + text }));
         }
     });
+
+    // Check for finished background jobs
+    useEffect(() => {
+        if (activeJob && activeJob.type === 'generation' && activeJob.status === 'completed' && activeJob.result) {
+            setDocumentContent(activeJob.result.content);
+            setStep('BUILD');
+            clearJob();
+        }
+    }, [activeJob?.status]);
 
     const handleSelectTemplate = (template: Template) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -198,11 +210,6 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 if (consultScrollViewRef.current) {
                     consultScrollViewRef.current.scrollToEnd({ animated: true });
                 }
-
-                if (lowerContent(content).includes('ready to generate') ||
-                    lowerContent(content).includes('architect the document now')) {
-                    // Placeholder hook: could enable a CTA to jump to build step.
-                }
             };
 
             if (useAuthEndpoint) {
@@ -236,6 +243,12 @@ export const DocumentGeneratorScreen: React.FC = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setIsArchitecting(true);
 
+        const jobId = startJob({
+            type: 'generation',
+            title: 'Architecting Custom Draft',
+            progress: 'Analyzing Consultation...',
+        });
+
         try {
             const context = consultMessages.map(m => `${m.role}: ${m.content}`).join('\n');
             const response = await documentService.generateDocument(
@@ -243,9 +256,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 context,
                 { useAuthenticated: isAuthenticated && !isGuest }
             );
+            finishJob(jobId, response);
             setDocumentContent(response.content);
             setStep('BUILD');
         } catch (error) {
+            failJob(jobId, 'Custom generation failed');
             Alert.alert("Error", "Could not finalize document. Please try again.");
         } finally {
             setIsArchitecting(false);
@@ -291,7 +306,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 dialogTitle: `Save ${selectedTemplate?.title}`
             });
 
-            Alert.alert("Success", "Document exported successfully. You can find it where you saved it via the share sheet.");
+            Alert.alert(
+                "Success",
+                `Document ready! Select "Save to Files" (iOS) or a specific folder (Android) to keep it locally on your device.\n\nNote: This file is NOT stored on our servers.`
+            );
 
         } catch (error) {
             console.error('Export error:', error);
@@ -313,6 +331,12 @@ export const DocumentGeneratorScreen: React.FC = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setIsArchitecting(true);
 
+        const jobId = startJob({
+            type: 'generation',
+            title: `Architecting ${selectedTemplate.title}`,
+            progress: 'Finalizing Parameters...',
+        });
+
         try {
             const userDetails = Object.entries(formData)
                 .map(([key, val]) => `${key}: ${val}`)
@@ -324,11 +348,13 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 { useAuthenticated: isAuthenticated && !isGuest }
             );
 
+            finishJob(jobId, response);
             setDocumentContent(response.content);
             setStep('BUILD');
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         } catch (error) {
             console.error('Generation error:', error);
+            failJob(jobId, 'Generation failed');
             Alert.alert("Reviewing Request...", "AI generation failed. Please try again.");
         } finally {
             setIsArchitecting(false);
@@ -645,6 +671,20 @@ export const DocumentGeneratorScreen: React.FC = () => {
                             {isExporting ? 'Exporting Files...' : 'AI Architecting...'}
                         </Text>
                         <Text style={styles.loadingSub}>Analyzing Nigerian Case Law & Context</Text>
+
+                        {isArchitecting && (
+                            <TouchableOpacity
+                                style={styles.backgroundBtn}
+                                onPress={() => {
+                                    setIsArchitecting(false);
+                                    navigation.goBack();
+                                }}
+                            >
+                                <Text style={[styles.backgroundBtnText, { color: theme.colors.primary }]}>
+                                    Continue in Background
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             )}
@@ -964,5 +1004,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
         textAlign: 'center',
+    },
+    backgroundBtn: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0,34,68,0.05)',
+    },
+    backgroundBtnText: {
+        fontSize: 13,
+        fontWeight: '700',
     },
 });

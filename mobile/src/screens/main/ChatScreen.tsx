@@ -16,7 +16,7 @@ import {
     Switch,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
@@ -42,6 +42,7 @@ export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
     const { isAuthenticated, isGuest, logout } = useAuth();
     const navigation = useNavigation<any>();
+    const route = useRoute<any>();
     const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
@@ -85,9 +86,33 @@ export const ChatScreen: React.FC = () => {
 
     useEffect(() => {
         if (isAuthenticated) {
-            loadCachedConversation();
+            initializeChat();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, route.params?.conversationId]);
+
+    const initializeChat = async () => {
+        // If route has conversationId (from History screen), load that specific chat from backend
+        if (route.params?.conversationId) {
+            setIsLoading(true);
+            try {
+                const { messages: fetchedMessages, conversationId: fetchedId } = await chatService.getConversationDetails(route.params.conversationId);
+                setMessages(fetchedMessages);
+                setConversationId(fetchedId);
+                // Also update local cache so it's the "active" chat if user kills app
+                await chatService.cacheMessages(fetchedMessages, true, fetchedId);
+            } catch (error) {
+                console.error("Failed to load chat history:", error);
+                Alert.alert("Error", "Could not load conversation history.");
+            } finally {
+                setIsLoading(false);
+            }
+        } else {
+            // Default to fresh chat on launch (per user request)
+            // loadCachedConversation(); 
+            setMessages([]);
+            setConversationId(null);
+        }
+    };
 
     const loadCachedConversation = async () => {
         const { messages: cachedMessages, conversationId: cachedConversationId } = await chatService.getCachedConversation();
@@ -107,12 +132,6 @@ export const ChatScreen: React.FC = () => {
         }
     }, [messages, isIncognito, isAuthenticated, conversationId]);
 
-    // Scroll to end when messages change
-    useEffect(() => {
-        if (messages.length > 0) {
-            flatListRef.current?.scrollToEnd({ animated: true });
-        }
-    }, [messages]);
 
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim();
@@ -158,10 +177,13 @@ export const ChatScreen: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const useAuthenticatedEndpoint = isAuthenticated && !isIncognito;
+            // Refined Incognito: If authenticated, use authenticated endpoint but suppress saving to DB.
+            // If NOT authenticated, use public endpoint.
+            const useAuthenticatedEndpoint = isAuthenticated;
             const response = await chatService.sendMessage(messageText, {
                 useAuthenticatedEndpoint,
-                conversationId: useAuthenticatedEndpoint ? conversationId ?? undefined : undefined,
+                conversationId: (useAuthenticatedEndpoint && !isIncognito) ? (conversationId ?? undefined) : undefined,
+                suppressStorage: isIncognito
             });
 
             setMessages((prev) => {
@@ -522,7 +544,7 @@ export const ChatScreen: React.FC = () => {
                                 value={inputText}
                                 onChangeText={setInputText}
                                 multiline
-                                maxLength={1000}
+                                maxLength={10000}
                                 textAlignVertical="center"
                                 onFocus={() => setInputFocused(true)}
                                 onBlur={() => setInputFocused(false)}
@@ -541,6 +563,11 @@ export const ChatScreen: React.FC = () => {
                                     color={isRecording ? theme.colors.error : colors.textSecondary}
                                 />
                             </TouchableOpacity>
+                            {inputText.length > 8000 && (
+                                <Text style={[styles.charCounter, { color: inputText.length > 9500 ? '#EF4444' : colors.textTertiary }]}>
+                                    {inputText.length}/10000
+                                </Text>
+                            )}
                         </View>
 
                         <TouchableOpacity
@@ -551,7 +578,7 @@ export const ChatScreen: React.FC = () => {
                                 }
                             ]}
                             onPress={() => handleSend()}
-                            disabled={!inputText.trim() || isLoading}
+                            disabled={!inputText.trim() || isLoading || inputText.length > 10000}
                         >
                             <Ionicons name="send" size={20} color={colors.onPrimary} />
                         </TouchableOpacity>
@@ -729,6 +756,12 @@ const styles = StyleSheet.create({
         height: 32,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    charCounter: {
+        fontSize: 10,
+        position: 'absolute',
+        bottom: 2,
+        right: 44,
     },
     input: {
         flex: 1,

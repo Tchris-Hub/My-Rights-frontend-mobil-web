@@ -18,6 +18,8 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
     Login: undefined;
     Signup: undefined;
+    ForgotPassword: undefined;
+    ResetPassword: undefined;
 };
 
 // Tools Stack (Document Review, Generate)

@@ -13,20 +13,33 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 120000, // Explicitly set timeout to match the error message
+    timeout: 120000,
 });
 
-// Debug Logging
-console.log('configured API_BASE_URL:', API_BASE_URL);
+if (__DEV__) {
+    console.log('configured API_BASE_URL:', API_BASE_URL);
+}
 
-// Add request interceptor
-api.interceptors.request.use(request => {
-    console.log('Starting Request:', request.method, request.url, 'to', request.baseURL);
-    return request;
-});
+// ─── Token Refresh Mutex ────────────────────────────────────────────────
+// Prevents concurrent 401 retries from each triggering their own refresh.
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
 
+function subscribeTokenRefresh(cb: (token: string) => void) {
+    refreshSubscribers.push(cb);
+}
 
-// Request interceptor - Add auth token to requests
+function onTokenRefreshed(newToken: string) {
+    refreshSubscribers.forEach((cb) => cb(newToken));
+    refreshSubscribers = [];
+}
+
+function onRefreshFailed() {
+    refreshSubscribers = [];
+}
+// ────────────────────────────────────────────────────────────────────────
+
+// Request interceptor - Add auth token and log (dev only)
 api.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
         try {
@@ -35,13 +48,29 @@ api.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${token}`;
             }
         } catch (error) {
-            console.error('Error getting access token:', error);
+            if (__DEV__) {
+                console.error('Error getting access token:', error);
+            }
         }
 
-        // Log request in development
+        // Log request in development only
         if (__DEV__) {
+            const safeData = { ...config.data };
+
+            // SECURITY: Redact sensitive fields before logging
+            const sensitiveFields = ['password', 'refresh_token', 'access_token', 'token', 'code_verifier', 'newPassword', 'confirmPassword'];
+            if (safeData && typeof safeData === 'object') {
+                Object.keys(safeData).forEach(key => {
+                    if (sensitiveFields.includes(key)) {
+                        safeData[key] = '[REDACTED]';
+                    } else if (typeof safeData[key] === 'string' && safeData[key].length > 100) {
+                        safeData[key] = safeData[key].substring(0, 100) + '... [TRUNCATED]';
+                    }
+                });
+            }
+
             console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-                data: config.data,
+                data: safeData,
                 headers: config.headers
             });
         }
@@ -53,27 +82,49 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor - Handle token refresh and errors
+// Response interceptor - Handle token refresh (with mutex) and errors
 api.interceptors.response.use(
     (response: AxiosResponse) => {
-        // Log response in development
         if (__DEV__) {
             console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
     async (error: AxiosError) => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
         // Handle 401 Unauthorized - Try to refresh token
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
+            // If a refresh is already in progress, queue this request
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    subscribeTokenRefresh((newToken: string) => {
+                        if (originalRequest.headers) {
+                            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                        }
+                        resolve(api(originalRequest));
+                    });
+                });
+            }
+
+            isRefreshing = true;
+
             try {
                 const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
 
+                // BRIDGE GUARD: If using Supabase (ref token is likely a Supabase internal or missing),
+                // don't try to refresh at our custom backend endpoint. Supabase handles its own 
+                // refreshing via the onAuthStateChange listener we added.
+                const isSupabaseUser = refreshToken?.length && refreshToken.length > 200; // Supabase JWTs are long
+
+                if (!refreshToken || isSupabaseUser) {
+                    if (__DEV__) console.warn('[API Interceptor] Skipping backend refresh (Supabase or no token)');
+                    return Promise.reject(error);
+                }
+
                 if (refreshToken) {
-                    // Attempt to refresh the token
                     const response = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
                         refresh_token: refreshToken,
                     });
@@ -84,6 +135,10 @@ api.interceptors.response.use(
                     await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, access_token);
                     await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
 
+                    // Notify all queued requests
+                    onTokenRefreshed(access_token);
+                    isRefreshing = false;
+
                     // Retry original request with new token
                     if (originalRequest.headers) {
                         originalRequest.headers.Authorization = `Bearer ${access_token}`;
@@ -92,19 +147,21 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
-                // Refresh failed - Clear tokens and redirect to login
+                // Refresh failed - Clear tokens
+                onRefreshFailed();
+                isRefreshing = false;
+
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
                 await SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA);
 
-                // TODO: Navigate to login screen
-                // This will be handled by AuthContext
-
                 return Promise.reject(refreshError);
             }
+
+            isRefreshing = false;
         }
 
-        // Log error in development
+        // Log error in development only
         if (__DEV__) {
             console.error('[API Error]', error.response?.status, error.response?.data || error.message);
         }

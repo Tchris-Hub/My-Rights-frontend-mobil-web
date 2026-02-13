@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -27,7 +27,14 @@ import { TermsModal } from '../../components/modals/TermsModal';
 export const SignupScreen: React.FC = () => {
     const navigation = useNavigation();
     const { colors } = useTheme();
-    const { register, isLoading, error, clearError } = useAuth();
+    const { register, signInWithGoogle, isLoading, error, clearError } = useAuth();
+
+    // Clear error when screen is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            clearError();
+        }, [])
+    );
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -266,6 +273,23 @@ export const SignupScreen: React.FC = () => {
                         />
                     </View>
 
+                    {/* OAuth Section */}
+                    <View style={styles.dividerContainer}>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    </View>
+
+                    <Button
+                        title="Sign Up with Google"
+                        variant="outline"
+                        onPress={() => signInWithGoogle('home')}
+                        disabled={isLoading}
+                        fullWidth
+                        icon={<Ionicons name="logo-google" size={20} color={colors.primary} />}
+                        style={styles.googleButton}
+                    />
+
                     <View style={styles.footer}>
                         <Text style={[styles.footerText, { color: colors.textSecondary }]}>
                             Already have an account?{' '}
@@ -368,6 +392,22 @@ const styles = StyleSheet.create({
     },
     signupButton: {
         marginTop: theme.spacing.md,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: theme.spacing.lg,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+    },
+    dividerText: {
+        ...theme.typography.caption,
+        marginHorizontal: theme.spacing.md,
+    },
+    googleButton: {
+        marginBottom: theme.spacing.xl,
     },
     footer: {
         flexDirection: 'row',

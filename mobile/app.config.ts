@@ -6,10 +6,15 @@ const prodApiUrl = process.env.PROD_API_URL ?? 'https://injustice-production.up.
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
+console.log('--- Expo Config Load ---');
+console.log('PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Present' : 'EMPTY');
+console.log('PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'EMPTY');
+
 export default {
     expo: {
         name: 'My Rights',
         slug: 'my-rights',
+        scheme: 'myrights',
         version: '1.0.0',
         orientation: 'portrait',
         icon: './assets/icon.png',
@@ -32,9 +37,9 @@ export default {
         splash: {
             image: './assets/splash-icon.png',
             resizeMode: 'contain',
-            backgroundColor: '#006B3F',
+            backgroundColor: '#FFFFFF',
         },
-        plugins: ['react-native-document-scanner-plugin'],
+        plugins: ['react-native-document-scanner-plugin', 'expo-web-browser'],
         extra: {
             devApiUrl,
             stagingApiUrl,

@@ -3,7 +3,7 @@
  * "Minimal Grenade" upgrade: Visual risk gauges, camera scanning, and rich analysis
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -55,10 +55,15 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
 
+import { useJobs } from '../../contexts/JobContext';
+import { useNavigation } from '@react-navigation/native';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
+    const navigation = useNavigation<any>();
     const { isAuthenticated, isGuest } = useAuth();
     const [documentText, setDocumentText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +74,15 @@ export const DocumentReviewScreen: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
 
+    // Check if there's a finished job for this screen
+    useEffect(() => {
+        if (activeJob && activeJob.type === 'analysis' && activeJob.status === 'completed' && activeJob.result) {
+            setResult(activeJob.result);
+            setDocumentText(activeJob.params?.text || '');
+            clearJob();
+        }
+    }, [activeJob?.status]);
+
     const handleAnalyze = async (text?: string) => {
         const targetText = text || documentText;
         if (!targetText.trim()) return;
@@ -76,23 +90,45 @@ export const DocumentReviewScreen: React.FC = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setIsLoading(true);
 
-        // Production-grade granular status states
+        const jobId = startJob({
+            type: 'analysis',
+            title: 'Analyzing Document',
+            progress: 'Uploading Document...',
+            params: { text: targetText }
+        });
+
+        // Granular status updates
         setLoadingPhase('Uploading Document...');
 
         try {
-            setTimeout(() => setLoadingPhase('Extracting Clause Patterns...'), 1000);
-            setTimeout(() => setLoadingPhase('Cross-referencing Constitutional Principles...'), 2500);
-            setTimeout(() => setLoadingPhase('Finalizing Safety Audit...'), 4000);
+            const updatePhase = (phase: string) => {
+                setLoadingPhase(phase);
+                updateJob(jobId, { progress: phase });
+            };
+
+            setTimeout(() => updatePhase('Extracting Clause Patterns...'), 1000);
+            setTimeout(() => updatePhase('Cross-referencing Constitutional Principles...'), 2500);
+            setTimeout(() => updatePhase('Finalizing Safety Audit...'), 4000);
 
             const analysis = await documentService.analyzeDocument(
                 targetText,
                 { useAuthenticated: isAuthenticated && !isGuest }
             );
+
+            if (analysis.error) {
+                failJob(jobId, analysis.details || 'Analysis failed');
+                Alert.alert('Analysis Issue', analysis.details || 'Could not analyze document.');
+                return;
+            }
+
+            finishJob(jobId, analysis);
             setResult(analysis);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Analysis failed:', error);
-            Alert.alert('Analysis Failed', 'Could not analyze the document. Please ensure it is a text-based format.');
+            const msg = error.response?.data?.detail || error.message || 'Please ensure it is a text-based format.';
+            failJob(jobId, msg);
+            Alert.alert('Analysis Failed', msg);
         } finally {
             setIsLoading(false);
         }
@@ -381,6 +417,25 @@ export const DocumentReviewScreen: React.FC = () => {
                                         {result.disclaimer}
                                     </Text>
                                 </View>
+
+                                {/* Authenticity/Stamp Marker */}
+                                {result.authenticity_markers && (
+                                    <Card elevation="sm" style={styles.clauseCard}>
+                                        <View style={[styles.clauseHeader, { marginBottom: 8 }]}>
+                                            <Ionicons
+                                                name={result.authenticity_markers.has_stamp ? "ribbon" : "help-circle"}
+                                                size={20}
+                                                color={result.authenticity_markers.has_stamp ? colors.primary : colors.textTertiary}
+                                            />
+                                            <Text style={[styles.sectionTitle, { fontSize: 16, marginBottom: 0, color: colors.text }]}>
+                                                Visual Authenticity Check
+                                            </Text>
+                                        </View>
+                                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                                            {result.authenticity_markers.details}
+                                        </Text>
+                                    </Card>
+                                )}
                             </View>
                         )}
                     </ScrollView>
@@ -470,7 +525,7 @@ export const DocumentReviewScreen: React.FC = () => {
                         <View style={styles.overlay}>
                             <BlurView intensity={20} style={StyleSheet.absoluteFill} />
                             <View style={styles.loadingBox}>
-                                <ActivityIndicator size="large" color={colors.primary} />
+                                <ActivityIndicator size="large" color="#002244" />
                                 {loadingPhase ? (
                                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                                         {loadingPhase}
@@ -479,6 +534,20 @@ export const DocumentReviewScreen: React.FC = () => {
                                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                                         Architecting Analysis...
                                     </Text>
+                                )}
+
+                                {isLoading && (
+                                    <TouchableOpacity
+                                        style={styles.backgroundBtn}
+                                        onPress={() => {
+                                            setIsLoading(false);
+                                            navigation.goBack();
+                                        }}
+                                    >
+                                        <Text style={[styles.backgroundBtnText, { color: colors.primary }]}>
+                                            Continue in Background
+                                        </Text>
+                                    </TouchableOpacity>
                                 )}
                             </View>
                         </View>
@@ -697,16 +766,29 @@ const styles = StyleSheet.create({
         zIndex: 1000,
     },
     loadingBox: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FFFFFF', // Force white background for contrast
         padding: 32,
         borderRadius: 32,
         alignItems: 'center',
         gap: 16,
         ...theme.shadows.lg,
+        borderColor: 'rgba(0,0,0,0.05)',
+        borderWidth: 1,
     },
     loadingText: {
         ...theme.typography.body,
         fontWeight: '600',
+    },
+    backgroundBtn: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        backgroundColor: 'rgba(0,34,68,0.05)',
+    },
+    backgroundBtnText: {
+        fontSize: 13,
+        fontWeight: '700',
     },
 
     disclaimerContainer: {

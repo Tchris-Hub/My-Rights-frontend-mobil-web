@@ -16,12 +16,17 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { CustomSplashScreen as SplashScreen } from '../screens/common/SplashScreen';
 import { useAuth } from '../contexts/AuthContext';
 import { STORAGE_KEYS } from '../constants/config';
+import { BackgroundJobOverlay } from '../components/common/BackgroundJobOverlay';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export const RootNavigator: React.FC = () => {
-    const { isAuthenticated, isLoading, onboardingCompleted, isGuest } = useAuth();
+interface RootNavigatorProps {
+    linking?: any;
+}
+
+export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
+    const { isAuthenticated, isLoading, onboardingCompleted, isGuest, needsPasswordReset } = useAuth();
     const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
     const [isInitialBoot, setIsInitialBoot] = useState(true);
 
@@ -43,13 +48,15 @@ export const RootNavigator: React.FC = () => {
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
             <Stack.Navigator
                 screenOptions={{ headerShown: false }}
                 initialRouteName={(!onboardingCompleted) ? "Onboarding" : (!isAuthenticated && !isGuest) ? "Auth" : "Chat"}
             >
                 {!onboardingCompleted ? (
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                ) : needsPasswordReset ? (
+                    <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (!isAuthenticated && !isGuest) ? (
                     <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (
@@ -60,6 +67,7 @@ export const RootNavigator: React.FC = () => {
                     </>
                 )}
             </Stack.Navigator>
+            <BackgroundJobOverlay />
         </NavigationContainer>
     );
 };

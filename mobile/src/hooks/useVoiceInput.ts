@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
@@ -7,18 +7,22 @@ import { chatService } from '../services/chat.service';
 export const useVoiceInput = (onTranscription: (text: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    // Use ref so callbacks always see the latest recording instance
+    const recordingRef = useRef<Audio.Recording | null>(null);
+    // Keep a stable reference to the latest onTranscription callback
+    const onTranscriptionRef = useRef(onTranscription);
+    onTranscriptionRef.current = onTranscription;
 
     // Clean up recording on unmount
     useEffect(() => {
         return () => {
-            if (recording) {
-                recording.stopAndUnloadAsync();
+            if (recordingRef.current) {
+                recordingRef.current.stopAndUnloadAsync();
             }
         };
-    }, [recording]);
+    }, []);
 
-    const startRecording = async () => {
+    const startRecording = useCallback(async () => {
         try {
             const permission = await Audio.requestPermissionsAsync();
             if (permission.status !== 'granted') {
@@ -34,40 +38,47 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
             const { recording } = await Audio.Recording.createAsync(
                 Audio.RecordingOptionsPresets.HIGH_QUALITY
             );
-            setRecording(recording);
+            recordingRef.current = recording;
             setIsRecording(true);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (err) {
-            console.error('Failed to start recording', err);
+            if (__DEV__) console.error('Failed to start recording', err);
             Alert.alert('Error', 'Could not start recording. Please try again.');
         }
-    };
+    }, []);
 
-    const stopRecording = async () => {
-        if (!recording) return;
+    const stopRecording = useCallback(async () => {
+        const currentRecording = recordingRef.current;
+        if (!currentRecording) return;
 
         setIsRecording(false);
         setIsTranscribing(true);
 
         try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
-            setRecording(null);
+            await currentRecording.stopAndUnloadAsync();
+            const uri = currentRecording.getURI();
+            recordingRef.current = null;
 
             if (uri) {
-                const result = await chatService.transcribeAudio(uri);
-                if (result.text) {
-                    onTranscription(result.text);
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                try {
+                    const result = await chatService.transcribeAudio(uri);
+                    if (result.text) {
+                        onTranscriptionRef.current(result.text);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    }
+                } finally {
+                    // Always clean up the temp file after use
+                    const { deleteAsync } = await import('expo-file-system');
+                    await deleteAsync(uri, { idempotent: true });
                 }
             }
         } catch (err) {
-            console.error('Failed to transcribe', err);
+            if (__DEV__) console.error('Failed to transcribe', err);
             Alert.alert('Transcription Failed', 'Could not process your voice. Please try typing.');
         } finally {
             setIsTranscribing(false);
         }
-    };
+    }, []);
 
     const toggleRecording = useCallback(() => {
         if (isRecording) {
@@ -75,7 +86,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
         } else {
             startRecording();
         }
-    }, [isRecording, recording, onTranscription]);
+    }, [isRecording, startRecording, stopRecording]);
 
     return {
         isRecording,

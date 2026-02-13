@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -13,6 +13,58 @@ import type { ChatMessage } from '../../types';
 interface MessageBubbleProps {
     message: ChatMessage;
 }
+
+interface MessageBubbleProps {
+    message: ChatMessage;
+}
+
+const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
+    const [expanded, setExpanded] = React.useState(false);
+
+    return (
+        <View style={{ marginTop: 8 }}>
+            <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setExpanded(!expanded)}
+                style={[styles.collapseHeader, { backgroundColor: isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)' }]}
+            >
+                <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={14} color={isUser ? colors.onPrimary : colors.textSecondary} />
+                <Text style={[styles.collapseHeaderText, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
+                    {expanded ? "Hide Details" : "Show Legal Notice & Sources"}
+                </Text>
+            </TouchableOpacity>
+
+            {expanded && (
+                <View style={[styles.collapseContent, { borderColor: isUser ? 'rgba(255,255,255,0.1)' : colors.border }]}>
+                    {sources && sources.length > 0 && (
+                        <View style={styles.sourcesSection}>
+                            <Text style={[styles.sectionTitle, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>Sources:</Text>
+                            {sources.map((source: any, idx: number) => {
+                                const sourceText = typeof source === 'string'
+                                    ? source
+                                    : [source.title, source.section].filter(Boolean).join(' • ');
+                                return (
+                                    <Text key={idx} style={[styles.sourceText, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
+                                        • {sourceText}
+                                    </Text>
+                                );
+                            })}
+                        </View>
+                    )}
+
+                    {!!disclaimer && (
+                        <View style={styles.disclaimerSection}>
+                            <Ionicons name="alert-circle-outline" size={14} color={isUser ? colors.onPrimary : colors.textTertiary} />
+                            <Text style={[styles.disclaimerText, { color: isUser ? colors.onPrimary : colors.textTertiary }]}>
+                                {disclaimer.replace(/⚠️/g, '').trim()}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            )}
+        </View>
+    );
+};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     const { colors } = useTheme();
@@ -31,38 +83,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     {message.content}
                 </Text>
 
-                {message.sources && message.sources.length > 0 && (
-                    <View style={[styles.sources, { borderTopColor: isUser ? colors.onPrimary + '30' : colors.border }]}>
-                        <View style={styles.sourcesHeader}>
-                            <Ionicons name="book-outline" size={12} color={isUser ? colors.onPrimary : colors.textSecondary} />
-                            <Text style={[styles.sourcesLabel, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
-                                Sources
-                            </Text>
-                        </View>
-                        {message.sources.map((source, idx) => {
-                            const sourceText = typeof source === 'string'
-                                ? source
-                                : [source.title, source.section, source.document_type]
-                                    .filter(Boolean)
-                                    .join(' • ');
-
-                            return (
-                                <Text
-                                    key={`${sourceText}-${idx}`}
-                                    style={[styles.source, { color: isUser ? colors.onPrimary : colors.textSecondary }]}
-                                >
-                                    • {sourceText}
-                                </Text>
-                            );
-                        })}
-                    </View>
+                {/* Collapsible Sources & Disclaimer */}
+                {((message.sources?.length ?? 0) > 0 || !!message.legal_disclaimer) && (
+                    <CollapsibleInfo
+                        sources={message.sources}
+                        disclaimer={message.legal_disclaimer}
+                        isUser={isUser}
+                        colors={colors}
+                    />
                 )}
 
-                {message.legal_disclaimer && (
-                    <Text style={[styles.disclaimer, { color: isUser ? colors.onPrimary + 'CC' : colors.textTertiary }]}>
-                        {message.legal_disclaimer}
-                    </Text>
-                )}
+
             </View>
 
             {isUser && (
@@ -132,4 +163,45 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing.sm,
         fontStyle: 'italic',
     },
+    collapseHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+        gap: 6,
+    },
+    collapseHeaderText: {
+        ...theme.typography.caption,
+        fontWeight: '600',
+    },
+    collapseContent: {
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        gap: 8,
+    },
+    sourcesSection: {
+        gap: 4,
+    },
+    sectionTitle: {
+        ...theme.typography.caption,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+    sourceText: {
+        fontSize: 11,
+        lineHeight: 16,
+    },
+    disclaimerSection: {
+        flexDirection: 'row',
+        gap: 6,
+        marginTop: 4,
+    },
+    disclaimerText: {
+        fontSize: 10,
+        fontStyle: 'italic',
+        flex: 1,
+    }
 });

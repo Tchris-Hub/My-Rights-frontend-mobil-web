@@ -6,7 +6,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { makeRedirectUri } from 'expo-auth-session';
 import { authService } from '../services/auth.service';
+import { supabase } from '../services/supabase';
 import { STORAGE_KEYS } from '../constants/config';
 import type { User, LoginCredentials, RegisterData, AuthTokens } from '../types';
 
@@ -24,6 +28,11 @@ interface AuthContextType {
     completeOnboarding: () => Promise<void>;
     isGuest: boolean;
     continueAsGuest: () => void;
+    signInWithGoogle: (redirectPath?: string) => Promise<void>;
+    resetPasswordForEmail: (email: string) => Promise<void>;
+    updateUserPassword: (password: string) => Promise<void>;
+    needsPasswordReset: boolean;
+    setNeedsPasswordReset: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,8 +47,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [error, setError] = useState<string | null>(null);
     const [onboardingCompleted, setOnboardingCompleted] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
+    const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
     const isAuthenticated = user !== null;
+
+    // Helper to generate consistent redirect URIs
+    const getRedirectUri = (path: string = '') => {
+        return makeRedirectUri({
+            scheme: 'myrights',
+            path: path,
+        });
+    };
 
     // Initialize auth state on app launch
     useEffect(() => {
@@ -251,6 +269,310 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    /**
+     * Sign in with Google using Supabase OAuth
+     */
+    const signInWithGoogle = async (redirectPath: string = 'home') => {
+        if (isLoading) return;
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const redirectTo = getRedirectUri(redirectPath);
+            console.log('[Google Auth] Starting OAuth flow with redirect:', redirectTo);
+
+            // Check for crypto support
+            const hasCrypto = typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
+            const hasEncoder = typeof TextEncoder !== 'undefined';
+            console.log('[Google Auth] Crypto support check:', { hasCrypto, hasEncoder });
+
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                    skipBrowserRedirect: true,
+                    queryParams: {
+                        prompt: 'select_account',
+                        access_type: 'offline',
+                    }
+                },
+            });
+
+            if (error) {
+                console.error('[Google Auth] Supabase OAuth Error:', error);
+                throw error;
+            }
+
+            if (data?.url) {
+                console.log('[Google Auth] Opening WebBrowser with URL:', data.url);
+                const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+                console.log('[Google Auth] WebBrowser result:', result.type);
+
+                if (result.type === 'success' && result.url) {
+                    console.log('[Google Auth] Redirect URL caught by WebBrowser:', result.url);
+
+                    // Standardize the URL for parsing
+                    // Only replace # if it's not already a query string
+                    const cleanUrl = result.url.includes('?')
+                        ? result.url.replace('#', '&')
+                        : result.url.replace('#', '?');
+                    const parsed = Linking.parse(cleanUrl);
+                    const { queryParams } = parsed;
+
+                    const accessToken = queryParams?.access_token as string;
+                    const refreshToken = queryParams?.refresh_token as string;
+                    const code = queryParams?.code as string;
+                    const authError = queryParams?.error as string;
+                    const errorDescription = queryParams?.error_description as string;
+
+                    console.log('[Google Auth] Parsed link params:', {
+                        hasAccessToken: !!accessToken,
+                        hasCode: !!code,
+                        error: authError || null
+                    });
+
+                    if (authError) {
+                        throw new Error(errorDescription || authError);
+                    }
+
+                    if (accessToken && refreshToken) {
+                        console.log('[Google Auth] Session tokens found, establishing session...');
+                        const { error: sessionError } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        });
+                        if (sessionError) throw sessionError;
+                    } else if (code) {
+                        console.log('[Google Auth] Auth code found, checking storage before exchange...');
+
+                        // Debug: Inspect AsyncStorage
+                        try {
+                            const keys = await AsyncStorage.getAllKeys();
+                            console.log('[Google Auth] AsyncStorage keys:', keys);
+                            const verifierKey = 'myrights-auth-code-verifier';
+                            const verifier = await AsyncStorage.getItem(verifierKey);
+                            console.log(`[Google Auth] Verifier found at ${verifierKey}:`, verifier ? 'YES' : 'NO');
+                        } catch (e) {
+                            console.error('[Google Auth] Storage check error:', e);
+                        }
+
+                        const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+                        if (sessionError) {
+                            console.error('[Google Auth] Exchange Error Detail:', sessionError);
+                            throw sessionError;
+                        }
+                    } else {
+                        console.warn('[Google Auth] No session data or code found in redirect URL');
+                    }
+                } else if (result.type !== 'success') {
+                    console.log('[Google Auth] WebBrowser session was not success:', result.type);
+                }
+            } else {
+                console.warn('[Google Auth] No URL returned from Supabase OAuth');
+            }
+        } catch (err: any) {
+            console.error('[Google Auth] Catch Error:', err.message);
+            setError(err.message || 'Google Sign-In failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * Send password reset email
+     */
+    const resetPasswordForEmail = async (email: string) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const redirectTo = getRedirectUri('reset-password');
+            console.log('[AuthContext] Requesting password reset for:', email);
+            console.log('[AuthContext] Reset redirect URL:', redirectTo);
+
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo,
+            });
+
+            if (error) {
+                console.error('[AuthContext] Password reset error:', error);
+                throw error;
+            }
+
+            console.log('[AuthContext] Password reset email sent successfully');
+        } catch (err: any) {
+            console.error('[AuthContext] Password reset catch error:', err);
+            setError(err.message || 'Failed to send reset email');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    /**
+     * Update user password (used after recovery)
+     */
+    const updateUserPassword = async (password: string) => {
+        try {
+            setIsLoading(true);
+            const { error } = await supabase.auth.updateUser({ password });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || 'Failed to update password');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Listen for Auth Changes (especially for deep linking/recovery)
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (__DEV__) console.log('[AuthContext] Auth State Change:', event);
+
+            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+                const userData: User = {
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    full_name: session.user.user_metadata?.full_name || '',
+                    avatar_url: session.user.user_metadata?.avatar_url || '',
+                    phone_number: session.user.user_metadata?.phone_number || null,
+                    is_active: true,
+                    // Security: Don't assume. Check if provider verified or metadata flags exist.
+                    is_verified: !!session.user.email_confirmed_at || !!session.user.user_metadata?.email_verified,
+                    has_accepted_terms: !!session.user.user_metadata?.has_accepted_terms,
+                    created_at: session.user.created_at || new Date().toISOString(),
+                };
+                setUser(userData);
+                await storeTokens({
+                    access_token: session.access_token,
+                    refresh_token: session.refresh_token || '',
+                    token_type: 'bearer',
+                    expires_at: session.expires_at?.toString() || '',
+                });
+                await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+                // Normal sign in clears the reset flag. 
+                // Recovery events happen AFTER this and will set it back to true.
+                setNeedsPasswordReset(false);
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                await clearAuthData();
+                setNeedsPasswordReset(false);
+            } else if (event === 'PASSWORD_RECOVERY') {
+                console.log('[AuthContext] Password recovery mode detected - forcing state');
+                setNeedsPasswordReset(true);
+            }
+        });
+
+        const handleDeepLink = async (event: { url: string }) => {
+            const { url } = event;
+            if (!url) return;
+
+            console.log('[AuthContext] Full deep link received:', url);
+            console.log('[AuthContext] Processing deep link (no fragment):', url.split('#')[0]);
+            setError(null);
+
+            try {
+                // Use Expo's Linking.parse which handles fragments and query params correctly
+                const parsed = Linking.parse(url);
+                const { queryParams } = parsed;
+
+                // Supabase puts tokens in the fragment, which Linking.parse handles in queryParams 
+                // if it's following the standard redirect pattern
+                const accessToken = queryParams?.access_token as string;
+                const refreshToken = queryParams?.refresh_token as string;
+                const code = queryParams?.code as string;
+                const returnedState = queryParams?.state as string;
+                const type = queryParams?.type as string;
+                const error = queryParams?.error as string;
+                const errorDescription = queryParams?.error_description as string;
+
+                if (error) {
+                    console.error('[AuthContext] Auth error in URL:', error, errorDescription);
+                    setError(errorDescription || 'Authentication error');
+                    return;
+                }
+
+                if (accessToken && refreshToken) {
+                    console.log('[AuthContext] Tokens found, setting session...');
+                    const { error: sessionError } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+
+                    if (sessionError) {
+                        console.error('[AuthContext] setSession error:', sessionError.message);
+                        if (sessionError.message.includes('Network request failed')) {
+                            console.log('[AuthContext] Retrying setSession once...');
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            await supabase.auth.setSession({
+                                access_token: accessToken,
+                                refresh_token: refreshToken,
+                            });
+                        } else {
+                            throw sessionError;
+                        }
+                    }
+
+                    if (type === 'recovery') {
+                        console.log('[AuthContext] Recovery session set successfully');
+                        setNeedsPasswordReset(true);
+                    }
+                } else {
+                    console.log('[AuthContext] No auth parameters found in link query params, checking manual fragment/tokens...');
+
+                    // Fallback: Manually check fragment and session tokens
+                    if (url.includes('access_token=') || url.includes('#')) {
+                        console.log('[AuthContext] Fragment-style tokens detected');
+
+                        // Use URL class or manual parsing if Linking.parse missed it
+                        const fragment = url.includes('#') ? url.split('#')[1] : url.split('?')[1];
+                        const params = new URLSearchParams(fragment || '');
+
+                        const fAccessToken = params.get('access_token');
+                        const fRefreshToken = params.get('refresh_token');
+                        const fType = params.get('type');
+                        const fCode = params.get('code');
+
+                        if (fAccessToken && fRefreshToken) {
+                            console.log('[AuthContext] Setting session from fragment tokens...');
+                            const { error: sessionError } = await supabase.auth.setSession({
+                                access_token: fAccessToken,
+                                refresh_token: fRefreshToken,
+                            });
+
+                            if (!sessionError && fType === 'recovery') {
+                                console.log('[AuthContext] Recovery type detected in fragment');
+                                setNeedsPasswordReset(true);
+                            }
+                        } else if (fCode) {
+                            console.log('[AuthContext] Found code in fragment, exchanging...');
+                            const { error: sessionError } = await supabase.auth.exchangeCodeForSession(fCode);
+                            if (sessionError) throw sessionError;
+                        }
+                    }
+                }
+            } catch (err: any) {
+                console.error('[AuthContext] Deep link processing failure:', err?.message || err);
+            }
+        };
+
+        // Check initial URL on launch (Cold Boot)
+        Linking.getInitialURL().then((url) => {
+            if (url) {
+                console.log('[AuthContext] Cold boot URL detected');
+                handleDeepLink({ url });
+            }
+        });
+
+        const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+
+        return () => {
+            subscription.unsubscribe();
+            linkingSubscription.remove();
+        };
+    }, []);
+
     const value: AuthContextType = {
         user,
         isLoading,
@@ -265,6 +587,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         completeOnboarding,
         isGuest,
         continueAsGuest,
+        signInWithGoogle,
+        resetPasswordForEmail,
+        updateUserPassword,
+        needsPasswordReset,
+        setNeedsPasswordReset,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

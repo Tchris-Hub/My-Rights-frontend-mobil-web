@@ -10,31 +10,69 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LogBox } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
-// Maintenance Note:
-// Suppressing "Expo AV has been deprecated" warning.
-// We are currently using `expo-av` for voice recording features. 
-// Migration to `expo-audio` is planned for Q3 2026.
-// This suppression is safe as the library still functions correctly in SDK 52.
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+
+// Complete the auth session if the app was opened via a redirect
+WebBrowser.maybeCompleteAuthSession();
+
+// React Native LogBox suppression
 LogBox.ignoreLogs(['[expo-av]', 'Expo AV has been deprecated']);
+
+// GLOBAL PRODUCTION LOG GUARD
+// Mutes all console logging in production to prevent data leakage and improve performance
+if (!__DEV__) {
+  console.log = () => { };
+  console.info = () => { };
+  console.warn = () => { };
+  console.error = () => { };
+}
 
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { JobProvider } from './src/contexts/JobContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { BackgroundJobOverlay } from './src/components/common/BackgroundJobOverlay';
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
+import { supabase } from './src/services/supabase';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
+// React Navigation Linking Configuration
+const linking = {
+  prefixes: [
+    Linking.createURL('/'),
+    'myrights://',
+    'exp://', // Fallback for Expo Go
+  ],
+  config: {
+    screens: {
+      Auth: {
+        screens: {
+          ResetPassword: 'reset-password',
+        }
+      },
+    },
+  },
+};
+
 export default function App() {
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <ThemedStatusBar />
-            <RootNavigator />
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <JobProvider>
+              <AuthProvider>
+                <ThemedStatusBar />
+                <RootNavigator linking={linking} />
+              </AuthProvider>
+            </JobProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

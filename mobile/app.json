@@ -2,6 +2,7 @@
   "expo": {
     "name": "My Rights",
     "slug": "my-rights",
+    "scheme": "myrights",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -27,15 +28,6 @@
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#006B3F"
-    },
-    "plugins": [
-      "react-native-document-scanner-plugin"
-    ],
-    "extra": {
-      "apiEnvironment": "production",
-      "prodApiUrl": "https://injustice-production.up.railway.app",
-      "stagingApiUrl": "https://injustice-production.up.railway.app",
-      "devApiUrl": "http://127.0.0.1:8000"
     }
   }
 }
