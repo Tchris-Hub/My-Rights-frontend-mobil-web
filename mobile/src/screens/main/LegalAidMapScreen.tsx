@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -384,36 +384,48 @@ export const LegalAidMapScreen: React.FC = () => {
         }
     };
 
+    const [mapError, setMapError] = useState(false);
+
     const renderHeader = () => (
         <View style={styles.mapContainer}>
-            <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                initialRegion={initialRegion}
-                showsUserLocation
-                showsMyLocationButton
-                showsCompass
-                userInterfaceStyle={isDark ? 'dark' : 'light'}
-            >
-                {filteredCenters.map(center => (
-                    <Marker
-                        key={center.id}
-                        coordinate={{ latitude: center.latitude, longitude: center.longitude }}
-                        pinColor={center.type === 'Government' ? colors.primary : center.type === 'NGO' ? colors.success : colors.secondary}
-                    >
-                        <Callout onPress={() => handleDirections(center.latitude, center.longitude, center.name)}>
-                            <View style={styles.callout}>
-                                <Text style={styles.calloutTitle}>{center.name}</Text>
-                                <Text style={styles.calloutSub}>{center.address}</Text>
-                                <View style={styles.calloutActionBadge}>
-                                    <Ionicons name="navigate" size={12} color="#FFF" />
-                                    <Text style={styles.calloutAction}>Directions</Text>
+            {mapError ? (
+                <View style={[styles.map, { backgroundColor: colors.surfaceElevated1, alignItems: 'center', justifyContent: 'center' }]}>
+                    <Ionicons name="map-outline" size={48} color={colors.textTertiary} />
+                    <Text style={[styles.emptyText, { color: colors.textSecondary, marginTop: 8 }]}>Map unavailable</Text>
+                    <Text style={[styles.emptyText, { color: colors.textTertiary, fontSize: 11 }]}>Browse centers in the list below</Text>
+                </View>
+            ) : (
+                <MapView
+                    style={styles.map}
+                    initialRegion={initialRegion}
+                    showsUserLocation
+                    showsMyLocationButton
+                    showsCompass
+                    userInterfaceStyle={isDark ? 'dark' : 'light'}
+                    onMapReady={() => console.log('Map loaded successfully')}
+                    // @ts-ignore - onError exists at runtime
+                    onError={() => setMapError(true)}
+                >
+                    {filteredCenters.map(center => (
+                        <Marker
+                            key={center.id}
+                            coordinate={{ latitude: center.latitude, longitude: center.longitude }}
+                            pinColor={center.type === 'Government' ? colors.primary : center.type === 'NGO' ? colors.success : colors.secondary}
+                        >
+                            <Callout onPress={() => handleDirections(center.latitude, center.longitude, center.name)}>
+                                <View style={styles.callout}>
+                                    <Text style={styles.calloutTitle}>{center.name}</Text>
+                                    <Text style={styles.calloutSub}>{center.address}</Text>
+                                    <View style={styles.calloutActionBadge}>
+                                        <Ionicons name="navigate" size={12} color="#FFF" />
+                                        <Text style={styles.calloutAction}>Directions</Text>
+                                    </View>
                                 </View>
-                            </View>
-                        </Callout>
-                    </Marker>
-                ))}
-            </MapView>
+                            </Callout>
+                        </Marker>
+                    ))}
+                </MapView>
+            )}
         </View>
     );
 
@@ -486,33 +498,33 @@ export const LegalAidMapScreen: React.FC = () => {
                 </ScrollView>
             </View>
 
-        <View style={{ flex: 1 }}>
-            <SectionList
-                sections={sections}
-                keyExtractor={(item: Center | Lawyer, index: number) => `${item.id}-${index}`}
-                renderItem={renderItem}
-                renderSectionHeader={({ section }: { section: SectionData }) => (
-                    <View style={{ backgroundColor: colors.background, paddingBottom: 10, paddingTop: 10 }}>
-                        <Text style={[styles.sectionTitle, { color: colors.textTertiary, paddingHorizontal: theme.spacing.lg }]}>{section.title}</Text>
-                    </View>
-                )}
-                ListHeaderComponent={renderHeader}
-                stickySectionHeadersEnabled={true}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={() => (
-                    <View style={styles.emptyState}>
-                        <Ionicons name={viewMode === 'centers' ? "map-outline" : "people-outline"} size={48} color={colors.textTertiary} />
-                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                            {viewMode === 'centers' ? 'No centers found for this filter.' : 'No legal experts found in this category.'}
-                        </Text>
-                    </View>
-                )}
-            />
-        </View>
-        <FloatingChatButton />
-    </SafeAreaView>
-);
+            <View style={{ flex: 1 }}>
+                <SectionList
+                    sections={sections}
+                    keyExtractor={(item: Center | Lawyer, index: number) => `${item.id}-${index}`}
+                    renderItem={renderItem}
+                    renderSectionHeader={({ section }: { section: SectionData }) => (
+                        <View style={{ backgroundColor: colors.background, paddingBottom: 10, paddingTop: 10 }}>
+                            <Text style={[styles.sectionTitle, { color: colors.textTertiary, paddingHorizontal: theme.spacing.lg }]}>{section.title}</Text>
+                        </View>
+                    )}
+                    ListHeaderComponent={renderHeader}
+                    stickySectionHeadersEnabled={true}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={() => (
+                        <View style={styles.emptyState}>
+                            <Ionicons name={viewMode === 'centers' ? "map-outline" : "people-outline"} size={48} color={colors.textTertiary} />
+                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                                {viewMode === 'centers' ? 'No centers found for this filter.' : 'No legal experts found in this category.'}
+                            </Text>
+                        </View>
+                    )}
+                />
+            </View>
+            <FloatingChatButton />
+        </SafeAreaView>
+    );
 };
 
 const styles = StyleSheet.create({
