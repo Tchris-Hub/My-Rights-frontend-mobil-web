@@ -35,9 +35,37 @@ const resolveEnvironment = (): ApiEnvironment => {
     return __DEV__ ? 'development' : 'production';
 };
 
+// --------------------------------------------------
+// Environment Constants
+// --------------------------------------------------
+const LOCAL_IP = '192.168.0.138'; // Your laptop's IP
+const LOCAL_URL = `http://${LOCAL_IP}:8000`;
+const PROD_URL = 'https://injustice-production-be94.up.railway.app';
+
+/**
+ * FLAG FOR EASY TOGGLING:
+ * Set to true if you want to test the production server while in dev mode.
+ * Set to false (default) to use your local backend.
+ */
+const USE_PRODUCTION_IN_DEV = true;
+
 const getApiBaseUrl = (): string => {
-    // FORCE PRODUCTION URL
-    return 'https://injustice-production.up.railway.app';
+    const env = resolveEnvironment();
+
+    // Toggle to production even in development mode if flag is set
+    if (__DEV__ && USE_PRODUCTION_IN_DEV) {
+        return PROD_URL;
+    }
+
+    switch (env) {
+        case 'production':
+            return PROD_URL;
+        case 'staging':
+            return extra.stagingApiUrl || PROD_URL;
+        case 'development':
+        default:
+            return LOCAL_URL;
+    }
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -71,8 +99,10 @@ export const API_ENDPOINTS = {
         ANALYZE: '/api/v1/chat/analyze-document',
         AUTH_ANALYZE: '/api/v1/chat/documents/analyze',
         EXTRACT_TEXT: '/api/v1/chat/public/extract-text',
+        VERIFY_STAMP: '/api/v1/chat/public/verify-stamp',
         GENERATE: '/api/v1/chat/generate-document',
         AUTH_GENERATE: '/api/v1/chat/documents/generate',
+
     },
 };
 

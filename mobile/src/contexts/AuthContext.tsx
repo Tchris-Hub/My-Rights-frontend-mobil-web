@@ -12,6 +12,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { authService } from '../services/auth.service';
 import { supabase } from '../services/supabase';
 import { STORAGE_KEYS } from '../constants/config';
+import { logger } from '../utils/logger';
 import type { User, LoginCredentials, RegisterData, AuthTokens } from '../types';
 
 interface AuthContextType {
@@ -53,9 +54,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Helper to generate consistent redirect URIs
     const getRedirectUri = (path: string = '') => {
+        // In Expo Go, we need to use the exp:// scheme for reliable redirects
+        // If we're on a real device with APK, we use our custom scheme
         return makeRedirectUri({
             scheme: 'myrights',
             path: path,
+            preferLocalhost: false,
         });
     };
 
@@ -98,12 +102,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         setUser(userData);
                         await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
                     } catch (error) {
-                        console.error('Failed to fetch user data:', error);
+                        logger.error('Failed to fetch user data:', error);
                     }
                 }
             })();
         } catch (error) {
-            console.error('Failed to initialize auth:', error);
+            logger.error('Failed to initialize auth:', error);
         } finally {
             setIsLoading(false);
         }
@@ -210,14 +214,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     await authService.logout(refreshToken);
                 } catch (error) {
                     // Continue with logout even if API call fails
-                    console.error('Logout API call failed:', error);
+                    logger.error('Logout API call failed:', error);
                 }
             }
 
             // Clear all auth data
             await clearAuthData();
         } catch (error) {
-            console.error('Logout error:', error);
+            logger.error('Logout error:', error);
             // Clear data anyway
             await clearAuthData();
         } finally {
@@ -234,7 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(userData);
             await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
         } catch (error) {
-            console.error('Failed to refresh user data:', error);
+            logger.error('Failed to refresh user data:', error);
         }
     };
 
@@ -253,7 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
             setOnboardingCompleted(true);
         } catch (error) {
-            console.error('Failed to save onboarding status:', error);
+            logger.error('Failed to save onboarding status:', error);
         }
     };
 
@@ -265,7 +269,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await AsyncStorage.setItem(STORAGE_KEYS.IS_GUEST, 'true');
             setIsGuest(true);
         } catch (error) {
-            console.error('Failed to save guest status:', error);
+            logger.error('Failed to save guest status:', error);
         }
     };
 
@@ -279,12 +283,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setError(null);
 
             const redirectTo = getRedirectUri(redirectPath);
-            console.log('[Google Auth] Starting OAuth flow with redirect:', redirectTo);
+            logger.log('[Google Auth] Starting OAuth flow with redirect:', redirectTo);
 
             // Check for crypto support
             const hasCrypto = typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
             const hasEncoder = typeof TextEncoder !== 'undefined';
-            console.log('[Google Auth] Crypto support check:', { hasCrypto, hasEncoder });
+            logger.log('[Google Auth] Crypto support check:', { hasCrypto, hasEncoder });
 
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -299,17 +303,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             });
 
             if (error) {
-                console.error('[Google Auth] Supabase OAuth Error:', error);
+                logger.error('[Google Auth] Supabase OAuth Error:', error);
                 throw error;
             }
 
             if (data?.url) {
-                console.log('[Google Auth] Opening WebBrowser with URL:', data.url);
+                logger.log('[Google Auth] Opening WebBrowser with URL:', data.url);
                 const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-                console.log('[Google Auth] WebBrowser result:', result.type);
+                logger.log('[Google Auth] WebBrowser result:', result.type);
 
                 if (result.type === 'success' && result.url) {
-                    console.log('[Google Auth] Redirect URL caught by WebBrowser:', result.url);
+                    logger.log('[Google Auth] Redirect URL caught by WebBrowser:', result.url);
 
                     // Standardize the URL for parsing
                     // Only replace # if it's not already a query string
@@ -325,7 +329,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     const authError = queryParams?.error as string;
                     const errorDescription = queryParams?.error_description as string;
 
-                    console.log('[Google Auth] Parsed link params:', {
+                    logger.log('[Google Auth] Parsed link params:', {
                         hasAccessToken: !!accessToken,
                         hasCode: !!code,
                         error: authError || null
@@ -336,42 +340,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     }
 
                     if (accessToken && refreshToken) {
-                        console.log('[Google Auth] Session tokens found, establishing session...');
+                        logger.log('[Google Auth] Session tokens found, establishing session...');
                         const { error: sessionError } = await supabase.auth.setSession({
                             access_token: accessToken,
                             refresh_token: refreshToken,
                         });
                         if (sessionError) throw sessionError;
                     } else if (code) {
-                        console.log('[Google Auth] Auth code found, checking storage before exchange...');
+                        logger.log('[Google Auth] Auth code found, checking storage before exchange...');
 
                         // Debug: Inspect AsyncStorage
                         try {
                             const keys = await AsyncStorage.getAllKeys();
-                            console.log('[Google Auth] AsyncStorage keys:', keys);
+                            logger.log('[Google Auth] AsyncStorage keys size:', keys.length);
                             const verifierKey = 'myrights-auth-code-verifier';
                             const verifier = await AsyncStorage.getItem(verifierKey);
-                            console.log(`[Google Auth] Verifier found at ${verifierKey}:`, verifier ? 'YES' : 'NO');
+                            logger.log(`[Google Auth] Verifier found at ${verifierKey}:`, verifier ? 'YES' : 'NO');
                         } catch (e) {
-                            console.error('[Google Auth] Storage check error:', e);
+                            logger.error('[Google Auth] Storage check error:', e);
                         }
 
                         const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
                         if (sessionError) {
-                            console.error('[Google Auth] Exchange Error Detail:', sessionError);
+                            logger.error('[Google Auth] Exchange Error Detail:', sessionError);
                             throw sessionError;
                         }
                     } else {
-                        console.warn('[Google Auth] No session data or code found in redirect URL');
+                        logger.warn('[Google Auth] No session data or code found in redirect URL');
                     }
                 } else if (result.type !== 'success') {
-                    console.log('[Google Auth] WebBrowser session was not success:', result.type);
+                    logger.log('[Google Auth] WebBrowser session was not success:', result.type);
                 }
             } else {
-                console.warn('[Google Auth] No URL returned from Supabase OAuth');
+                logger.warn('[Google Auth] No URL returned from Supabase OAuth');
             }
         } catch (err: any) {
-            console.error('[Google Auth] Catch Error:', err.message);
+            logger.error('[Google Auth] Catch Error:', err.message);
             setError(err.message || 'Google Sign-In failed');
         } finally {
             setIsLoading(false);
@@ -387,21 +391,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setError(null);
 
             const redirectTo = getRedirectUri('reset-password');
-            console.log('[AuthContext] Requesting password reset for:', email);
-            console.log('[AuthContext] Reset redirect URL:', redirectTo);
+            logger.log('[AuthContext] Requesting password reset for:', email);
+            logger.log('[AuthContext] Reset redirect URL:', redirectTo);
 
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo,
             });
 
             if (error) {
-                console.error('[AuthContext] Password reset error:', error);
+                logger.error('[AuthContext] Password reset error:', error);
                 throw error;
             }
 
-            console.log('[AuthContext] Password reset email sent successfully');
+            logger.log('[AuthContext] Password reset email sent successfully');
         } catch (err: any) {
-            console.error('[AuthContext] Password reset catch error:', err);
+            logger.error('[AuthContext] Password reset catch error:', err);
             setError(err.message || 'Failed to send reset email');
             throw err;
         } finally {
@@ -428,7 +432,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for Auth Changes (especially for deep linking/recovery)
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (__DEV__) console.log('[AuthContext] Auth State Change:', event);
+            if (__DEV__) logger.debug('[AuthContext] Auth State Change:', event);
 
             if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
                 const userData: User = {
@@ -459,7 +463,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 await clearAuthData();
                 setNeedsPasswordReset(false);
             } else if (event === 'PASSWORD_RECOVERY') {
-                console.log('[AuthContext] Password recovery mode detected - forcing state');
+                logger.log('[AuthContext] Password recovery mode detected - forcing state');
                 setNeedsPasswordReset(true);
             }
         });
@@ -468,8 +472,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const { url } = event;
             if (!url) return;
 
-            console.log('[AuthContext] Full deep link received:', url);
-            console.log('[AuthContext] Processing deep link (no fragment):', url.split('#')[0]);
+            logger.log('[AuthContext] Full deep link received:', url);
+            logger.log('[AuthContext] Processing deep link (no fragment):', url.split('#')[0]);
             setError(null);
 
             try {
@@ -488,22 +492,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const errorDescription = queryParams?.error_description as string;
 
                 if (error) {
-                    console.error('[AuthContext] Auth error in URL:', error, errorDescription);
+                    logger.error('[AuthContext] Auth error in URL:', error, errorDescription);
                     setError(errorDescription || 'Authentication error');
                     return;
                 }
 
                 if (accessToken && refreshToken) {
-                    console.log('[AuthContext] Tokens found, setting session...');
+                    logger.log('[AuthContext] Tokens found, setting session...');
                     const { error: sessionError } = await supabase.auth.setSession({
                         access_token: accessToken,
                         refresh_token: refreshToken,
                     });
 
                     if (sessionError) {
-                        console.error('[AuthContext] setSession error:', sessionError.message);
+                        logger.error('[AuthContext] setSession error:', sessionError.message);
                         if (sessionError.message.includes('Network request failed')) {
-                            console.log('[AuthContext] Retrying setSession once...');
+                            logger.log('[AuthContext] Retrying setSession once...');
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             await supabase.auth.setSession({
                                 access_token: accessToken,
@@ -515,15 +519,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     }
 
                     if (type === 'recovery') {
-                        console.log('[AuthContext] Recovery session set successfully');
+                        logger.log('[AuthContext] Recovery session set successfully');
                         setNeedsPasswordReset(true);
                     }
                 } else {
-                    console.log('[AuthContext] No auth parameters found in link query params, checking manual fragment/tokens...');
+                    logger.log('[AuthContext] No auth parameters found in link query params, checking manual fragment/tokens...');
 
                     // Fallback: Manually check fragment and session tokens
                     if (url.includes('access_token=') || url.includes('#')) {
-                        console.log('[AuthContext] Fragment-style tokens detected');
+                        logger.log('[AuthContext] Fragment-style tokens detected');
 
                         // Use URL class or manual parsing if Linking.parse missed it
                         const fragment = url.includes('#') ? url.split('#')[1] : url.split('?')[1];
@@ -535,32 +539,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         const fCode = params.get('code');
 
                         if (fAccessToken && fRefreshToken) {
-                            console.log('[AuthContext] Setting session from fragment tokens...');
+                            logger.log('[AuthContext] Setting session from fragment tokens...');
                             const { error: sessionError } = await supabase.auth.setSession({
                                 access_token: fAccessToken,
                                 refresh_token: fRefreshToken,
                             });
 
                             if (!sessionError && fType === 'recovery') {
-                                console.log('[AuthContext] Recovery type detected in fragment');
+                                logger.log('[AuthContext] Recovery type detected in fragment');
                                 setNeedsPasswordReset(true);
                             }
                         } else if (fCode) {
-                            console.log('[AuthContext] Found code in fragment, exchanging...');
+                            logger.log('[AuthContext] Found code in fragment, exchanging...');
                             const { error: sessionError } = await supabase.auth.exchangeCodeForSession(fCode);
                             if (sessionError) throw sessionError;
                         }
                     }
                 }
             } catch (err: any) {
-                console.error('[AuthContext] Deep link processing failure:', err?.message || err);
+                logger.error('[AuthContext] Deep link processing failure:', err?.message || err);
             }
         };
 
         // Check initial URL on launch (Cold Boot)
         Linking.getInitialURL().then((url) => {
             if (url) {
-                console.log('[AuthContext] Cold boot URL detected');
+                logger.debug('[AuthContext] Cold boot URL detected');
                 handleDeepLink({ url });
             }
         });

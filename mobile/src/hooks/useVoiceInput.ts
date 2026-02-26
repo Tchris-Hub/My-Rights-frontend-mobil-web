@@ -68,8 +68,13 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
                     }
                 } finally {
                     // Always clean up the temp file after use
-                    const { deleteAsync } = await import('expo-file-system');
-                    await deleteAsync(uri, { idempotent: true });
+                    // NOTE: expo-file-system SDK 54+ moved legacy functions to /legacy path
+                    try {
+                        const { deleteAsync } = await import('expo-file-system/legacy');
+                        await deleteAsync(uri, { idempotent: true });
+                    } catch {
+                        // Safe to ignore cleanup failures
+                    }
                 }
             }
         } catch (err) {

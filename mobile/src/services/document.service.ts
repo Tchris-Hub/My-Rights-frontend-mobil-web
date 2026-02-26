@@ -1,11 +1,6 @@
-/**
- * Document Service
- * API methods for document analysis and generation
- */
-
 import api from './api';
 import { API_ENDPOINTS } from '../constants/config';
-import type { DocumentAnalysisResponse, DocumentGenerationResponse } from '../types';
+import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
 
 export const documentService = {
     /**
@@ -86,4 +81,28 @@ export const documentService = {
         );
         return response.data.text;
     },
+
+    /**
+     * Verify whether stamps/seals on a document image are authentic using AI vision.
+     * Totally free — uses Gemini Flash vision model via OpenRouter.
+     */
+    async verifyStamp(uri: string, mimeType?: string): Promise<AuthenticityMarkers> {
+        const formData = new FormData();
+        const name = uri.split('/').pop() || 'document.jpg';
+        const type = mimeType || 'image/jpeg';
+
+        // @ts-ignore - React Native FormData expects uri, name, type
+        formData.append('image', { uri, name, type });
+
+        const response = await api.post<AuthenticityMarkers>(
+            API_ENDPOINTS.DOCUMENTS.VERIFY_STAMP,
+            formData,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                transformRequest: () => formData,
+            }
+        );
+        return response.data;
+    },
 };
+

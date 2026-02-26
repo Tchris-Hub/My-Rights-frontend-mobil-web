@@ -6,6 +6,7 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, STORAGE_KEYS } from '../constants/config';
+import { logger } from '../utils/logger';
 
 // Create axios instance
 const api = axios.create({
@@ -17,7 +18,7 @@ const api = axios.create({
 });
 
 if (__DEV__) {
-    console.log('configured API_BASE_URL:', API_BASE_URL);
+    logger.log('configured API_BASE_URL:', API_BASE_URL);
 }
 
 // ─── Token Refresh Mutex ────────────────────────────────────────────────
@@ -49,7 +50,7 @@ api.interceptors.request.use(
             }
         } catch (error) {
             if (__DEV__) {
-                console.error('Error getting access token:', error);
+                logger.error('Error getting access token:', error);
             }
         }
 
@@ -69,9 +70,12 @@ api.interceptors.request.use(
                 });
             }
 
-            console.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+            logger.log(`🚀 [API Request] ${config.method?.toUpperCase()} ${config.url}`, {
                 data: safeData,
-                headers: config.headers
+                headers: {
+                    ...config.headers,
+                    Authorization: config.headers?.Authorization ? '[REDACTED]' : undefined
+                }
             });
         }
 
@@ -86,7 +90,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response: AxiosResponse) => {
         if (__DEV__) {
-            console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+            logger.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
@@ -163,7 +167,7 @@ api.interceptors.response.use(
 
         // Log error in development only
         if (__DEV__) {
-            console.error('[API Error]', error.response?.status, error.response?.data || error.message);
+            logger.error('[API Error]', error.response?.status, error.response?.data || error.message);
         }
 
         return Promise.reject(error);

@@ -1,9 +1,5 @@
-/**
- * Premium Design System - My Rights Mobile App
- * World-class design tokens following optical principles
- */
-
 import { Platform } from 'react-native';
+import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
 export const colors = {
     // Primary - Nigerian Emerald (Land, Prosperity, Flag)
@@ -96,63 +92,63 @@ export const typography = {
 
     // Sizes with optical adjustments (negative letter spacing for large text)
     h1: {
-        fontSize: 32,
-        lineHeight: 40,
+        fontSize: moderateScale(32),
+        lineHeight: moderateScale(40),
         fontWeight: '700' as const,
         letterSpacing: -0.5,
     },
     h2: {
-        fontSize: 28,
-        lineHeight: 36,
+        fontSize: moderateScale(28),
+        lineHeight: moderateScale(36),
         fontWeight: '700' as const,
         letterSpacing: -0.3,
     },
     h3: {
-        fontSize: 24,
-        lineHeight: 32,
+        fontSize: moderateScale(24),
+        lineHeight: moderateScale(32),
         fontWeight: '600' as const,
         letterSpacing: -0.2,
     },
     h4: {
-        fontSize: 20,
-        lineHeight: 28,
+        fontSize: moderateScale(20),
+        lineHeight: moderateScale(28),
         fontWeight: '600' as const,
         letterSpacing: 0,
     },
     body: {
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: moderateScale(16),
+        lineHeight: moderateScale(24),
         fontWeight: '400' as const,
         letterSpacing: 0,
     },
     bodySmall: {
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: moderateScale(14),
+        lineHeight: moderateScale(20),
         fontWeight: '400' as const,
         letterSpacing: 0,
     },
     caption: {
-        fontSize: 12,
-        lineHeight: 16,
+        fontSize: moderateScale(12),
+        lineHeight: moderateScale(16),
         fontWeight: '400' as const,
         letterSpacing: 0.3,
     },
     button: {
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: moderateScale(16),
+        lineHeight: moderateScale(24),
         fontWeight: '600' as const,
         letterSpacing: 0.5,
     },
 };
 
 export const spacing = {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
-    xxxl: 64,
+    xs: scale(4),
+    sm: scale(8),
+    md: scale(16),
+    lg: scale(24),
+    xl: scale(32),
+    xxl: scale(48),
+    xxxl: scale(64),
 };
 
 export const borderRadius = {

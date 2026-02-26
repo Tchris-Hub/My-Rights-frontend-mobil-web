@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -14,6 +14,7 @@ import {
     Keyboard,
     TouchableWithoutFeedback,
     Switch,
+    Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -133,9 +134,11 @@ export const ChatScreen: React.FC = () => {
     }, [messages, isIncognito, isAuthenticated, conversationId]);
 
 
+    const isSubmitting = useRef(false);
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim();
-        if (!messageText || isLoading) return;
+        if (!messageText || isLoading || isSubmitting.current) return;
+        isSubmitting.current = true;
 
         // Guest limit logic
         if (isGuest && guestMessageCount >= 5) {
@@ -202,6 +205,7 @@ export const ChatScreen: React.FC = () => {
                                 : undefined,
                             legal_disclaimer: authResponse.disclaimer,
                             isLoading: false,
+                            isNew: true, // Mark as new to trigger typing animation
                         };
                     }
 
@@ -216,6 +220,7 @@ export const ChatScreen: React.FC = () => {
                             : undefined,
                         legal_disclaimer: publicResponse.legal_disclaimer,
                         isLoading: false,
+                        isNew: true, // Mark as new to trigger typing animation
                     };
                 });
             });
@@ -242,6 +247,7 @@ export const ChatScreen: React.FC = () => {
             );
         } finally {
             setIsLoading(false);
+            isSubmitting.current = false;
         }
     };
 
@@ -456,10 +462,11 @@ export const ChatScreen: React.FC = () => {
                 </TouchableWithoutFeedback>
             )}
 
+            {/* FIX: 'padding' on iOS only; offset=0 because header is outside this view */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.keyboardView}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                keyboardVerticalOffset={0}
             >
                 {/* Suggestions List */}
                 {messages.length === 0 && (
@@ -479,17 +486,17 @@ export const ChatScreen: React.FC = () => {
                 )}
 
                 {messages.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <View style={styles.emptyIconContainer}>
-                            <Ionicons name="chatbubbles-outline" size={80} color={colors.primary + '20'} />
+                    <Pressable style={styles.emptyState} onPress={Keyboard.dismiss}>
+                        <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
+                            <Ionicons name="sparkles" size={48} color={colors.primary} />
                         </View>
                         <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                            Tell me your legal problem.
+                            How can I help you today?
                         </Text>
                         <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                            I can analyze laws, explain rights, and draft documents for you.
+                            Ask me about your legal rights or instruct me to draft a document for you.
                         </Text>
-                    </View>
+                    </Pressable>
                 ) : (
                     <FlatList
                         ref={flatListRef}
@@ -500,7 +507,7 @@ export const ChatScreen: React.FC = () => {
                                 <View style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-                                        {isTranscribing ? "Transcribing voice..." : "Reviewing laws..."}
+                                        {isTranscribing ? "Transcribing voice..." : "Drafting response..."}
                                     </Text>
                                 </View>
                             ) : <MessageBubble message={item} />
@@ -508,6 +515,9 @@ export const ChatScreen: React.FC = () => {
                         keyExtractor={(item) => item.id}
                         contentContainerStyle={[styles.messagesList, isKeyboardVisible && { paddingBottom: theme.spacing.lg }]}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                        // FIX 3: Tapping on messages list dismisses keyboard
+                        keyboardShouldPersistTaps="handled"
+                        onScrollBeginDrag={Keyboard.dismiss}
                     />
                 )}
 
@@ -516,7 +526,8 @@ export const ChatScreen: React.FC = () => {
                     style={[
                         styles.inputBlur,
                         {
-                            paddingBottom: Math.max(insets.bottom, theme.spacing.sm),
+                            // When keyboard is visible, the safe area is covered — no extra padding needed
+                            paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, theme.spacing.sm),
                         }
                     ]}
                 >
@@ -527,6 +538,11 @@ export const ChatScreen: React.FC = () => {
                                 {
                                     backgroundColor: colors.surfaceElevated1,
                                     borderColor: inputFocused ? colors.primary : colors.border,
+                                    shadowColor: 'rgba(0,0,0,0.05)',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 1,
+                                    shadowRadius: 4,
+                                    elevation: 1, // Subtle lift for the input box
                                 }
                             ]}
                         >
@@ -534,12 +550,12 @@ export const ChatScreen: React.FC = () => {
                                 style={styles.inputLeftIcon}
                                 onPress={pickDocument}
                             >
-                                <Ionicons name="add-circle" size={20} color={colors.textSecondary} />
+                                <Ionicons name="add" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
 
                             <TextInput
                                 style={[styles.input, { color: colors.text }]}
-                                placeholder={isRecording ? "Listening..." : "Type your legal question..."}
+                                placeholder={isRecording ? "Listening..." : "Message AI..."}
                                 placeholderTextColor={colors.textTertiary}
                                 value={inputText}
                                 onChangeText={setInputText}
@@ -550,16 +566,16 @@ export const ChatScreen: React.FC = () => {
                                 onBlur={() => setInputFocused(false)}
                                 blurOnSubmit={false}
                                 autoCorrect
-                                returnKeyType="send"
+                                returnKeyType="default"
                             />
 
                             <TouchableOpacity
                                 onPress={toggleRecording}
-                                style={[styles.inputRightIcon, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 12 }]}
+                                style={[styles.inputRightIcon, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 16 }]}
                             >
                                 <Ionicons
                                     name={isRecording ? 'mic' : 'mic-outline'}
-                                    size={18}
+                                    size={20}
                                     color={isRecording ? theme.colors.error : colors.textSecondary}
                                 />
                             </TouchableOpacity>
@@ -574,13 +590,23 @@ export const ChatScreen: React.FC = () => {
                             style={[
                                 styles.sendButton,
                                 {
-                                    backgroundColor: (inputText.trim() && !isLoading) ? colors.primary : colors.border,
+                                    backgroundColor: (inputText.trim() && !isLoading) ? colors.primary : colors.surfaceElevated2,
+                                    shadowColor: (inputText.trim() && !isLoading) ? colors.primary : 'transparent',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 8,
+                                    elevation: (inputText.trim() && !isLoading) ? 4 : 0,
                                 }
                             ]}
                             onPress={() => handleSend()}
                             disabled={!inputText.trim() || isLoading || inputText.length > 10000}
+                            activeOpacity={0.7}
                         >
-                            <Ionicons name="send" size={20} color={colors.onPrimary} />
+                            <Ionicons
+                                name={isLoading ? "ellipsis-horizontal" : "arrow-up"}
+                                size={22}
+                                color={inputText.trim() && !isLoading ? colors.onPrimary : colors.textTertiary}
+                            />
                         </TouchableOpacity>
                     </View>
 
@@ -590,7 +616,7 @@ export const ChatScreen: React.FC = () => {
                             numberOfLines={1}
                             adjustsFontSizeToFit
                         >
-                            Always verify legal actions with a professional lawyer.
+                            AI can make mistakes. Verify important legal info.
                         </Text>
                     )}
                 </BlurView>
@@ -602,7 +628,7 @@ export const ChatScreen: React.FC = () => {
                 onClose={() => setShowEscalateModal(false)}
                 conversationId={conversationId}
             />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 

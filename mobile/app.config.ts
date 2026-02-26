@@ -6,9 +6,7 @@ const prodApiUrl = process.env.PROD_API_URL ?? 'https://injustice-production.up.
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-console.log('--- Expo Config Load ---');
-console.log('PUBLIC_SUPABASE_URL:', supabaseUrl ? 'Present' : 'EMPTY');
-console.log('PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'EMPTY');
+// Keys are injected via environment variables or defaults
 
 export default {
     expo: {
@@ -26,7 +24,7 @@ export default {
         },
         android: {
             adaptiveIcon: {
-                foregroundImage: './assets/adaptive-icon.png',
+                foregroundImage: './assets/adaptive_icon.png',
                 backgroundColor: '#006B3F',
             },
             package: 'com.myrights.app',
@@ -35,7 +33,7 @@ export default {
             favicon: './assets/favicon.png',
         },
         splash: {
-            image: './assets/splash-icon.png',
+            image: './assets/splash_icon.png',
             resizeMode: 'contain',
             backgroundColor: '#FFFFFF',
         },
@@ -46,6 +44,9 @@ export default {
             prodApiUrl,
             supabaseUrl,
             supabaseAnonKey,
+            eas: {
+                projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4',
+            },
         },
     },
 };

@@ -53,7 +53,7 @@ import { documentService } from '../../services/document.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
+import type { DocumentAnalysisResponse, AnalysisResult, AuthenticityMarkers } from '../../types';
 
 import { useJobs } from '../../contexts/JobContext';
 import { useNavigation } from '@react-navigation/native';
@@ -73,6 +73,8 @@ export const DocumentReviewScreen: React.FC = () => {
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
+    const [stampResult, setStampResult] = useState<AuthenticityMarkers | null>(null);
+    const [isVerifyingStamp, setIsVerifyingStamp] = useState(false);
 
     // Check if there's a finished job for this screen
     useEffect(() => {
@@ -82,6 +84,27 @@ export const DocumentReviewScreen: React.FC = () => {
             clearJob();
         }
     }, [activeJob?.status]);
+
+    const handleVerifyStamp = async (uri: string) => {
+        if (!uri) return;
+        setIsVerifyingStamp(true);
+        setStampResult(null);
+        try {
+            const markers = await documentService.verifyStamp(uri);
+            setStampResult(markers);
+        } catch {
+            setStampResult({
+                has_stamp: false,
+                has_signature: false,
+                verdict: 'Unknown',
+                confidence: 'Low',
+                details: 'Could not verify stamp. Please try again.',
+                red_flags: [],
+            });
+        } finally {
+            setIsVerifyingStamp(false);
+        }
+    };
 
     const handleAnalyze = async (text?: string) => {
         const targetText = text || documentText;
@@ -327,6 +350,102 @@ export const DocumentReviewScreen: React.FC = () => {
                                     multiline
                                     textAlignVertical="top"
                                 />
+
+                                {/* Verify Stamp button — appears after scanning an image */}
+                                {capturedImage && (
+                                    <View style={{ gap: 12 }}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.stampVerifyBtn,
+                                                { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
+                                            ]}
+                                            onPress={() => handleVerifyStamp(capturedImage)}
+                                            disabled={isVerifyingStamp}
+                                        >
+                                            {isVerifyingStamp ? (
+                                                <ActivityIndicator size="small" color={colors.primary} />
+                                            ) : (
+                                                <Ionicons name="ribbon" size={18} color={colors.primary} />
+                                            )}
+                                            <Text style={[styles.stampVerifyText, { color: colors.primary }]}>
+                                                {isVerifyingStamp ? 'Analyzing Stamp...' : 'Verify Stamp / Seal'}
+                                            </Text>
+                                        </TouchableOpacity>
+
+                                        {/* Stamp result card */}
+                                        {stampResult && (
+                                            <View style={[
+                                                styles.stampResultCard,
+                                                {
+                                                    backgroundColor: stampResult.verdict === 'Likely Authentic'
+                                                        ? colors.success + '15'
+                                                        : stampResult.verdict === 'Suspicious'
+                                                            ? colors.error + '15'
+                                                            : colors.surfaceElevated1,
+                                                    borderColor: stampResult.verdict === 'Likely Authentic'
+                                                        ? colors.success
+                                                        : stampResult.verdict === 'Suspicious'
+                                                            ? colors.error
+                                                            : colors.border,
+                                                }
+                                            ]}>
+                                                <View style={styles.stampResultHeader}>
+                                                    <Ionicons
+                                                        name={
+                                                            stampResult.verdict === 'Likely Authentic' ? 'checkmark-circle'
+                                                                : stampResult.verdict === 'Suspicious' ? 'alert-circle'
+                                                                    : 'help-circle'
+                                                        }
+                                                        size={22}
+                                                        color={
+                                                            stampResult.verdict === 'Likely Authentic' ? colors.success
+                                                                : stampResult.verdict === 'Suspicious' ? colors.error
+                                                                    : colors.textTertiary
+                                                        }
+                                                    />
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={[
+                                                            styles.stampVerdict,
+                                                            {
+                                                                color: stampResult.verdict === 'Likely Authentic' ? colors.success
+                                                                    : stampResult.verdict === 'Suspicious' ? colors.error
+                                                                        : colors.text
+                                                            }
+                                                        ]}>
+                                                            {stampResult.verdict}
+                                                        </Text>
+                                                        <Text style={[styles.stampConfidence, { color: colors.textSecondary }]}>
+                                                            Confidence: {stampResult.confidence} •
+                                                            {stampResult.has_stamp ? ' Stamp Detected' : ' No Stamp'}
+                                                            {stampResult.has_signature ? ' • Signature' : ''}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <Text style={[styles.stampDetails, { color: colors.text }]}>
+                                                    {stampResult.details}
+                                                </Text>
+
+                                                {stampResult.red_flags.length > 0 && (
+                                                    <View style={[
+                                                        styles.redFlagsBox,
+                                                        { backgroundColor: colors.error + '10', borderColor: colors.error + '30' }
+                                                    ]}>
+                                                        <Text style={[styles.redFlagsTitle, { color: colors.error }]}>
+                                                            ⚠ Red Flags
+                                                        </Text>
+                                                        {stampResult.red_flags.map((flag, i) => (
+                                                            <Text key={i} style={[styles.redFlagItem, { color: colors.text }]}>
+                                                                • {flag}
+                                                            </Text>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+
 
                                 <Button
                                     title="Analyze Now"
@@ -883,5 +1002,58 @@ const styles = StyleSheet.create({
     modalFooter: {
         padding: 24,
         paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    },
+
+    /* Stamp Verification */
+    stampVerifyBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 12,
+        borderRadius: 14,
+        borderWidth: 1.5,
+    },
+    stampVerifyText: {
+        ...theme.typography.button,
+        fontSize: 14,
+    },
+    stampResultCard: {
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        gap: 12,
+    },
+    stampResultHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+    },
+    stampVerdict: {
+        ...theme.typography.h4,
+        fontSize: 16,
+    },
+    stampConfidence: {
+        ...theme.typography.caption,
+        marginTop: 2,
+    },
+    stampDetails: {
+        ...theme.typography.bodySmall,
+        lineHeight: 20,
+    },
+    redFlagsBox: {
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: 6,
+    },
+    redFlagsTitle: {
+        ...theme.typography.caption,
+        fontWeight: '800',
+        marginBottom: 2,
+    },
+    redFlagItem: {
+        ...theme.typography.bodySmall,
+        lineHeight: 18,
     },
 });

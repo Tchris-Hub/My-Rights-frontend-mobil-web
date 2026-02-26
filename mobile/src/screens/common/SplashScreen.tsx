@@ -147,7 +147,7 @@ export const CustomSplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFin
                             style={styles.logoBlur}
                         >
                             <Image
-                                source={require('../../../assets/premium-logo.png')}
+                                source={require('../../../assets/premium_logo.png')}
                                 style={styles.logo}
                                 resizeMode="cover"
                             />

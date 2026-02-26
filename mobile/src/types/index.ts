@@ -59,12 +59,14 @@ export interface ChatMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    sources?: (SourceCitation | string)[];
+    timestamp?: number;
+    sources?: Array<string | { title: string; section?: string }>;
     confidence_score?: number;
     legal_disclaimer?: string;
-    timestamp: number;
+    isVerified?: boolean;
     isLoading?: boolean;
     error?: string;
+    isNew?: boolean; // Indicates if the message was just received (triggers typing animation)
 }
 
 export interface PublicChatResponse {
@@ -96,6 +98,15 @@ export interface AnalysisResult {
     action_step: string;
 }
 
+export interface AuthenticityMarkers {
+    has_stamp: boolean;
+    has_signature: boolean;
+    verdict: 'Likely Authentic' | 'Suspicious' | 'No Stamp Found' | 'Unknown';
+    confidence: 'High' | 'Medium' | 'Low';
+    details: string;
+    red_flags: string[];
+}
+
 export interface DocumentAnalysisResponse {
     document_type: string;
     confidence_score: number;
@@ -108,11 +119,7 @@ export interface DocumentAnalysisResponse {
     error?: string;
     details?: string;
     // Visual Stamp Detection
-    authenticity_markers?: {
-        has_stamp: boolean;
-        has_signature?: boolean;
-        details: string;
-    };
+    authenticity_markers?: AuthenticityMarkers;
 }
 
 export interface DocumentGenerationResponse {
