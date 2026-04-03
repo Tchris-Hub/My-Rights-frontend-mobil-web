@@ -51,32 +51,21 @@ export const authService = {
      * Get current authenticated user session/profile
      */
     async getCurrentUser(): Promise<User | null> {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user) return null;
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        if (error || !authUser) return null;
 
-        // Fetch custom profile data (including is_superuser) from public.users table
-        const { data: profile, error: profileError } = await supabase
+        // 2. Fetch extended profile info from public.users
+        const { data: profile } = await supabase
             .from('users')
             .select('*')
-            .eq('id', user.id)
+            .eq('id', authUser.id)
             .single();
 
-        if (profileError) {
-            console.warn('Could not fetch user profile from public.users:', profileError);
-        }
-
-        // Map Supabase and Database data to our internal User type
         return {
-            id: user.id,
-            email: user.email || '',
-            full_name: profile?.full_name || user.user_metadata?.full_name || '',
+            id: authUser.id,
+            email: authUser.email || '',
+            full_name: profile?.full_name || authUser.user_metadata?.full_name || '',
             avatar_url: profile?.avatar_url || null,
-            phone_number: profile?.phone_number || user.user_metadata?.phone_number || '',
-            is_active: profile?.is_active ?? true,
-            is_verified: profile?.is_verified ?? false,
-            has_accepted_terms: profile?.has_accepted_terms ?? false,
-            is_superuser: profile?.is_superuser ?? false,
-            created_at: user.created_at,
         } as User;
     },
 
@@ -87,7 +76,6 @@ export const authService = {
         const { data: { user }, error } = await supabase.auth.updateUser({
             data: {
                 full_name: data.full_name,
-                phone_number: data.phone_number,
             }
         });
 

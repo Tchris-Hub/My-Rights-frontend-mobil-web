@@ -63,37 +63,31 @@ export const chatService = {
     },
 
     /**
-     * Stream message via SSE using the legal-advisor proxy
+     * Stream message via SSE using the secure legal-advisor proxy.
+     * This uses the Supabase Edge Function to protect your API keys on the server.
      */
     async streamMessage(
         message: string,
         options: { conversationId?: string; onChunk: (chunk: string) => void }
     ): Promise<void> {
         const { conversationId, onChunk } = options;
-        const { data: { session } } = await supabase.auth.getSession();
 
-        // For simplicity in this production version, we use the direct function URL for streaming
-        const baseUrl = (supabase as any).functionsUrl; // Internal helper or construct manually
-        const url = `${baseUrl}/legal-advisor`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token || supabaseAnonKey}`,
-                'apikey': supabaseAnonKey
-            },
-            body: JSON.stringify({
+        const { data, error } = await supabase.functions.invoke('legal-advisor', {
+            body: { 
                 messages: [{ role: 'user', content: message }],
                 stream: true,
                 conversation_id: conversationId
-            }),
+            }
         });
 
-        if (!response.ok) throw new Error('AI Stream Error');
+        if (error) {
+            console.error('Edge Function Error:', error);
+            throw new Error('AI Stream Error');
+        }
 
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error('Streaming not supported');
+        // The invoke method with stream: true returns a Response-like body in Supabase v2
+        const reader = data.getReader?.() || (data as Response).body?.getReader();
+        if (!reader) throw new Error('Streaming not supported by this device environment');
 
         const decoder = new TextDecoder();
         while (true) {
@@ -105,19 +99,21 @@ export const chatService = {
             
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
-                    const data = line.replace('data: ', '').trim();
-                    if (data === '[DONE]') break;
+                    const dataLine = line.replace('data: ', '').trim();
+                    if (dataLine === '[DONE]') break;
                     try {
-                        const parsed = JSON.parse(data);
-                        const content = parsed.choices[0].delta?.content || '';
+                        const parsed = JSON.parse(dataLine);
+                        const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) onChunk(content);
                     } catch (e) {
-                        // Handle non-JSON lines or partials
+                        // Handle partial JSON chunks
                     }
                 }
             }
         }
     },
+
+
 
     /**
      * History fetching from Supabase
