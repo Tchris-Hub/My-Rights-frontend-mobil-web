@@ -40,16 +40,22 @@ const resolveEnvironment = (): ApiEnvironment => {
 // --------------------------------------------------
 const LOCAL_IP = '192.168.0.138'; // Your laptop's IP
 const LOCAL_URL = `http://${LOCAL_IP}:8000`;
-const PROD_URL = 'https://injustice-production-be94.up.railway.app';
+// DECOMMISSIONED: 'https://injustice-production-be94.up.railway.app'
+const PROD_URL = 'https://my-rights-supabase.v1.ng'; // Placeholder for Supabase Edge Functions
 
 /**
  * FLAG FOR EASY TOGGLING:
  * Set to true if you want to test the production server while in dev mode.
- * Set to false (default) to use your local backend.
+ * Set to false (default) to use your local backend or Mock mode.
  */
-const USE_PRODUCTION_IN_DEV = true;
+const USE_PRODUCTION_IN_DEV = false; // Disable production until Supabase is live
+const USE_MOCK_BACKEND = true; // NEW: Use mock data to prevent 404s during transition
 
 const getApiBaseUrl = (): string => {
+    if (USE_MOCK_BACKEND) {
+        return 'mock://api';
+    }
+
     const env = resolveEnvironment();
 
     // Toggle to production even in development mode if flag is set
@@ -66,6 +72,14 @@ const getApiBaseUrl = (): string => {
         default:
             return LOCAL_URL;
     }
+};
+
+// --------------------------------------------------
+// Supabase Configuration
+// --------------------------------------------------
+export const SUPABASE_CONFIG = {
+    URL: 'https://your-project-id.supabase.co',
+    ANON_KEY: 'your-anon-key',
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -87,7 +101,9 @@ export const API_ENDPOINTS = {
     // Chat (Authenticated & Anonymous)
     CHAT: {
         MESSAGE: '/api/v1/chat/message',
+        STREAM_MESSAGE: '/api/v1/chat/message/stream',
         PUBLIC_MESSAGE: '/api/v1/chat/public/message',
+        PUBLIC_STREAM_MESSAGE: '/api/v1/chat/public/message/stream',
         HISTORY: '/api/v1/chat/conversations',
         DETAILS: (id: string) => `/api/v1/chat/conversations/${id}`,
         ESCALATE: '/api/v1/chat/escalate',

@@ -1,77 +1,122 @@
 /**
  * Authentication Service
- * API methods for user authentication and profile management
+ * Refactored to use Supabase Auth for production reliability.
  */
 
-import api from './api';
-import { API_ENDPOINTS } from '../constants/config';
+import { supabase } from './supabaseClient';
 import type { LoginCredentials, RegisterData, AuthTokens, User } from '../types';
 
 export const authService = {
     /**
-     * Register a new user account
+     * Register a new user account via Supabase Auth
      */
-    async register(data: RegisterData): Promise<AuthTokens> {
-        const response = await api.post<AuthTokens>(API_ENDPOINTS.AUTH.REGISTER, {
+    async register(data: RegisterData): Promise<any> {
+        const { data: authData, error } = await supabase.auth.signUp({
             email: data.email,
             password: data.password,
-            full_name: data.full_name,
-            phone_number: data.phone_number,
-            accept_terms: true,
+            options: {
+                data: {
+                    full_name: data.full_name,
+                    phone_number: data.phone_number,
+                }
+            }
         });
-        return response.data;
+
+        if (error) throw error;
+        return authData;
     },
 
     /**
-     * Login with email and password
+     * Login with email and password via Supabase
      */
-    async login(credentials: LoginCredentials): Promise<AuthTokens> {
-        const response = await api.post<AuthTokens>(API_ENDPOINTS.AUTH.LOGIN, credentials);
-        return response.data;
-    },
-
-    /**
-     * Refresh access token
-     */
-    async refreshToken(refreshToken: string): Promise<AuthTokens> {
-        const response = await api.post<AuthTokens>(API_ENDPOINTS.AUTH.REFRESH, {
-            refresh_token: refreshToken,
+    async login(credentials: LoginCredentials): Promise<any> {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
         });
-        return response.data;
+
+        if (error) throw error;
+        return data;
     },
 
     /**
-     * Logout and revoke refresh token
+     * Logout and clear local session
      */
-    async logout(refreshToken: string): Promise<void> {
-        await api.post(API_ENDPOINTS.AUTH.LOGOUT, {
-            refresh_token: refreshToken,
+    async logout(): Promise<void> {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+    },
+
+    /**
+     * Get current authenticated user session/profile
+     */
+    async getCurrentUser(): Promise<User | null> {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return null;
+
+        // Fetch custom profile data (including is_superuser) from public.users table
+        const { data: profile, error: profileError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError) {
+            console.warn('Could not fetch user profile from public.users:', profileError);
+        }
+
+        // Map Supabase and Database data to our internal User type
+        return {
+            id: user.id,
+            email: user.email || '',
+            full_name: profile?.full_name || user.user_metadata?.full_name || '',
+            avatar_url: profile?.avatar_url || null,
+            phone_number: profile?.phone_number || user.user_metadata?.phone_number || '',
+            is_active: profile?.is_active ?? true,
+            is_verified: profile?.is_verified ?? false,
+            has_accepted_terms: profile?.has_accepted_terms ?? false,
+            is_superuser: profile?.is_superuser ?? false,
+            created_at: user.created_at,
+        } as User;
+    },
+
+    /**
+     * Update user metadata in Supabase
+     */
+    async updateProfile(data: Partial<User>): Promise<User | null> {
+        const { data: { user }, error } = await supabase.auth.updateUser({
+            data: {
+                full_name: data.full_name,
+                phone_number: data.phone_number,
+            }
         });
+
+        if (error || !user) throw error;
+
+        return {
+            id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || '',
+            phone_number: user.user_metadata?.phone_number || '',
+            created_at: user.created_at,
+        } as User;
     },
 
     /**
-     * Get current user profile
+     * Reset password / Change password
      */
-    async getCurrentUser(): Promise<User> {
-        const response = await api.get<User>(API_ENDPOINTS.AUTH.ME);
-        return response.data;
-    },
-
-    /**
-     * Update user profile
-     */
-    async updateProfile(data: Partial<User>): Promise<User> {
-        const response = await api.patch<User>(API_ENDPOINTS.AUTH.ME, data);
-        return response.data;
-    },
-
-    /**
-     * Change password
-     */
-    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-        await api.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
-            current_password: currentPassword,
-            new_password: newPassword,
+    async changePassword(newPassword: string): Promise<void> {
+        const { error } = await supabase.auth.updateUser({
+            password: newPassword
         });
+        if (error) throw error;
     },
+
+    /**
+     * Get active session
+     */
+    async getSession() {
+        return await supabase.auth.getSession();
+    }
 };
+

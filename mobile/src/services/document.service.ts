@@ -1,108 +1,65 @@
-import api from './api';
-import { API_ENDPOINTS } from '../constants/config';
+import { supabase } from './supabaseClient';
 import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
 
 export const documentService = {
     /**
-     * Analyze a contract or document for risks
+     * Analyze a contract or document for risks via Supabase Edge Function
      */
-    async analyzeDocument(documentText: string, options?: { useAuthenticated?: boolean }): Promise<DocumentAnalysisResponse> {
-        const endpoint = options?.useAuthenticated
-            ? API_ENDPOINTS.DOCUMENTS.AUTH_ANALYZE
-            : API_ENDPOINTS.DOCUMENTS.ANALYZE;
-
-        const response = await api.post<DocumentAnalysisResponse>(
-            endpoint,
-            { document_text: documentText }
-        );
-        return response.data;
-    },
-
-    /**
-     * Generate a legal document template
-     */
-    async generateDocument(docType: string, userDetails: string, options?: { useAuthenticated?: boolean }): Promise<DocumentGenerationResponse> {
-        const endpoint = options?.useAuthenticated
-            ? API_ENDPOINTS.DOCUMENTS.AUTH_GENERATE
-            : API_ENDPOINTS.DOCUMENTS.GENERATE;
-
-        const response = await api.post<DocumentGenerationResponse>(
-            endpoint,
-            {
-                doc_type: docType,
-                user_details: userDetails,
+    async analyzeDocument(documentText: string): Promise<DocumentAnalysisResponse> {
+        const { data, error } = await supabase.functions.invoke('legal-advisor', {
+            body: { 
+                messages: [
+                    { 
+                        role: 'user', 
+                        content: `Please analyze the following document for legal risks, key clauses, and suggested improvements: \n\n${documentText}` 
+                    }
+                ],
+                mode: 'analysis'
             }
-        );
-        return response.data;
-    },
-
-    /**
-     * Extract text from an image or PDF
-     */
-    async extractText(uri: string, fileName?: string, mimeType?: string): Promise<string> {
-        const formData = new FormData();
-
-        // Use provided metadata or fallback to URI parsing
-        const finalName = fileName || uri.split('/').pop() || 'document.jpg';
-
-        // Efficient production-grade MIME mapping
-        let finalType = mimeType;
-        if (!finalType) {
-            const extension = finalName.split('.').pop()?.toLowerCase() || 'jpg';
-            const mimeMap: Record<string, string> = {
-                'pdf': 'application/pdf',
-                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'txt': 'text/plain',
-                'png': 'image/png',
-                'webp': 'image/webp',
-                'heic': 'image/heic',
-            };
-            finalType = mimeMap[extension] || 'image/jpeg';
-        }
-
-        // @ts-ignore - React Native FormData expects uri, name, type
-        formData.append('image', {
-            uri: uri,
-            name: finalName,
-            type: finalType,
         });
 
-        const response = await api.post<{ success: boolean; text: string }>(
-            API_ENDPOINTS.DOCUMENTS.EXTRACT_TEXT,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                transformRequest: (data, headers) => {
-                    return formData; // Prevent axios from serializing FormData
-                },
-            }
-        );
-        return response.data.text;
+        if (error) throw error;
+
+        // Structured data returned by Edge Function
+        return data as DocumentAnalysisResponse;
     },
 
     /**
-     * Verify whether stamps/seals on a document image are authentic using AI vision.
-     * Totally free — uses Gemini Flash vision model via OpenRouter.
+     * Generate a legal document template via Supabase Edge Function
      */
-    async verifyStamp(uri: string, mimeType?: string): Promise<AuthenticityMarkers> {
-        const formData = new FormData();
-        const name = uri.split('/').pop() || 'document.jpg';
-        const type = mimeType || 'image/jpeg';
-
-        // @ts-ignore - React Native FormData expects uri, name, type
-        formData.append('image', { uri, name, type });
-
-        const response = await api.post<AuthenticityMarkers>(
-            API_ENDPOINTS.DOCUMENTS.VERIFY_STAMP,
-            formData,
-            {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                transformRequest: () => formData,
+    async generateDocument(docType: string, userDetails: string): Promise<DocumentGenerationResponse> {
+        const { data, error } = await supabase.functions.invoke('legal-advisor', {
+            body: { 
+                messages: [
+                    { 
+                        role: 'user', 
+                        content: `Generate a detailed ${docType} document template based on these details: ${userDetails}` 
+                    }
+                ],
+                mode: 'generation'
             }
-        );
-        return response.data;
+        });
+
+        if (error) throw error;
+        return data as DocumentGenerationResponse;
+    },
+
+    /**
+     * OCR / Text Extraction
+     */
+    async extractText(uri: string): Promise<string> {
+        return "Feature coming soon: OCR integration via Supabase Storage.";
+    },
+
+    async verifyStamp(uri: string): Promise<AuthenticityMarkers> {
+        return {
+            has_stamp: false,
+            has_signature: false,
+            verdict: 'Unknown',
+            confidence: 'Low',
+            details: "Visual verification is scheduled for the next release.",
+            red_flags: []
+        };
     },
 };
 

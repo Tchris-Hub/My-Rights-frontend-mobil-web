@@ -15,6 +15,8 @@ import {
     StyleProp,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -56,98 +58,125 @@ export const Button: React.FC<ButtonProps> = ({
     return (
         <TouchableOpacity
             style={[
-                styles.button,
-                styles[`button_${variant}`],
-                styles[`button_${size}`],
+                styles.buttonBase,
+                styles[`buttonBase_${size}`],
                 fullWidth && styles.fullWidth,
-                isDisabled && styles.disabled,
                 style,
             ]}
             onPress={handlePress}
             disabled={isDisabled}
             activeOpacity={0.7}
         >
-            {loading ? (
-                <ActivityIndicator
-                    color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.onPrimary}
-                    size="small"
-                />
-            ) : (
+            <View style={[styles.container, isDisabled && styles.disabled, styles[`container_${variant}`]]}>
+                {variant === 'primary' && (
+                    <LinearGradient
+                        colors={[theme.colors.primary, theme.colors.primaryContainer]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={StyleSheet.absoluteFillObject}
+                        locations={[0, 1]}
+                    />
+                )}
+                {variant === 'secondary' && (
+                    <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} />
+                )}
                 <View style={styles.content}>
-                    {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-                    <Text style={[styles.text, styles[`text_${variant}`], styles[`text_${size}`]]}>
-                        {title}
-                    </Text>
-                    {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
+                    {loading ? (
+                        <ActivityIndicator
+                            color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.onPrimary}
+                            size="small"
+                        />
+                    ) : (
+                        <>
+                            {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
+                            <Text style={[styles.text, styles[`text_${variant}`], styles[`text_${size}`]]}>
+                                {title}
+                            </Text>
+                            {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
+                        </>
+                    )}
                 </View>
-            )}
+            </View>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
-    button: {
-        borderRadius: theme.borderRadius.md,
+    buttonBase: {
+        borderRadius: theme.borderRadius.lg,
+        overflow: 'hidden', // Ensures inner gradient/blur conforms to border radius
+        justifyContent: 'center',
+        shadowColor: 'rgba(0, 0, 0, 0.4)',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 1,
+        shadowRadius: 20,
+        elevation: 6,
+    },
+    container: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        flexDirection: 'row',
     },
 
     // Variants
-    button_primary: {
-        backgroundColor: theme.colors.primary,
-        ...theme.shadows.sm,
+    container_primary: {
+        // LinearGradient applied via absoluteFill
     },
-    button_secondary: {
-        backgroundColor: theme.colors.secondary,
-        ...theme.shadows.sm,
+    container_secondary: {
+        backgroundColor: 'rgba(34, 42, 61, 0.7)', // surfaceContainerHigh @ 70%
     },
-    button_outline: {
+    container_outline: {
         backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: theme.colors.primary,
+        borderWidth: 1.5,
+        borderColor: 'rgba(61, 74, 65, 0.2)', // ghost border fallback
     },
-    button_ghost: {
+    container_ghost: {
         backgroundColor: 'transparent',
     },
-    button_danger: {
+    container_danger: {
         backgroundColor: theme.colors.error,
-        ...theme.shadows.sm,
     },
 
     // Sizes
-    button_small: {
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
+    buttonBase_small: {
         minHeight: 36,
     },
-    button_medium: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
+    buttonBase_medium: {
         minHeight: theme.touchTargets.min,
     },
-    button_large: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingVertical: theme.spacing.lg,
+    buttonBase_large: {
         minHeight: theme.touchTargets.comfortable,
+    },
+
+    content: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        width: '100%',
+        height: '100%',
+        zIndex: 1, // Ensure content sits above gradient/blur
     },
 
     // Text styles
     text: {
-        ...theme.typography.button,
+        ...theme.typography.labelMd,
+        fontFamily: theme.typography.fontFamily.headline,
         textAlign: 'center',
+        letterSpacing: 0.5,
     },
     text_primary: {
-        color: theme.colors.onPrimary,
+        color: '#00331d', // onPrimaryContainer to match gradient
     },
     text_secondary: {
-        color: theme.colors.onSecondary,
+        color: theme.colors.primary,
     },
     text_outline: {
-        color: theme.colors.primary,
+        color: theme.colors.onSurface,
     },
     text_ghost: {
-        color: theme.colors.primary,
+        color: theme.colors.onSurface,
     },
     text_danger: {
         color: theme.colors.onPrimary,
@@ -171,15 +200,12 @@ const styles = StyleSheet.create({
     fullWidth: {
         width: '100%',
     },
-    content: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     iconLeft: {
         marginRight: theme.spacing.sm,
+        zIndex: 1,
     },
     iconRight: {
         marginLeft: theme.spacing.sm,
+        zIndex: 1,
     },
 });

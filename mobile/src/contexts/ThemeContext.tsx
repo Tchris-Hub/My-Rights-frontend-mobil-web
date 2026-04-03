@@ -36,13 +36,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         ? {
             ...theme.colors,
             background: theme.colors.backgroundDark,
-            surface: theme.colors.surfaceDark,
-            surfaceElevated1: theme.colors.surfaceDarkElevated1,
-            surfaceElevated2: theme.colors.surfaceDarkElevated2,
-            surfaceElevated3: theme.colors.surfaceDarkElevated3,
-            text: theme.colors.textDark,
-            textSecondary: theme.colors.textSecondaryDark,
-            textTertiary: theme.colors.textTertiaryDark,
+            surface: theme.colors.surfaceContainer,
+            surfaceElevated1: theme.colors.surfaceContainerLow,
+            surfaceElevated2: theme.colors.surfaceContainerHigh,
+            surfaceElevated3: theme.colors.surfaceContainerHighest,
+            text: theme.colors.onSurface,
+            textSecondary: theme.colors.onSurfaceVariant,
+            textTertiary: theme.colors.onSurfaceVariant,
             border: theme.colors.borderDark,
         }
         : theme.colors;

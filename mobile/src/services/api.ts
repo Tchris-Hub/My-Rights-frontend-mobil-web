@@ -8,6 +8,42 @@ import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, STORAGE_KEYS } from '../constants/config';
 import { logger } from '../utils/logger';
 
+if (__DEV__) {
+    logger.log('configured API_BASE_URL:', API_BASE_URL);
+}
+
+// ─── Mock Adapter Logic ──────────────────────────────────────────────
+const mockAdapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
+    return new Promise((resolve, reject) => {
+        const endpoint = config.url || '';
+        const mockResponse = MOCK_DATA[endpoint];
+
+        if (mockResponse) {
+            if (__DEV__) logger.log(`🩻 [Mock API Success] ${endpoint}`);
+            resolve({
+                data: mockResponse,
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config: config,
+                request: {},
+            });
+        } else {
+            if (__DEV__) logger.error(`🩻 [Mock API Error] Endpoint not found: ${endpoint}`);
+            reject({
+                response: {
+                    status: 404,
+                    data: { message: 'Mock endpoint not found' },
+                    headers: {},
+                    config: config,
+                },
+                message: 'Mock 404',
+                config: config,
+            });
+        }
+    });
+};
+
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -15,6 +51,18 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
     timeout: 120000,
+    adapter: (config) => {
+        if (config.baseURL?.startsWith('mock://')) {
+            return mockAdapter(config as InternalAxiosRequestConfig);
+        }
+        // Use default adapter for real requests
+        const { adapter } = axios.defaults;
+        if (typeof adapter === 'function') {
+            return adapter(config);
+        }
+        // Fallback for some axios versions
+        return (axios.getAdapter(config as any))(config);
+    }
 });
 
 if (__DEV__) {
@@ -38,7 +86,30 @@ function onTokenRefreshed(newToken: string) {
 function onRefreshFailed() {
     refreshSubscribers = [];
 }
+
+// ─── Mock Data Strategy ────────────────────────────────────────────────
+const MOCK_DATA: Record<string, any> = {
+    '/api/v1/auth/me': {
+        id: 'mock-user-123',
+        email: 'jurist@myrights.ng',
+        full_name: 'Digital Jurist',
+        avatar_url: null,
+        is_premium: true,
+        created_at: new Date().toISOString(),
+    },
+    '/api/v1/auth/register': {
+        user: { id: 'new-user', email: 'user@example.com' },
+        access_token: 'mock-jwt-token',
+        refresh_token: 'mock-refresh-token',
+    },
+    '/api/v1/auth/login': {
+        user: { id: 'mock-user-123', email: 'jurist@myrights.ng' },
+        access_token: 'mock-jwt-token',
+        refresh_token: 'mock-refresh-token',
+    }
+};
 // ────────────────────────────────────────────────────────────────────────
+
 
 // Request interceptor - Add auth token and log (dev only)
 api.interceptors.request.use(
@@ -53,6 +124,7 @@ api.interceptors.request.use(
                 logger.error('Error getting access token:', error);
             }
         }
+// ... rest of the interceptor
 
         // Log request in development only
         if (__DEV__) {

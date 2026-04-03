@@ -123,7 +123,7 @@ export const BackgroundJobOverlay: React.FC = () => {
                                 {status.icon}
                             </View>
                             <View>
-                                <Text style={[styles.jobTitle, { color: colors.text }]} numberOfLines={1}>
+                                <Text style={[styles.jobTitle, { color: colors.onSurface }]} numberOfLines={1}>
                                     {activeJob.title}
                                 </Text>
                                 <Text style={[styles.jobStatus, { color: status.color }]}>
@@ -139,7 +139,7 @@ export const BackgroundJobOverlay: React.FC = () => {
                             }}
                             style={styles.closeBtn}
                         >
-                            <Ionicons name="close" size={20} color={colors.textTertiary} />
+                            <Ionicons name="close" size={20} color={colors.onSurfaceVariant} />
                         </TouchableOpacity>
                     </View>
                 </BlurView>
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     touchable: {
         borderRadius: 24,
         overflow: 'hidden',
-        ...theme.shadows.lg,
+        ...theme.shadows.glass,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
     },

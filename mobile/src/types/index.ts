@@ -12,6 +12,7 @@ export interface User {
     is_active: boolean;
     is_verified: boolean;
     has_accepted_terms: boolean;
+    is_superuser: boolean;
     created_at: string;
 }
 
@@ -135,6 +136,39 @@ export interface EscalationResponse {
     estimated_response_time: string;
 }
 
+// Constitution & Legal Architect Types
+export interface Section {
+    id: number;
+    chapter_id: number;
+    section_number: string;
+    title: string;
+    content: string;
+    key_takeaway?: string;
+}
+
+export interface Chapter {
+    id: number;
+    chapter_number: number;
+    title: string;
+    sections?: Section[];
+}
+
+export interface TemplateField {
+    key: string;
+    label: string;
+    placeholder: string;
+    type?: 'text' | 'number';
+}
+
+export interface Template {
+    id: string;
+    title: string;
+    category: string;
+    description: string;
+    content_template: string;
+    fields: TemplateField[];
+}
+
 // Lawyer directory types
 export interface LegalOrganization {
     id: string;
@@ -146,6 +180,32 @@ export interface LegalOrganization {
     location: string;
     specialty: string[];
     website?: string;
+}
+
+export interface LegalAidCenter {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+    type: 'Government' | 'NGO' | 'Legal Center';
+    latitude: number;
+    longitude: number;
+    rating: number;
+    reviews: number;
+    credibility: string;
+}
+
+export interface Lawyer {
+    id: string;
+    name: string;
+    specialization: string;
+    location: string;
+    experience_years: number;
+    cases_won: number;
+    rating: number;
+    reviews: number;
+    credibility: string;
+    bio?: string;
 }
 
 // Theme types

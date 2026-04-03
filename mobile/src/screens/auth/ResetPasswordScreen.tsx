@@ -67,7 +67,7 @@ export const ResetPasswordScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -80,15 +80,15 @@ export const ResetPasswordScreen: React.FC = () => {
                         <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
                             <Ionicons name="lock-open" size={48} color={colors.onPrimary} />
                         </View>
-                        <Text style={[styles.title, { color: colors.text }]}>Create New Password</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>Create New Password</Text>
+                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                             Please enter your new password below
                         </Text>
                     </View>
 
                     <View style={styles.form}>
                         {error && (
-                            <View style={[styles.errorContainer, { backgroundColor: colors.errorLight + '20' }]}>
+                            <View style={[styles.errorContainer, { backgroundColor: colors.error + '20' }]}>
                                 <Ionicons name="alert-circle" size={20} color={colors.error} />
                                 <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
                             </View>
@@ -162,14 +162,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.lg,
-        ...theme.shadows.md,
+        ...theme.shadows.glass,
     },
     title: {
-        ...theme.typography.h2,
+        ...theme.typography.displayMd,
         marginBottom: theme.spacing.xs,
     },
     subtitle: {
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
         textAlign: 'center',
     },
     form: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
         gap: theme.spacing.sm,
     },
     errorText: {
-        ...theme.typography.bodySmall,
+        ...theme.typography.labelMd,
         flex: 1,
     },
 });

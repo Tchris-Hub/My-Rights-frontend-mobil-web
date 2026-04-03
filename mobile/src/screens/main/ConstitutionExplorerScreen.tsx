@@ -6,203 +6,231 @@ import {
     ScrollView,
     TouchableOpacity,
     TextInput,
-    FlatList,
     Platform,
+    Image,
+    Alert,
+    ActivityIndicator,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import theme from '../../constants/theme';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import theme, { spacing, borderRadius } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
-const CHAPTERS = [
-    {
-        id: '1',
-        title: 'Chapter I: General Provisions',
-        sections: [
-            { id: 's1', title: 'Supremacy of Constitution', content: 'This Constitution is supreme and its provisions shall have binding force on all authorities and persons throughout the Federal Republic of Nigeria.' },
-            { id: 's2', title: 'The Federal Republic of Nigeria', content: 'Nigeria is one indivisible and indissoluble sovereign state to be known by the name of the Federal Republic of Nigeria.' },
-            { id: 's3', title: 'States of the Federation and the FCT', content: 'There shall be 36 states in Nigeria... and the Federal Capital Territory, Abuja.' },
-        ]
-    },
-    {
-        id: '2',
-        title: 'Chapter II: Fundamental Objectives',
-        sections: [
-            { id: 's13', title: 'Fundamental Obligations', content: 'It shall be the duty and responsibility of all organs of government, and of all authorities and persons... to conform to, observe and apply the provisions of this Chapter.' },
-            { id: 's14', title: 'The Government and the People', content: 'The Federal Republic of Nigeria shall be a State based on the principles of democracy and social justice.' },
-            { id: 's15', title: 'Political Objectives', content: 'The motto of the Federal Republic of Nigeria shall be Unity and Faith, Peace and Progress.' },
-        ]
-    },
-    {
-        id: '3',
-        title: 'Chapter III: Citizenship',
-        sections: [
-            { id: 's25', title: 'Citizenship by Birth', content: 'The following persons are citizens of Nigeria by birth, namely- (a) every person born in Nigeria before the date of independence, either of whose parents or any of whose grandparents belongs or belonged to a community indigenous to Nigeria...' },
-            { id: 's26', title: 'Citizenship by Registration', content: 'Subject to the provisions of section 28 of this Constitution, a person to whom the provisions of this section apply may be registered as a citizen of Nigeria...' },
-        ]
-    },
-    {
-        id: '4',
-        title: 'Chapter IV: Fundamental Rights',
-        sections: [
-            { id: 's33', title: 'Right to Life', content: 'Every person has a right to life, and no one shall be deprived intentionally of his life, save in execution of the sentence of a court...' },
-            { id: 's34', title: 'Right to Dignity of Human Person', content: 'Every individual is entitled to respect for the dignity of his person, and accordingly - (a) no person shall be subjected to torture or to inhuman or degrading treatment...' },
-            { id: 's35', title: 'Right to Personal Liberty', content: 'Every person shall be entitled to his personal liberty and no person shall be deprived of such liberty...' },
-            { id: 's36', title: 'Right to Fair Hearing', content: 'In the determination of his civil rights and obligations, a person shall be entitled to a fair hearing within a reasonable time by a court or other tribunal established by law...' },
-            { id: 's37', title: 'Right to Private and Family Life', content: 'The privacy of citizens, their homes, correspondence, telephone conversations and telegraphic communications is hereby guaranteed and protected.' },
-            { id: 's38', title: 'Right to Freedom of Thought', content: 'Every person shall be entitled to freedom of thought, conscience and religion...' },
-            { id: 's39', title: 'Right to Freedom of Expression', content: 'Every person shall be entitled to freedom of expression, including freedom to hold opinions and to receive and impart ideas and information without interference.' },
-            { id: 's40', title: 'Right to Peaceful Assembly', content: 'Every person shall be entitled to assemble freely and associate with other persons, and in particular he may form or belong to any political party, trade union or any other association...' },
-            { id: 's41', title: 'Right to Freedom of Movement', content: 'Every citizen of Nigeria is entitled to move freely throughout Nigeria and to reside in any part thereof...' },
-            { id: 's42', title: 'Right to Freedom from Discrimination', content: 'A citizen of Nigeria of a particular community, ethnic group, place of origin, sex, religion or political opinion shall not, by reason only that he is such a person:- (a) be subjected either expressly by, or in the practical application of, any law in force in Nigeria...' },
-        ]
-    }
-];
+import { legalService, Chapter } from '../../services/legalService';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const ConstitutionExplorerScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const [searchQuery, setSearchQuery] = useState('');
-    const [expandedChapter, setExpandedChapter] = useState<string | null>('4'); // Default to Chapter IV
+    const [chapters, setChapters] = useState<Chapter[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
+
+    useEffect(() => {
+        loadConstitution();
+    }, []);
+
+    const loadConstitution = async () => {
+        try {
+            setIsLoading(true);
+            const data = await legalService.getConstitution();
+            setChapters(data);
+            
+            // Default to Chapter IV (Fundamental Rights) if it exists
+            const chapterIV = data.find(c => c.chapter_number === 4);
+            if (chapterIV) {
+                setExpandedChapter(chapterIV.id.toString());
+            } else if (data.length > 0) {
+                setExpandedChapter(data[0].id.toString());
+            }
+        } catch (error) {
+            console.error('Error loading constitution:', error);
+            Alert.alert('Connection Error', 'Failed to load constitution data from the cloud.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleToggleChapter = (id: string) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setExpandedChapter(expandedChapter === id ? null : id);
     };
 
     const filteredChapters = useMemo(() => {
-        if (!searchQuery) return CHAPTERS;
+        if (!searchQuery) return chapters;
 
-        return CHAPTERS.map(chapter => ({
-            ...chapter,
-            sections: chapter.sections.filter(s =>
-                s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.content.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        })).filter(c => c.sections.length > 0);
-    }, [searchQuery]);
+        const query = searchQuery.toLowerCase();
+        return chapters.map(chapter => {
+            const matchedSections = chapter.sections?.filter(s =>
+                s.title.toLowerCase().includes(query) ||
+                s.content.toLowerCase().includes(query)
+            ) || [];
+            
+            return {
+                ...chapter,
+                sections: matchedSections
+            };
+        }).filter(c => c.sections && c.sections.length > 0);
+    }, [searchQuery, chapters]);
 
     // Automatically expand the first chapter if searching and none expanded
     useEffect(() => {
         if (searchQuery && filteredChapters.length > 0 && !expandedChapter) {
-            setExpandedChapter(filteredChapters[0].id);
+            setExpandedChapter(filteredChapters[0].id.toString());
         }
     }, [searchQuery, filteredChapters]);
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity
-                        style={[styles.backButton, { backgroundColor: colors.surfaceElevated1 }]}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Ionicons name="chevron-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <View style={styles.titleContainer}>
-                        <Text style={[styles.title, { color: colors.text }]}>1999 Constitution</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Federal Republic of Nigeria</Text>
-                    </View>
-                    <View style={{ width: 44 }} />
-                </View>
-
-                <View style={[styles.searchBar, { backgroundColor: colors.surfaceElevated1, borderColor: colors.border }]}>
-                    <Ionicons name="search" size={20} color={colors.textTertiary} />
-                    <TextInput
-                        style={[styles.searchInput, { color: colors.text }]}
-                        placeholder="Search rights, duties, or sections..."
-                        placeholderTextColor={colors.textTertiary}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        clearButtonMode="while-editing"
-                    />
-                </View>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <View style={StyleSheet.absoluteFillObject}>
+                <Image 
+                    source={require('../../../assets/onboarding/classroom_bg.png')} 
+                    style={styles.globalBackground} 
+                    resizeMode="cover"
+                />
+                <View style={[styles.overlay, { backgroundColor: colors.surface + 'F0' }]} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {filteredChapters.map(chapter => (
-                    <View key={chapter.id} style={styles.chapterContainer}>
-                        <TouchableOpacity
-                            style={[
-                                styles.chapterHeader,
-                                { backgroundColor: colors.surfaceElevated1 },
-                                expandedChapter === chapter.id && [styles.expandedHeader, { borderBottomWidth: 1, borderBottomColor: colors.border }]
-                            ]}
-                            onPress={() => handleToggleChapter(chapter.id)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.chapterTitleRow}>
-                                <View style={[styles.chapterBadge, { backgroundColor: colors.primary }]}>
-                                    <Text style={styles.chapterBadgeText}>{chapter.id}</Text>
-                                </View>
-                                <Text style={[styles.chapterTitle, { color: colors.text }]} numberOfLines={1}>
-                                    {chapter.title}
-                                </Text>
+            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint={isDark ? 'dark' : 'light'} style={styles.blurHeader}>
+                <SafeAreaView edges={['top']}>
+                    <View style={styles.header}>
+                        <View style={styles.headerTop}>
+                            <TouchableOpacity
+                                style={[styles.backButton, { backgroundColor: colors.surfaceContainerHigh }]}
+                                onPress={() => navigation.goBack()}
+                            >
+                                <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
+                            </TouchableOpacity>
+                            <View style={styles.titleContainer}>
+                                <Text style={[styles.heroPreTitle, { color: colors.primary }]}>Institutional Index</Text>
+                                <Text style={[theme.typography.displaySm, { color: colors.onSurface }]}>1999 Constitution</Text>
                             </View>
-                            <Ionicons
-                                name={expandedChapter === chapter.id ? "chevron-up" : "chevron-down"}
-                                size={20}
-                                color={colors.textSecondary}
-                            />
-                        </TouchableOpacity>
+                            <View style={{ width: 44 }} />
+                        </View>
 
-                        {expandedChapter === chapter.id && (
-                            <View style={[styles.sectionsList, { backgroundColor: colors.surfaceElevated1 }]}>
-                                {chapter.sections.map(section => (
-                                    <TouchableOpacity
-                                        key={section.id}
-                                        style={[styles.sectionCard, { backgroundColor: colors.background }]}
-                                        activeOpacity={0.7}
-                                        onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                                    >
-                                        <View style={styles.sectionHeader}>
-                                            <View style={styles.sectionTag}>
-                                                <Text style={[styles.sectionId, { color: theme.colors.secondary }]}>
-                                                    Section {section.id.replace('s', '')}
+                        <View style={[styles.searchBar, { backgroundColor: colors.surfaceContainerLow }]}>
+                            <Ionicons name="search" size={20} color={colors.onSurfaceVariant} />
+                            <TextInput
+                                style={[theme.typography.bodyMd, styles.searchInput, { color: colors.onSurface }]}
+                                placeholder="Search rights, duties, or citations..."
+                                placeholderTextColor={colors.onSurfaceVariant}
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                clearButtonMode="while-editing"
+                            />
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </BlurView>
+
+            {isLoading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Archives...</Text>
+                </View>
+            ) : filteredChapters.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="search-outline" size={48} color={colors.onSurfaceVariant} />
+                    <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>No matches found in the Constitution</Text>
+                    <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginTop: 20 }}>
+                         <Text style={{ ...theme.typography.labelLg, color: colors.primary, fontWeight: '900' }}>CLEAR SEARCH</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                    {filteredChapters.map(chapter => (
+                        <View key={chapter.id.toString()} style={styles.chapterWrapper}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.chapterHeader,
+                                    { backgroundColor: expandedChapter === chapter.id.toString() ? colors.surfaceContainerHigh : colors.surfaceContainerLow }
+                                ]}
+                                onPress={() => handleToggleChapter(chapter.id.toString())}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.chapterTitleRow}>
+                                    <View style={styles.chapterMarker}>
+                                        <Text style={[styles.chapterNumber, { color: colors.primary }]}>
+                                            {chapter.chapter_number.toString().padStart(2, '0')}
+                                        </Text>
+                                        <View style={[styles.markerDot, { backgroundColor: colors.primary }]} />
+                                    </View>
+                                    <Text style={[styles.chapterTitle, { color: colors.onSurface }]} numberOfLines={2}>
+                                        {chapter.title}
+                                    </Text>
+                                </View>
+                                <Ionicons 
+                                    name={expandedChapter === chapter.id.toString() ? "remove" : "add"} 
+                                    size={24} 
+                                    color={colors.onSurfaceVariant} 
+                                />
+                            </TouchableOpacity>
+
+                             {expandedChapter === chapter.id.toString() && (
+                                <View style={[styles.sectionsList, { backgroundColor: colors.surfaceContainerLow }]}>
+                                    {chapter.sections?.map((section, idx) => (
+                                        <View
+                                            key={section.id.toString()}
+                                            style={[
+                                                styles.sectionCard, 
+                                                { 
+                                                    backgroundColor: colors.surface,
+                                                    paddingVertical: spacing.lg,
+                                                    paddingHorizontal: spacing.md,
+                                                    marginBottom: spacing.md,
+                                                    borderRadius: borderRadius.lg,
+                                                }
+                                            ]}
+                                        >
+                                            <View style={styles.sectionHeader}>
+                                                <Text style={[theme.typography.labelSm, { color: colors.primary, textTransform: 'uppercase' }]}>
+                                                    Article {section.section_number}
+                                                </Text>
+                                                <Text style={[theme.typography.titleMd, { color: colors.onSurface, marginTop: 4 }]}>
+                                                    {section.title}
                                                 </Text>
                                             </View>
-                                            <Text style={[styles.sectionTitleText, { color: colors.text }]}>
-                                                {section.title}
+                                            <Text style={[theme.typography.bodyMd, styles.sectionText, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>
+                                                {section.content}
                                             </Text>
-                                        </View>
-                                        <Text
-                                            style={[styles.sectionPreview, { color: colors.textSecondary }]}
-                                        >
-                                            {section.content}
-                                        </Text>
-                                        <TouchableOpacity style={styles.readMore}>
-                                            <Text style={[styles.readMoreText, { color: colors.primary }]}>Cite this section</Text>
-                                            <Ionicons name="copy-outline" size={14} color={colors.primary} />
-                                        </TouchableOpacity>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                ))}
+                                            
+                                            {section.key_takeaway && (
+                                                <View style={[styles.insightBox, { backgroundColor: colors.primary + '08' }]}>
+                                                    <Text style={[theme.typography.labelSm, { color: colors.primary }]}>DIGITAL JURIST INSIGHT</Text>
+                                                    <Text style={[theme.typography.bodyMd, { color: colors.onSurface, marginTop: 4 }]}>
+                                                        {section.key_takeaway}
+                                                    </Text>
+                                                </View>
+                                            )}
 
-                {filteredChapters.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
-                        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-                            No matching sections found for "{searchQuery}"
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.clearBtn, { backgroundColor: colors.primary }]}
-                            onPress={() => setSearchQuery('')}
-                        >
-                            <Text style={styles.clearBtnText}>Clear Search</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </ScrollView>
+                                            <View style={styles.cardFooter}>
+                                                <TouchableOpacity 
+                                                    style={styles.citeButton}
+                                                    onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}
+                                                >
+                                                    <Ionicons name="bookmark" size={16} color={colors.primary} />
+                                                    <Text style={[theme.typography.labelSm, { color: colors.primary, marginLeft: 8 }]}>SAVE CITATION</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
 
             <FloatingChatButton />
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -210,9 +238,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    safeHeader: {
+        zIndex: 10,
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+    },
     header: {
-        padding: theme.spacing.lg,
-        gap: 20,
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: 16,
+        gap: 24,
     },
     headerTop: {
         flexDirection: 'row',
@@ -222,141 +258,167 @@ const styles = StyleSheet.create({
     backButton: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    blurHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+    },
+    sectionText: {
+        opacity: 0.9,
+        lineHeight: 22,
+    },
+    insightBox: {
+        padding: spacing.md,
+        borderRadius: borderRadius.md,
+        marginVertical: spacing.md,
     },
     titleContainer: {
         alignItems: 'center',
     },
-    title: {
-        ...theme.typography.h3,
-        fontSize: 20,
-    },
-    subtitle: {
-        ...theme.typography.caption,
-        fontSize: 10,
+    heroPreTitle: {
+        ...theme.typography.labelSm,
+        fontWeight: '900',
         textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginTop: 2,
+        letterSpacing: 2,
+        marginBottom: 2,
+    },
+    title: {
+        ...theme.typography.titleLg,
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: -0.5,
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-        borderRadius: 20,
-        borderWidth: 1,
+        paddingHorizontal: 20,
+        height: 56,
+        borderRadius: 18,
         gap: 12,
     },
     searchInput: {
         flex: 1,
-        fontSize: 15,
-        fontWeight: '500',
+        ...theme.typography.bodyMd,
+        fontWeight: '600',
     },
     content: {
-        padding: theme.spacing.lg,
-        paddingBottom: 120,
+        paddingHorizontal: 24,
+        paddingBottom: 140,
     },
-    chapterContainer: {
-        marginBottom: 16,
+    chapterWrapper: {
+        marginBottom: 12,
         borderRadius: 24,
         overflow: 'hidden',
-        ...theme.shadows.sm,
     },
     chapterHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        paddingHorizontal: 20,
+        padding: 24,
     },
     chapterTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        gap: 12,
+        gap: 20,
     },
-    chapterBadge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+    chapterMarker: {
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 4,
     },
-    chapterBadgeText: {
-        color: '#FFF',
-        fontSize: 12,
+    chapterNumber: {
+        ...theme.typography.displaySm,
+        fontSize: 24,
         fontWeight: '900',
+        letterSpacing: -1,
     },
-    expandedHeader: {
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
+    markerDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        opacity: 0.5,
     },
     chapterTitle: {
+        ...theme.typography.titleMd,
         fontWeight: '800',
-        fontSize: 15,
+        fontSize: 17,
         flex: 1,
+        lineHeight: 22,
     },
     sectionsList: {
-        padding: 12,
-        gap: 12,
+        padding: 16,
+        paddingTop: 0,
     },
     sectionCard: {
-        padding: 20,
+        padding: 24,
         borderRadius: 20,
-        gap: 12,
     },
     sectionHeader: {
-        gap: 6,
-    },
-    sectionTag: {
-        backgroundColor: 'rgba(212, 175, 55, 0.1)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-        alignSelf: 'flex-start',
+        marginBottom: 12,
+        gap: 4,
     },
     sectionId: {
-        fontSize: 10,
+        ...theme.typography.labelSm,
         fontWeight: '900',
         textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     sectionTitleText: {
-        fontSize: 16,
+        ...theme.typography.titleMd,
         fontWeight: '900',
+        fontSize: 18,
     },
     sectionPreview: {
-        fontSize: 14,
-        lineHeight: 22,
-        letterSpacing: 0.2,
+        ...theme.typography.bodyMd,
+        lineHeight: 24,
+        opacity: 0.8,
     },
-    readMore: {
+    cardFooter: {
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.03)',
+    },
+    citeButton: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginTop: 4,
     },
-    readMoreText: {
-        fontSize: 12,
-        fontWeight: '800',
+    citeText: {
+        ...theme.typography.labelSm,
+        fontWeight: '900',
+        letterSpacing: 1,
     },
-    emptyState: {
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        padding: 60,
-        gap: 20,
+    },
+    loadingText: {
+        ...theme.typography.bodyMd,
+        marginTop: 16,
+        opacity: 0.6,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
     },
     emptyText: {
-        fontSize: 14,
+        ...theme.typography.bodyLg,
+        marginTop: 16,
         textAlign: 'center',
+        opacity: 0.5,
     },
-    clearBtn: {
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 20,
+    globalBackground: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.05,
     },
-    clearBtnText: {
-        color: '#FFF',
-        fontWeight: '800',
-    }
 });

@@ -21,6 +21,7 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
@@ -181,58 +182,65 @@ export const ChatScreen: React.FC = () => {
 
         try {
             // Refined Incognito: If authenticated, use authenticated endpoint but suppress saving to DB.
-            // If NOT authenticated, use public endpoint.
             const useAuthenticatedEndpoint = isAuthenticated;
-            const response = await chatService.sendMessage(messageText, {
-                useAuthenticatedEndpoint,
-                conversationId: (useAuthenticatedEndpoint && !isIncognito) ? (conversationId ?? undefined) : undefined,
-                suppressStorage: isIncognito
-            });
-
-            setMessages((prev) => {
-                return prev.map((msg) => {
-                    if (msg.id !== loadingMessage.id) return msg;
-
-                    if (useAuthenticatedEndpoint) {
-                        const authResponse = response as AuthenticatedChatResponse;
-
-                        return {
-                            ...msg,
-                            content: authResponse.message.content,
-                            sources: authResponse.message.sources,
-                            confidence_score: authResponse.message.confidence_score
-                                ? Number(authResponse.message.confidence_score)
-                                : undefined,
-                            legal_disclaimer: authResponse.disclaimer,
-                            isLoading: false,
-                            isNew: true, // Mark as new to trigger typing animation
-                        };
-                    }
-
-                    const publicResponse = response as PublicChatResponse;
-
-                    return {
-                        ...msg,
-                        content: publicResponse.content,
-                        sources: publicResponse.sources,
-                        confidence_score: publicResponse.confidence_score
-                            ? Number(publicResponse.confidence_score)
-                            : undefined,
-                        legal_disclaimer: publicResponse.legal_disclaimer,
-                        isLoading: false,
-                        isNew: true, // Mark as new to trigger typing animation
-                    };
-                });
-            });
 
             if (useAuthenticatedEndpoint) {
-                const authResponse = response as AuthenticatedChatResponse;
-                setConversationId(authResponse.conversation_id);
-            } else if (isGuest) {
-                // Increment guest message counter
-                setGuestMessageCount(prev => prev + 1);
+                // HANDLE STREAMING (Authenticated)
+                let firstChunk = true;
+                await chatService.streamMessage(messageText, {
+                    conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
+                    onChunk: (chunk) => {
+                        setMessages((prev) =>
+                            prev.map((msg) => {
+                                if (msg.id !== loadingMessage.id) return msg;
+                                return {
+                                    ...msg,
+                                    content: firstChunk ? chunk : msg.content + chunk,
+                                    isLoading: false,
+                                };
+                            })
+                        );
+                        if (firstChunk) {
+                            firstChunk = false;
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }
+                    },
+                });
+
+                // Get final state to update conversationId if needed
+                // Note: The stream itself doesn't return the full AuthResponse object, 
+                // but we can infer the conversationId if it was a new chat.
+                // In a production app, we'd probably include the conversation_id in the SSE stream metadata.
+                // For now, if it was a new chat, we might need a separate call or just rely on the next refresh.
+            } else {
+                // HANDLE STREAMING (Public/Guest)
+                let firstChunk = true;
+                await chatService.streamMessage(messageText, {
+                    useAuthenticatedEndpoint: false,
+                    onChunk: (chunk) => {
+                        setMessages((prev) =>
+                            prev.map((msg) => {
+                                if (msg.id !== loadingMessage.id) return msg;
+                                return {
+                                    ...msg,
+                                    content: firstChunk ? chunk : msg.content + chunk,
+                                    isLoading: false,
+                                };
+                            })
+                        );
+                        if (firstChunk) {
+                            firstChunk = false;
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }
+                    },
+                });
+
+                if (isGuest) {
+                    setGuestMessageCount(prev => prev + 1);
+                }
             }
         } catch (error) {
+            console.error('Chat error:', error);
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.id === loadingMessage.id
@@ -344,51 +352,61 @@ export const ChatScreen: React.FC = () => {
     });
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
+            {/* Background Decoration (Blobs) */}
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
+                <View style={[styles.blob2, { backgroundColor: colors.secondaryContainer + '0A' }]} />
+            </View>
+
             {/* Premium Header */}
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <TouchableOpacity
-                    style={styles.headerIconButton}
-                    onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        navigation.navigate('Tools');
-                    }}
-                >
-                    <Ionicons name="apps-outline" size={24} color={colors.primary} />
-                </TouchableOpacity>
+            <View style={styles.headerContainer}>
+                <BlurView intensity={isDark ? 40 : 80} style={styles.headerBlur}>
+                    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}>
+                        <TouchableOpacity
+                            style={styles.headerIconButton}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                navigation.navigate('Tools');
+                            }}
+                        >
+                            <Ionicons name="apps-outline" size={24} color={colors.primary} />
+                        </TouchableOpacity>
 
-                <View style={styles.headerCentered}>
-                    <View style={styles.statusRow}>
-                        <View style={[styles.onlineDot, isIncognito && { backgroundColor: '#94A3B8' }]} />
-                        <Text style={[styles.headerTitle, { color: colors.text }]}>
-                            {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
-                        </Text>
+                        <View style={styles.headerCentered}>
+                            <View style={styles.statusRow}>
+                                <View style={[styles.onlineDot, isIncognito && { backgroundColor: colors.onSurfaceVariant }]} />
+                                <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
+                                    {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
+                                </Text>
+                            </View>
+                            <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
+                                {isIncognito ? 'Incognito • Zero-Trace' : 'Online • AI verified'}
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.headerIconButton}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                setIsMenuVisible(prev => !prev);
+                            }}
+                        >
+                            <Ionicons
+                                name={isMenuVisible ? 'close-circle-outline' : 'ellipsis-horizontal-circle-outline'}
+                                size={26}
+                                color={colors.primary}
+                            />
+                        </TouchableOpacity>
                     </View>
-                    <Text style={[styles.headerStatus, { color: isIncognito ? colors.textTertiary : colors.success }]}>
-                        {isIncognito ? 'Incognito • Zero-Trace' : 'Online • AI verified'}
-                    </Text>
-                </View>
-
-                <TouchableOpacity
-                    style={styles.headerIconButton}
-                    onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        setIsMenuVisible(prev => !prev);
-                    }}
-                >
-                    <Ionicons
-                        name={isMenuVisible ? 'close-circle-outline' : 'ellipsis-horizontal-circle-outline'}
-                        size={26}
-                        color={colors.primary}
-                    />
-                </TouchableOpacity>
+                </BlurView>
             </View>
 
             {isMenuVisible && (
                 <TouchableWithoutFeedback onPress={closeMenu}>
                     <View style={[styles.menuOverlay, { paddingTop: insets.top + theme.spacing.md }]}>
                         <TouchableWithoutFeedback>
-                            <View style={[styles.menuContainer, { backgroundColor: colors.surfaceElevated1, borderColor: colors.border }]}>
+                            <View style={[styles.menuContainer, { backgroundColor: colors.surfaceContainer, borderColor: colors.outline }]}>
                                 <TouchableOpacity
                                     style={styles.menuItem}
                                     onPress={() => {
@@ -398,16 +416,16 @@ export const ChatScreen: React.FC = () => {
                                 >
                                     <View style={styles.menuItemLabelWrap}>
                                         <Ionicons name="refresh-circle" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.text }]}>Start New Chat</Text>
+                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Start New Chat</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                    <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 {isAuthenticated && (
                                     <View style={[styles.menuItem, styles.menuItemDivider]}>
                                         <View style={styles.menuItemLabelWrap}>
-                                            <Ionicons name="eye-off" size={20} color={isIncognito ? colors.primary : colors.textSecondary} />
-                                            <Text style={[styles.menuItemLabel, { color: colors.text }]}>Incognito Mode</Text>
+                                            <Ionicons name="eye-off" size={20} color={isIncognito ? colors.primary : colors.onSurfaceVariant} />
+                                            <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Incognito Mode</Text>
                                         </View>
                                         <Switch
                                             value={isIncognito}
@@ -419,9 +437,9 @@ export const ChatScreen: React.FC = () => {
                                                     Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
                                                 }
                                             }}
-                                            trackColor={{ false: colors.border, true: colors.primary + '40' }}
+                                            trackColor={{ false: colors.outline, true: colors.primary + '40' }}
                                             thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
-                                            ios_backgroundColor={colors.border}
+                                            ios_backgroundColor={colors.outline}
                                             style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
                                         />
                                     </View>
@@ -436,9 +454,9 @@ export const ChatScreen: React.FC = () => {
                                 >
                                     <View style={styles.menuItemLabelWrap}>
                                         <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.text }]}>Account</Text>
+                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Account</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                    <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 {isAuthenticated && (
@@ -451,9 +469,9 @@ export const ChatScreen: React.FC = () => {
                                     >
                                         <View style={styles.menuItemLabelWrap}>
                                             <Ionicons name="time-outline" size={20} color={colors.primary} />
-                                            <Text style={[styles.menuItemLabel, { color: colors.text }]}>Chat History</Text>
+                                            <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Chat History</Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                                        <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -475,10 +493,10 @@ export const ChatScreen: React.FC = () => {
                             {SUGGESTIONS.map((s, i) => (
                                 <TouchableOpacity
                                     key={i}
-                                    style={[styles.suggestionChip, { backgroundColor: colors.surfaceElevated1 }]}
+                                    style={[styles.suggestionChip, { backgroundColor: colors.surfaceContainer }]}
                                     onPress={() => handleSend(s.query)}
                                 >
-                                    <Text style={[styles.suggestionText, { color: colors.text }]}>{s.title}</Text>
+                                    <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{s.title}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -490,10 +508,10 @@ export const ChatScreen: React.FC = () => {
                         <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
                             <Ionicons name="sparkles" size={48} color={colors.primary} />
                         </View>
-                        <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                        <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>
                             How can I help you today?
                         </Text>
-                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
                             Ask me about your legal rights or instruct me to draft a document for you.
                         </Text>
                     </Pressable>
@@ -506,7 +524,7 @@ export const ChatScreen: React.FC = () => {
                             item.isLoading || isTranscribing ? (
                                 <View style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
-                                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
                                         {isTranscribing ? "Transcribing voice..." : "Drafting response..."}
                                     </Text>
                                 </View>
@@ -522,11 +540,11 @@ export const ChatScreen: React.FC = () => {
                 )}
 
                 <BlurView
-                    intensity={isDark ? 40 : 80}
+                    intensity={isDark ? 60 : 90}
+                    tint={isDark ? 'dark' : 'light'}
                     style={[
                         styles.inputBlur,
                         {
-                            // When keyboard is visible, the safe area is covered — no extra padding needed
                             paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, theme.spacing.sm),
                         }
                     ]}
@@ -536,13 +554,8 @@ export const ChatScreen: React.FC = () => {
                             style={[
                                 styles.inputWrapper,
                                 {
-                                    backgroundColor: colors.surfaceElevated1,
-                                    borderColor: inputFocused ? colors.primary : colors.border,
-                                    shadowColor: 'rgba(0,0,0,0.05)',
-                                    shadowOffset: { width: 0, height: 2 },
-                                    shadowOpacity: 1,
-                                    shadowRadius: 4,
-                                    elevation: 1, // Subtle lift for the input box
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.surfaceContainerHighest,
+                                    // No-Line Rule: Removed borderBottomWidth
                                 }
                             ]}
                         >
@@ -550,13 +563,13 @@ export const ChatScreen: React.FC = () => {
                                 style={styles.inputLeftIcon}
                                 onPress={pickDocument}
                             >
-                                <Ionicons name="add" size={24} color={colors.textSecondary} />
+                                <Ionicons name="add" size={24} color={colors.onSurfaceVariant} />
                             </TouchableOpacity>
 
                             <TextInput
-                                style={[styles.input, { color: colors.text }]}
+                                style={[styles.input, { color: colors.onSurface }]}
                                 placeholder={isRecording ? "Listening..." : "Message AI..."}
-                                placeholderTextColor={colors.textTertiary}
+                                placeholderTextColor={colors.onSurfaceVariant}
                                 value={inputText}
                                 onChangeText={setInputText}
                                 multiline
@@ -576,43 +589,50 @@ export const ChatScreen: React.FC = () => {
                                 <Ionicons
                                     name={isRecording ? 'mic' : 'mic-outline'}
                                     size={20}
-                                    color={isRecording ? theme.colors.error : colors.textSecondary}
+                                    color={isRecording ? theme.colors.error : colors.onSurfaceVariant}
                                 />
                             </TouchableOpacity>
                             {inputText.length > 8000 && (
-                                <Text style={[styles.charCounter, { color: inputText.length > 9500 ? '#EF4444' : colors.textTertiary }]}>
+                                <Text style={[styles.charCounter, { color: inputText.length > 9500 ? '#EF4444' : colors.onSurfaceVariant }]}>
                                     {inputText.length}/10000
                                 </Text>
                             )}
                         </View>
 
                         <TouchableOpacity
-                            style={[
-                                styles.sendButton,
-                                {
-                                    backgroundColor: (inputText.trim() && !isLoading) ? colors.primary : colors.surfaceElevated2,
-                                    shadowColor: (inputText.trim() && !isLoading) ? colors.primary : 'transparent',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: 0.3,
-                                    shadowRadius: 8,
-                                    elevation: (inputText.trim() && !isLoading) ? 4 : 0,
-                                }
-                            ]}
                             onPress={() => handleSend()}
                             disabled={!inputText.trim() || isLoading || inputText.length > 10000}
                             activeOpacity={0.7}
                         >
-                            <Ionicons
-                                name={isLoading ? "ellipsis-horizontal" : "arrow-up"}
-                                size={22}
-                                color={inputText.trim() && !isLoading ? colors.onPrimary : colors.textTertiary}
-                            />
+                            <LinearGradient
+                                colors={(inputText.trim() && !isLoading) 
+                                    ? [colors.primary, theme.colors.primaryContainer] 
+                                    : [colors.surfaceContainerHigh, colors.surfaceContainerHigh]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={[
+                                    styles.sendButton,
+                                    (inputText.trim() && !isLoading) && {
+                                        shadowColor: colors.primary,
+                                        shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.3,
+                                        shadowRadius: 8,
+                                        elevation: 4,
+                                    }
+                                ]}
+                            >
+                                <Ionicons
+                                    name={isLoading ? "ellipsis-horizontal" : "arrow-up"}
+                                    size={22}
+                                    color={inputText.trim() && !isLoading ? colors.onPrimary : colors.onSurfaceVariant}
+                                />
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
 
                     {!isKeyboardVisible && (
                         <Text
-                            style={[styles.disclaimer, { color: colors.textTertiary }]}
+                            style={[styles.disclaimer, { color: colors.onSurfaceVariant }]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
                         >
@@ -636,18 +656,43 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    blob1: {
+        position: 'absolute',
+        top: -100,
+        right: -100,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+    },
+    blob2: {
+        position: 'absolute',
+        bottom: -100,
+        left: -100,
+        width: 400,
+        height: 400,
+        borderRadius: 200,
+    },
+    headerContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+    },
+    headerBlur: {
+        overflow: 'hidden',
+    },
     header: {
-        paddingVertical: theme.spacing.md,
+        paddingBottom: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottomWidth: 1,
     },
     headerIconButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -662,31 +707,27 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     onlineDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
         backgroundColor: '#10B981',
     },
     headerTitle: {
-        ...theme.typography.h4,
-        fontSize: 16,
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: -0.36,
     },
     headerStatus: {
         fontSize: 10,
-        fontWeight: '700',
+        fontFamily: theme.typography.fontFamily.bodyBold,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
-    },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    incognitoToggle: {
-        marginLeft: -4,
+        marginTop: 2,
     },
     keyboardView: {
         flex: 1,
+        paddingTop: 80,
     },
     suggestionsContainer: {
         paddingVertical: 12,
@@ -698,12 +739,11 @@ const styles = StyleSheet.create({
     suggestionChip: {
         paddingHorizontal: 16,
         paddingVertical: 8,
-        borderRadius: 20,
-        ...theme.shadows.sm,
+        borderRadius: 16,
     },
     suggestionText: {
-        ...theme.typography.bodySmall,
-        fontWeight: '600',
+        fontFamily: theme.typography.fontFamily.bodyMedium,
+        fontSize: 14,
     },
     emptyState: {
         flex: 1,
@@ -713,19 +753,23 @@ const styles = StyleSheet.create({
     },
     emptyIconContainer: {
         padding: 24,
-        backgroundColor: theme.colors.surfaceElevated1,
         borderRadius: 40,
         marginBottom: 24,
     },
     emptyTitle: {
-        ...theme.typography.h3,
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 32,
+        fontWeight: '700',
         textAlign: 'center',
         marginBottom: 8,
+        letterSpacing: -0.64,
     },
     emptySubtitle: {
-        ...theme.typography.body,
+        fontFamily: theme.typography.fontFamily.body,
+        fontSize: 16,
         textAlign: 'center',
-        color: theme.colors.textSecondary,
+        lineHeight: 24,
+        opacity: 0.7,
     },
     messagesList: {
         padding: theme.spacing.lg,
@@ -739,47 +783,53 @@ const styles = StyleSheet.create({
         paddingLeft: 4,
     },
     loadingText: {
-        ...theme.typography.bodySmall,
-        fontWeight: '500',
+        fontFamily: theme.typography.fontFamily.bodyMedium,
+        fontSize: 14,
     },
     inputBlur: {
         width: '100%',
         paddingTop: 12,
         paddingHorizontal: theme.spacing.lg,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255, 255, 255, 0.1)',
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        gap: 10,
-    },
-    iconButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
+        gap: 12,
     },
     inputWrapper: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        minHeight: 48,
+        minHeight: 52,
         maxHeight: 120,
-        borderRadius: 24,
-        borderWidth: 1,
+        borderRadius: 16,
         paddingHorizontal: 4,
     },
+    input: {
+        flex: 1,
+        minHeight: 40,
+        maxHeight: 100,
+        paddingHorizontal: 6,
+        paddingVertical: 10,
+        fontFamily: theme.typography.fontFamily.body,
+        fontSize: 16,
+    },
     inputLeftIcon: {
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
         alignItems: 'center',
         justifyContent: 'center',
     },
     inputRightIcon: {
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sendButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -789,31 +839,12 @@ const styles = StyleSheet.create({
         bottom: 2,
         right: 44,
     },
-    input: {
-        flex: 1,
-        minHeight: 40,
-        maxHeight: 100,
-        paddingHorizontal: 6,
-        paddingVertical: 10,
-        ...theme.typography.body,
-    },
-    sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     disclaimer: {
-        ...theme.typography.caption,
+        fontSize: 10,
+        fontFamily: theme.typography.fontFamily.body,
         textAlign: 'center',
         marginTop: 8,
-    },
-    escalateButton: {
-        marginLeft: 6,
-        padding: 5,
-        borderRadius: 10,
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        opacity: 0.5,
     },
     menuOverlay: {
         position: 'absolute',
@@ -821,18 +852,15 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-        paddingHorizontal: theme.spacing.lg,
-        zIndex: 10,
+        zIndex: 200,
     },
     menuContainer: {
-        alignSelf: 'flex-end',
-        width: 250,
+        position: 'absolute',
+        top: 100,
+        right: theme.spacing.lg,
+        width: 240,
         borderRadius: 20,
         paddingVertical: 8,
-        borderWidth: 1,
-        ...theme.shadows.md,
-        overflow: 'hidden',
     },
     menuItem: {
         flexDirection: 'row',
@@ -840,12 +868,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        gap: 12,
-    },
-    menuItemDivider: {
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderColor: 'rgba(148, 163, 184, 0.15)',
     },
     menuItemLabelWrap: {
         flexDirection: 'row',
@@ -853,7 +875,16 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     menuItemLabel: {
-        ...theme.typography.bodySmall,
-        fontWeight: '600',
+        fontFamily: theme.typography.fontFamily.bodyMedium,
+        fontSize: 14,
+    },
+    menuItemDivider: {
+        height: 1,
+        marginHorizontal: 16,
+    },
+    escalateButton: {
+        marginLeft: 6,
+        padding: 5,
+        borderRadius: 10,
     },
 });

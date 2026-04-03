@@ -1,8 +1,3 @@
-/**
- * Onboarding Screen
- * 3-slide carousel with swipeable slides
- */
-
 import React, { useState, useRef } from 'react';
 import {
     View,
@@ -11,41 +6,53 @@ import {
     Dimensions,
     FlatList,
     TouchableOpacity,
+    Image,
+    StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from '../../components/ui/Button';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 interface OnboardingSlide {
     id: string;
+    badge: string;
     title: string;
+    highlight: string;
     description: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    image: any;
 }
 
 const slides: OnboardingSlide[] = [
     {
         id: '1',
-        title: 'Know Your Rights',
-        description: 'Access legal information based on the Nigerian Constitution. Understand your rights in simple, clear language.',
-        icon: 'shield-checkmark',
+        badge: 'EDITORIAL AUTHORITY',
+        title: 'Know Your\n',
+        highlight: 'Rights.',
+        description: 'Navigate complex legal landscapes with clarity. We provide the editorial authority you need to protect your interests and command your future.',
+        image: require('../../../assets/onboarding/rights.png'),
     },
     {
         id: '2',
-        title: 'Get Legal Guidance',
-        description: 'Chat with our AI assistant, review contracts, and generate legal documents instantly.',
-        icon: 'chatbubbles',
+        badge: 'LEGAL PRECISION',
+        title: 'Command Your\n',
+        highlight: 'Future.',
+        description: 'Leverage AI-driven legal tools to review contracts and generate binding documents instantly. Precision at scale.',
+        image: require('../../../assets/onboarding/precision.png'),
     },
     {
         id: '3',
-        title: 'Access Justice',
-        description: 'Free, accessible legal help for everyone. Connect with legal aid organizations when you need more support.',
-        icon: 'people',
+        badge: 'ACCESSIBLE JUSTICE',
+        title: 'Justice for\n',
+        highlight: 'Everyone.',
+        description: 'Free, accessible legal help. Connect with trusted legal aid organizations when you need active representation.',
+        image: require('../../../assets/onboarding/justice.png'),
     },
 ];
 
@@ -58,45 +65,78 @@ export const OnboardingScreen: React.FC = () => {
     const handleNext = () => {
         if (currentIndex < slides.length - 1) {
             flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
+        } else {
+            completeOnboarding();
         }
-    };
-
-    const handleSkip = async () => {
-        await completeOnboarding();
-    };
-
-    const handleGetStarted = async () => {
-        await completeOnboarding();
     };
 
     const renderSlide = ({ item }: { item: OnboardingSlide }) => (
         <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-                <Ionicons name={item.icon} size={80} color={colors.onPrimary} />
+            <View style={styles.imageContainer}>
+                <Image 
+                    source={item.image} 
+                    style={styles.heroImage} 
+                />
+                <LinearGradient
+                    colors={[
+                        'rgba(255, 255, 255, 0.1)', // Top transparent
+                        'rgba(255, 255, 255, 0.5)', // Mid fade
+                        colors.surface           // Bottom solid
+                    ]}
+                    style={StyleSheet.absoluteFillObject}
+                />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-            <Text style={[styles.description, { color: colors.textSecondary }]}>
-                {item.description}
-            </Text>
+
+            <View style={styles.contentContainer}>
+                <View style={[styles.badgeContainer, { backgroundColor: colors.secondaryContainer + '1A', borderColor: colors.secondaryContainer + '33' }]}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.secondary} style={styles.badgeIcon} />
+                    <Text style={[styles.badgeText, { color: colors.secondary }]}>{item.badge}</Text>
+                </View>
+
+                <Text style={[styles.title, { color: colors.secondary }]}>
+                    {item.title}
+                    <Text style={[styles.highlight, { color: colors.primary }]}>{item.highlight}</Text>
+                </Text>
+
+                <Text style={[styles.description, { color: colors.onSurfaceVariant }]}>
+                    {item.description}
+                </Text>
+            </View>
         </View>
     );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Skip button */}
-            {currentIndex < slides.length - 1 && (
-                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                    <Text style={[styles.skipText, { color: colors.primary }]}>Skip</Text>
-                </TouchableOpacity>
-            )}
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+            
+            {/* Global Faded Background */}
+            <View style={styles.globalBackgroundContainer}>
+                <Image 
+                    source={CLASSROOM_BG}
+                    style={styles.globalBackground}
+                />
+            </View>
+            
+            {/* Top Navigation / Header */}
+            <SafeAreaView style={styles.header} edges={['top']}>
+                <View style={styles.logoRow}>
+                    <Ionicons name="hammer" size={28} color={colors.primary} />
+                    <Text style={[styles.logoText, { color: colors.primary }]}>My Rights</Text>
+                </View>
+                {currentIndex < slides.length - 1 && (
+                    <TouchableOpacity onPress={() => completeOnboarding()}>
+                        <Text style={[styles.headerSkip, { color: colors.onSurfaceVariant }]}>Skip</Text>
+                    </TouchableOpacity>
+                )}
+            </SafeAreaView>
 
-            {/* Slides */}
             <FlatList
                 ref={flatListRef}
                 data={slides}
                 renderItem={renderSlide}
                 horizontal
                 pagingEnabled
+                bounces={false}
                 showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={(event) => {
                     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
@@ -105,43 +145,52 @@ export const OnboardingScreen: React.FC = () => {
                 keyExtractor={(item) => item.id}
             />
 
-            {/* Page indicators */}
-            <View style={styles.pagination}>
-                {slides.map((_, index) => (
-                    <View
-                        key={index}
-                        style={[
-                            styles.dot,
-                            {
-                                backgroundColor: index === currentIndex ? colors.primary : colors.border,
-                                width: index === currentIndex ? 24 : 8,
-                            },
-                        ]}
-                    />
-                ))}
-            </View>
+            {/* Bottom Interaction Layer */}
+            <BlurView intensity={24} tint="light" style={[styles.bottomContainer, { backgroundColor: 'rgba(255, 255, 255, 0.7)' }]}>
+                <SafeAreaView edges={['bottom']} style={styles.footerRow}>
+                    
+                    {/* Progress indicators */}
+                    <View style={styles.pagination}>
+                        {slides.map((_, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.dot,
+                                    {
+                                        backgroundColor: index === currentIndex ? colors.primary : colors.surfaceContainerHighest,
+                                        width: index === currentIndex ? 32 : 8,
+                                        shadowColor: index === currentIndex ? colors.primary : 'transparent',
+                                        shadowOffset: { width: 0, height: 0 },
+                                        shadowOpacity: index === currentIndex ? 0.6 : 0,
+                                        shadowRadius: index === currentIndex ? 8 : 0,
+                                    },
+                                ]}
+                            />
+                        ))}
+                    </View>
 
-            {/* Bottom buttons */}
-            <View style={styles.footer}>
-                {currentIndex === slides.length - 1 ? (
-                    <Button
-                        title="Get Started"
-                        onPress={handleGetStarted}
-                        fullWidth
-                        icon={<Ionicons name="arrow-forward" size={20} color={theme.colors.onPrimary} />}
-                        iconPosition="right"
-                    />
-                ) : (
-                    <Button
-                        title="Next"
-                        onPress={handleNext}
-                        fullWidth
-                        icon={<Ionicons name="arrow-forward" size={20} color={theme.colors.onPrimary} />}
-                        iconPosition="right"
-                    />
-                )}
-            </View>
-        </SafeAreaView>
+                    {/* Primary Action */}
+                    <TouchableOpacity activeOpacity={0.8} onPress={handleNext} style={styles.buttonWrapper}>
+                        <LinearGradient
+                            colors={[colors.primary, colors.primaryContainer]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.gradientButton}
+                        >
+                            <Text style={[styles.buttonText, { color: colors.onPrimaryContainer }]}>
+                                {currentIndex === slides.length - 1 ? "Get Started" : "Continue"}
+                            </Text>
+                            <Ionicons name="arrow-forward" size={20} color={colors.onPrimaryContainer} />
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                </SafeAreaView>
+            </BlurView>
+
+            {/* Background elements */}
+            <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
+            <View style={[styles.blob2, { backgroundColor: colors.secondaryContainer + '0A' }]} />
+        </View>
     );
 };
 
@@ -149,55 +198,175 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    skipButton: {
+    header: {
         position: 'absolute',
-        top: 50,
-        right: theme.spacing.lg,
-        zIndex: 10,
-        padding: theme.spacing.sm,
+        top: 0,
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        zIndex: 50,
     },
-    skipText: {
-        ...theme.typography.button,
+    logoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    logoText: {
+        fontFamily: theme.typography.displayMd.fontFamily,
+        fontSize: 20,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+    },
+    headerSkip: {
+        fontFamily: theme.typography.labelMd.fontFamily,
+        fontWeight: '500',
+        fontSize: 16,
     },
     slide: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: theme.spacing.xl,
+        justifyContent: 'flex-end',
+        paddingBottom: 160, // Leave room for absolute footer
     },
-    iconContainer: {
-        width: 160,
-        height: 160,
-        borderRadius: 80,
+    imageContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
+    },
+    heroImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+        opacity: 0.4, // Grayscale effect fallback
+    },
+    contentContainer: {
+        paddingHorizontal: 48, // Wide 3rem Hero margins
+        zIndex: 20,
+        maxWidth: 600,
+    },
+    badgeContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: theme.spacing.xl,
-        ...theme.shadows.lg,
+        alignSelf: 'flex-start',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 9999,
+        borderWidth: 1,
+        marginBottom: 24,
+        gap: 6,
+    },
+    badgeIcon: {
+        marginTop: -1,
+    },
+    badgeText: {
+        fontFamily: theme.typography.labelMd.fontFamily,
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
     },
     title: {
-        ...theme.typography.h2,
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
+        fontFamily: theme.typography.displayLg.fontFamily, // authoritative weight
+        fontSize: 52,
+        fontWeight: '800',
+        lineHeight: 56,
+        letterSpacing: -1.04, // tight editorial spacing
+        marginBottom: 32,
+    },
+    highlight: {
+        fontFamily: theme.typography.displayLg.fontFamily,
+        fontStyle: 'italic',
+        fontWeight: '900',
     },
     description: {
-        ...theme.typography.body,
-        textAlign: 'center',
-        maxWidth: 320,
+        fontFamily: theme.typography.bodyLg.fontFamily,
+        fontSize: 18,
+        lineHeight: 28,
+        maxWidth: 320, // Asymmetric offset
+        marginLeft: 12, // Intentional asymmetry
+    },
+    bottomContainer: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        paddingTop: 32,
+        paddingBottom: 40,
+        paddingHorizontal: 48, // Match slide margins
+        zIndex: 30,
+        borderTopWidth: 0, // NO-LINE RULE
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
     },
     pagination: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        marginBottom: theme.spacing.xl,
+        gap: 8,
     },
     dot: {
-        height: 8,
-        borderRadius: 4,
+        height: 6,
+        borderRadius: 3,
     },
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
+    buttonWrapper: {
+        shadowColor: theme.colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
     },
+    gradientButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 40,
+        paddingVertical: 16,
+        borderRadius: 12,
+    },
+    buttonText: {
+        fontFamily: theme.typography.labelLg.fontFamily,
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    blob1: {
+        position: 'absolute',
+        top: '25%',
+        right: -80,
+        width: 500,
+        height: 500,
+        borderRadius: 250,
+        zIndex: 0,
+        transform: [{ scale: 1.5 }],
+    },
+    blob2: {
+        position: 'absolute',
+        bottom: -80,
+        left: -80,
+        width: 400,
+        height: 400,
+        borderRadius: 200,
+        zIndex: 0,
+        transform: [{ scale: 1.5 }],
+    },
+    globalBackgroundContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        zIndex: -1,
+        backgroundColor: '#FFFFFF',
+    },
+    globalBackground: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+        opacity: 0.15, // 15% opacity as requested
+    }
 });
-

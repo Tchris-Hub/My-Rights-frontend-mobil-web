@@ -64,10 +64,11 @@ export const ForgotPasswordScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.keyboardView}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
@@ -77,15 +78,15 @@ export const ForgotPasswordScreen: React.FC = () => {
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
                     >
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        <Ionicons name="arrow-back" size={24} color={colors.onSurface} />
                     </TouchableOpacity>
 
                     <View style={styles.header}>
                         <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
                             <Ionicons name="mail-open" size={48} color={colors.onPrimary} />
                         </View>
-                        <Text style={[styles.title, { color: colors.text }]}>Forgot Password</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>Forgot Password</Text>
+                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                             Enter your email to receive a recovery link.
                             {"\n\n"}
                             <Text style={{ fontSize: 12, fontStyle: 'italic' }}>
@@ -97,8 +98,8 @@ export const ForgotPasswordScreen: React.FC = () => {
                     {isSuccess ? (
                         <View style={styles.successContainer}>
                             <Ionicons name="checkmark-circle" size={64} color={colors.primary} />
-                            <Text style={[styles.successTitle, { color: colors.text }]}>Link Sent!</Text>
-                            <Text style={[styles.successText, { color: colors.textSecondary }]}>
+                            <Text style={[styles.successTitle, { color: colors.onSurface }]}>Link Sent!</Text>
+                            <Text style={[styles.successText, { color: colors.onSurfaceVariant }]}>
                                 Please check your email inbox for instructions on how to reset your password.
                             </Text>
                             <Button
@@ -111,7 +112,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                     ) : (
                         <View style={styles.form}>
                             {error && (
-                                <View style={[styles.errorContainer, { backgroundColor: colors.errorLight + '20' }]}>
+                                <View style={[styles.errorContainer, { backgroundColor: colors.error + '20' }]}>
                                     <Ionicons name="alert-circle" size={20} color={colors.error} />
                                     <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
                                 </View>
@@ -177,14 +178,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.lg,
-        ...theme.shadows.md,
+        ...theme.shadows.glass,
     },
     title: {
-        ...theme.typography.h2,
+        ...theme.typography.displayMd,
         marginBottom: theme.spacing.xs,
     },
     subtitle: {
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
         textAlign: 'center',
         paddingHorizontal: theme.spacing.xl,
     },
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
         gap: theme.spacing.sm,
     },
     errorText: {
-        ...theme.typography.bodySmall,
+        ...theme.typography.labelMd,
         flex: 1,
     },
     successContainer: {
@@ -211,11 +212,11 @@ const styles = StyleSheet.create({
         marginTop: theme.spacing.xl,
     },
     successTitle: {
-        ...theme.typography.h3,
+        ...theme.typography.titleLg,
         marginVertical: theme.spacing.md,
     },
     successText: {
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
         textAlign: 'center',
         marginBottom: theme.spacing.xl,
         paddingHorizontal: theme.spacing.lg,

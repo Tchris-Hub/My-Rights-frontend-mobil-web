@@ -26,7 +26,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
     if (overlay) {
         return (
-            <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+            <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
                 <ActivityIndicator size={size} color={spinnerColor} />
             </View>
         );

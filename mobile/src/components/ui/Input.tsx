@@ -1,9 +1,4 @@
-/**
- * Premium Input Component
- * Text input with floating labels, icons, and animations
- */
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
     View,
     TextInput,
@@ -27,7 +22,11 @@ interface InputProps extends TextInputProps {
     containerStyle?: ViewStyle;
 }
 
-export const Input: React.FC<InputProps> = ({
+/**
+ * Standardized Input scaling and positioning for the "Editorial" feel.
+ * Using Transforms instead of Top/Left to keep animations on the Native UI thread.
+ */
+const InputComponent: React.FC<InputProps> = ({
     label,
     error,
     leftIcon,
@@ -41,6 +40,8 @@ export const Input: React.FC<InputProps> = ({
 }) => {
     const { colors } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
+    
+    // 0 = active placeholder, 1 = floating label
     const labelAnimation = useRef(new Animated.Value(value ? 1 : 0)).current;
 
     const handleFocus = (e: any) => {
@@ -48,7 +49,7 @@ export const Input: React.FC<InputProps> = ({
         Animated.timing(labelAnimation, {
             toValue: 1,
             duration: theme.animations.fast,
-            useNativeDriver: false,
+            useNativeDriver: true, // Switched to true for maximum smoothness
         }).start();
         onFocus?.(e);
     };
@@ -59,50 +60,80 @@ export const Input: React.FC<InputProps> = ({
             Animated.timing(labelAnimation, {
                 toValue: 0,
                 duration: theme.animations.fast,
-                useNativeDriver: false,
+                useNativeDriver: true,
             }).start();
         }
         onBlur?.(e);
     };
 
+    /**
+     * Optimization: Using translateY and scale instead of top and fontSize.
+     * Scale 1.0 (Base) -> 0.75 (Label)
+     * TranslateY 0 (Base) -> -28 (Label)
+     */
     const labelStyle = {
-        top: labelAnimation.interpolate({
-            inputRange: [0, 1],
-            outputRange: [18, -8],
-        }),
-        fontSize: labelAnimation.interpolate({
-            inputRange: [0, 1],
-            outputRange: [16, 12],
-        }),
+        transform: [
+            {
+                translateY: labelAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [18, -10],
+                }),
+            },
+            {
+                scale: labelAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0.75],
+                }),
+            },
+            {
+                translateX: labelAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -10], // Compensate for scale origin center
+                }),
+            }
+        ],
     };
 
-    const borderColor = error
-        ? colors.error
-        : isFocused
-            ? colors.borderFocus
-            : colors.border;
+    const backgroundColor = useMemo(() => {
+        if (error) return colors.error + '0D'; // Very subtle error background
+        return isFocused 
+            ? colors.surfaceContainerHigh 
+            : colors.surfaceContainerHighest;
+    }, [error, isFocused, colors]);
 
     return (
         <View style={[styles.container, containerStyle]}>
             {label && (
-                <Animated.Text
-                    style={[
-                        styles.label,
-                        labelStyle,
-                        { color: error ? colors.error : isFocused ? colors.primary : colors.textSecondary },
-                        { backgroundColor: colors.background },
-                    ]}
-                >
-                    {label}
-                </Animated.Text>
+                <View style={styles.labelWrapper} pointerEvents="none">
+                    <Animated.Text
+                        style={[
+                            styles.label,
+                            labelStyle,
+                            { 
+                                color: error 
+                                    ? colors.error 
+                                    : isFocused 
+                                        ? colors.primary 
+                                        : colors.onSurfaceVariant 
+                            },
+                        ]}
+                    >
+                        {label}
+                    </Animated.Text>
+                </View>
             )}
 
-            <View style={[styles.inputContainer, { borderColor }]}>
+            <View style={[
+                styles.inputContainer, 
+                { backgroundColor }, 
+                isFocused && styles.inputFocused, 
+                error && { borderColor: colors.error, borderWidth: 1 }
+            ]}>
                 {leftIcon && (
                     <Ionicons
                         name={leftIcon}
                         size={20}
-                        color={colors.textSecondary}
+                        color={colors.onSurfaceVariant}
                         style={styles.leftIcon}
                     />
                 )}
@@ -110,14 +141,15 @@ export const Input: React.FC<InputProps> = ({
                 <TextInput
                     style={[
                         styles.input,
-                        { color: colors.text },
+                        { color: colors.onSurface },
                         leftIcon && styles.inputWithLeftIcon,
                         rightIcon && styles.inputWithRightIcon,
                     ]}
-                    placeholderTextColor={colors.textTertiary}
+                    placeholderTextColor={colors.onSurfaceVariant}
                     value={value}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
+                    selectionColor={colors.primary}
                     {...textInputProps}
                 />
 
@@ -125,47 +157,71 @@ export const Input: React.FC<InputProps> = ({
                     <TouchableOpacity
                         onPress={onRightIconPress}
                         style={styles.rightIcon}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                     >
-                        <Ionicons name={rightIcon} size={20} color={colors.textSecondary} />
+                        <Ionicons name={rightIcon} size={20} color={colors.onSurfaceVariant} />
                     </TouchableOpacity>
                 )}
             </View>
 
-            {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
+            {error && (
+                <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={12} color={colors.error} />
+                    <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+                </View>
+            )}
         </View>
     );
 };
 
+/**
+ * React.memo prevents the entire form from re-rendering every time 
+ * one field's state changes. Major performance gain.
+ */
+export const Input = React.memo(InputComponent);
+
 const styles = StyleSheet.create({
     container: {
         marginBottom: theme.spacing.md,
+        width: '100%',
+    },
+    labelWrapper: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '100%',
+        zIndex: 10,
     },
     label: {
         position: 'absolute',
         left: theme.spacing.md,
-        paddingHorizontal: 4,
-        zIndex: 1,
-        ...theme.typography.bodySmall,
+        ...theme.typography.labelMd,
+        fontWeight: '600',
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1.5,
-        borderRadius: theme.borderRadius.md,
+        borderRadius: theme.borderRadius.lg,
         minHeight: theme.touchTargets.comfortable,
+        zIndex: 1,
+    },
+    inputFocused: {
+        ...theme.shadows.ambientFloat,
+        shadowOpacity: 0.1, // Softer focus shadow
     },
     input: {
         flex: 1,
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.md,
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
+        fontSize: 16,
     },
     inputWithLeftIcon: {
-        paddingLeft: theme.spacing.sm,
+        paddingLeft: theme.spacing.xs,
     },
     inputWithRightIcon: {
-        paddingRight: theme.spacing.sm,
+        paddingRight: theme.spacing.xs,
     },
     leftIcon: {
         marginLeft: theme.spacing.md,
@@ -173,9 +229,15 @@ const styles = StyleSheet.create({
     rightIcon: {
         marginRight: theme.spacing.md,
     },
-    errorText: {
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginTop: theme.spacing.xs,
-        marginLeft: theme.spacing.md,
+        marginLeft: theme.spacing.sm,
+        gap: 4,
+    },
+    errorText: {
         ...theme.typography.caption,
+        fontSize: 11,
     },
 });

@@ -11,10 +11,12 @@ import {
     TouchableOpacity,
     Clipboard,
     Alert,
+    Platform,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import theme from '../../constants/theme';
+import theme, { typography } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage } from '../../types';
 
@@ -24,64 +26,126 @@ interface MessageBubbleProps {
     message: ChatMessage;
 }
 
+const SourceBadge = ({ type, colors }: { type: string; colors: any }) => {
+    let icon = 'document-text-outline';
+    let label = 'Source';
+    let bgColor = colors.surfaceContainerHighest;
+    let textColor = colors.onSurfaceVariant;
+
+    if (type === 'web_search') {
+        icon = 'globe-outline';
+        label = 'Live Search';
+        bgColor = '#E3F2FD';
+        textColor = '#1976D2';
+    } else if (type === 'legal_news') {
+        icon = 'newspaper-outline';
+        label = 'Legal Pulse';
+        bgColor = '#FFF3E0';
+        textColor = '#E65100';
+    } else if (type === 'constitution') {
+        icon = 'shield-checkmark-outline';
+        label = 'Constitution';
+        bgColor = '#FCE4EC';
+        textColor = '#C2185B';
+    }
+
+    return (
+        <View style={[styles.badge, { backgroundColor: bgColor }]}>
+            <Ionicons name={icon as any} size={10} color={textColor} />
+            <Text style={[styles.badgeText, { color: textColor }]}>{label}</Text>
+        </View>
+    );
+};
+
 const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
     const [expanded, setExpanded] = React.useState(false);
 
+    if (!sources?.length && !disclaimer) return null;
+
     return (
-        <View style={{ marginTop: 8 }}>
+        <View style={styles.infoWrapper}>
             <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setExpanded(!expanded)}
                 style={[
                     styles.collapseHeader,
-                    { backgroundColor: isUser ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.04)' },
+                    { backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : colors.surfaceContainerLow },
                 ]}
             >
-                <Ionicons
-                    name={expanded ? 'chevron-up' : 'chevron-down'}
-                    size={12}
-                    color={isUser ? colors.onPrimary : colors.textSecondary}
-                />
-                <Text style={[styles.collapseHeaderText, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
-                    {expanded ? 'Hide Details' : 'Show Notice & Sources'}
-                </Text>
+                <View style={styles.headerTitleRow}>
+                    <Ionicons
+                        name={expanded ? 'chevron-up' : 'book-outline'}
+                        size={14}
+                        color={isUser ? colors.onPrimary : colors.primary}
+                    />
+                    <Text style={[styles.collapseHeaderText, { 
+                        color: isUser ? colors.onPrimary : colors.onSurfaceVariant,
+                        fontFamily: theme.typography.fontFamily.bodyMedium 
+                    }]}>
+                        {expanded ? 'Hide Details' : `View Citations & Sources (${sources?.length || 0})`}
+                    </Text>
+                </View>
+                {!expanded && sources?.some((s: any) => s.document_type === 'web_search') && (
+                    <View style={styles.liveIndicator}>
+                        <View style={styles.liveDot} />
+                        <Text style={styles.liveText}>LIVE</Text>
+                    </View>
+                )}
             </TouchableOpacity>
 
             {expanded && (
-                <View style={[styles.collapseContent, { borderColor: isUser ? 'rgba(255,255,255,0.15)' : colors.border }]}>
+                <View style={[styles.collapseContent, { 
+                    backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : colors.surfaceContainerHigh
+                }]}>
                     {sources && sources.length > 0 && (
                         <View style={styles.sourcesSection}>
-                            <Text style={[styles.sectionTitle, { color: isUser ? colors.onPrimary : colors.textSecondary }]}>
-                                Sources
-                            </Text>
-                            {sources.map((source: any, idx: number) => {
-                                const sourceText =
-                                    typeof source === 'string'
-                                        ? source
-                                        : [source.title, source.section].filter(Boolean).join(' \u2022 ');
-                                return (
+                            {sources.map((source: any, idx: number) => (
+                                <View key={idx} style={styles.sourceItem}>
+                                    <View style={styles.sourceHeader}>
+                                        <SourceBadge type={source.document_type} colors={colors} />
+                                        {source.url && (
+                                            <TouchableOpacity onPress={() => {/* Handle URL open */}}>
+                                                <Ionicons name="open-outline" size={12} color={colors.primary} />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                     <Text
-                                        key={idx}
                                         selectable
-                                        style={[styles.sourceText, { color: isUser ? colors.onPrimary : colors.textSecondary }]}
+                                        style={[styles.sourceTitle, { 
+                                            color: isUser ? colors.onPrimary : colors.onSurface,
+                                            fontFamily: theme.typography.fontFamily.bodyBold
+                                        }]}
                                     >
-                                        \u2022 {sourceText}
+                                        {typeof source === 'string' ? source : source.title}
                                     </Text>
-                                );
-                            })}
+                                    {source.excerpt && (
+                                        <Text style={[styles.sourceExcerpt, { 
+                                            color: isUser ? colors.onPrimary + 'CC' : colors.onSurfaceVariant,
+                                            fontFamily: theme.typography.fontFamily.body
+                                        }]}>
+                                            {source.excerpt}
+                                        </Text>
+                                    )}
+                                </View>
+                            ))}
                         </View>
                     )}
 
                     {!!disclaimer && (
-                        <View style={styles.disclaimerSection}>
-                            <Ionicons
-                                name="alert-circle-outline"
-                                size={12}
-                                color={isUser ? colors.onPrimary : colors.textTertiary}
-                            />
+                        <View style={[styles.disclaimerSection, { borderTopWidth: 0 }]}>
+                            <View style={styles.disclaimerIconBox}>
+                                <Ionicons
+                                    name="information-circle"
+                                    size={16}
+                                    color={isUser ? colors.onPrimary : colors.secondary}
+                                />
+                            </View>
                             <Text
                                 selectable
-                                style={[styles.disclaimerText, { color: isUser ? colors.onPrimary : colors.textTertiary }]}
+                                style={[styles.disclaimerText, { 
+                                    color: isUser ? colors.onPrimary : colors.onSurfaceVariant,
+                                    fontFamily: theme.typography.fontFamily.body
+                                }]}
                             >
                                 {disclaimer.replace(/⚠️/g, '').trim()}
                             </Text>
@@ -100,7 +164,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
     const handlePress = () => {
         if (!isUser && !skipAnimation) {
-            setSkipAnimation(true); // User taps bubble to skip animation
+            setSkipAnimation(true);
         }
     };
 
@@ -112,48 +176,79 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
     return (
         <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
-            {/* AI Avatar */}
             {!isUser && (
-                <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                    <Ionicons name="sparkles" size={14} color={colors.primary} />
+                <View style={[styles.avatar, { backgroundColor: colors.surfaceContainerHighest }]}>
+                    <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
                 </View>
             )}
 
             <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handlePress} // Skip typing on tap
+                activeOpacity={0.9}
+                onPress={handlePress}
                 onLongPress={handleLongPress}
                 style={[
                     styles.bubble,
                     isUser ? styles.userBubble : styles.assistantBubble,
                     {
-                        backgroundColor: isUser ? colors.primary : colors.surfaceElevated2,
-                        // Premium Shadow for bubbles
-                        shadowColor: 'rgba(0,0,0,0.1)',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 1,
-                        shadowRadius: 4,
-                        elevation: 2,
+                        backgroundColor: isUser ? colors.primary : colors.surfaceContainerHigh,
                     },
                 ]}
             >
-                {/* Selectable message text — user can highlight and copy */}
                 {isUser ? (
                     <Text
                         selectable
-                        style={[styles.content, { color: colors.onPrimary }]}
+                        style={[styles.content, { 
+                            color: colors.onPrimary,
+                            fontFamily: theme.typography.fontFamily.body,
+                            fontSize: 16,
+                            lineHeight: 24,
+                        }]}
                     >
                         {message.content}
                     </Text>
                 ) : (
-                    <TypewriterText
-                        text={message.content}
-                        style={[styles.content, { color: colors.text }]}
-                        animate={!skipAnimation && message.isNew} // Only animate new messages
-                    />
+                    <Markdown
+                        style={{
+                            body: {
+                                color: colors.onSurface,
+                                fontSize: 16,
+                                lineHeight: 24,
+                                fontFamily: theme.typography.fontFamily.body,
+                            },
+                            heading1: { 
+                                color: colors.primary, 
+                                fontSize: 24, 
+                                fontFamily: theme.typography.fontFamily.headline,
+                                marginVertical: 12,
+                                letterSpacing: -0.48,
+                            },
+                            heading2: { 
+                                color: colors.primary, 
+                                fontSize: 20, 
+                                fontFamily: theme.typography.fontFamily.headline,
+                                marginVertical: 10,
+                                letterSpacing: -0.4,
+                            },
+                            strong: { 
+                                fontFamily: theme.typography.fontFamily.bodyBold,
+                                color: colors.onSurface,
+                            },
+                            em: { fontStyle: 'italic' },
+                            link: { color: colors.primary, textDecorationLine: 'underline' },
+                            paragraph: { marginVertical: 4 },
+                            code_inline: {
+                                backgroundColor: colors.surfaceContainerHighest,
+                                color: colors.primary,
+                                borderRadius: 4,
+                                paddingHorizontal: 6,
+                                fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                            },
+                        }}
+                    >
+                        {message.content}
+                    </Markdown>
                 )}
 
-                {/* Collapsible Sources & Disclaimer (only for AI) */}
                 {!isUser && ((message.sources?.length ?? 0) > 0 || !!message.legal_disclaimer) && (
                     <CollapsibleInfo
                         sources={message.sources}
@@ -163,19 +258,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     />
                 )}
 
-                {/* Subtle copy hint shown on long press (just icon) */}
                 <View style={styles.copyHint}>
                     <Ionicons
                         name="copy-outline"
                         size={10}
-                        color={isUser ? 'rgba(255,255,255,0.4)' : colors.textTertiary}
+                        color={isUser ? colors.onPrimary + '60' : colors.onSurfaceVariant}
                     />
                 </View>
             </TouchableOpacity>
 
-            {/* User Avatar */}
             {isUser && (
-                <View style={[styles.avatar, { backgroundColor: colors.secondary + '30' }]}>
+                <View style={[styles.avatar, { backgroundColor: colors.surfaceContainerHighest }]}>
                     <Ionicons name="person" size={14} color={colors.secondary} />
                 </View>
             )}
@@ -186,8 +279,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        marginBottom: 12,
-        gap: 8,
+        marginBottom: 20,
+        gap: 12,
         alignItems: 'flex-end',
     },
     userContainer: {
@@ -197,19 +290,18 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
     },
     avatar: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 32,
+        height: 32,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
     },
     bubble: {
-        maxWidth: '78%',
-        borderRadius: 18,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        ...theme.shadows.sm,
+        maxWidth: '82%',
+        borderRadius: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
     },
     userBubble: {
         borderBottomRightRadius: 4,
@@ -218,59 +310,111 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 4,
     },
     content: {
-        fontSize: 15,
-        lineHeight: 22,
         letterSpacing: 0.1,
     },
     copyHint: {
         alignSelf: 'flex-end',
-        marginTop: 4,
-        opacity: 0.6,
+        marginTop: 6,
+        opacity: 0.4,
+    },
+    infoWrapper: {
+        marginTop: 12,
+        width: '100%',
     },
     collapseHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 5,
-        paddingHorizontal: 8,
-        borderRadius: 10,
-        alignSelf: 'flex-start',
-        gap: 5,
-        marginTop: 6,
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 16,
+        gap: 8,
+    },
+    headerTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     collapseHeaderText: {
-        fontSize: 11,
-        fontWeight: '600',
+        fontSize: 12,
+        letterSpacing: 0.2,
     },
     collapseContent: {
         marginTop: 8,
-        paddingTop: 8,
-        borderTopWidth: 1,
-        gap: 6,
+        padding: 16,
+        borderRadius: 20,
+        gap: 16,
     },
     sourcesSection: {
-        gap: 3,
+        gap: 14,
     },
-    sectionTitle: {
-        fontSize: 11,
-        fontWeight: '700',
+    sourceItem: {
+        gap: 4,
+    },
+    sourceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 2,
+    },
+    sourceTitle: {
+        fontSize: 13,
+        lineHeight: 18,
+    },
+    sourceExcerpt: {
+        fontSize: 12,
+        lineHeight: 18,
+        opacity: 0.9,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        gap: 4,
+    },
+    badgeText: {
+        fontSize: 9,
+        fontWeight: '700',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    sourceText: {
-        fontSize: 11,
-        lineHeight: 16,
+    liveIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(201, 0, 0, 0.1)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        gap: 4,
+    },
+    liveDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#C90000',
+    },
+    liveText: {
+        fontSize: 9,
+        color: '#C90000',
+        fontWeight: '800',
     },
     disclaimerSection: {
         flexDirection: 'row',
-        gap: 5,
-        marginTop: 2,
+        gap: 12,
+        marginTop: 4,
         alignItems: 'flex-start',
+        paddingTop: 8,
+    },
+    disclaimerIconBox: {
+        marginTop: 2,
     },
     disclaimerText: {
-        fontSize: 10,
+        fontSize: 11,
         fontStyle: 'italic',
         flex: 1,
-        lineHeight: 14,
+        lineHeight: 17,
+        opacity: 0.75,
     },
 });

@@ -36,11 +36,11 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }
             onRequestClose={onClose}
         >
             <BlurView intensity={isDark ? 40 : 80} style={styles.overlay} tint="dark">
-                <View style={[styles.modal, { backgroundColor: colors.surfaceElevated1 }]}>
+                <View style={[styles.modal, { backgroundColor: colors.surfaceContainer }]}>
                     <View style={styles.header}>
-                        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
                         <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                            <Ionicons name="close" size={24} color={colors.textSecondary} />
+                            <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
                         </TouchableOpacity>
                     </View>
 
@@ -67,23 +67,23 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }
 
 const TermsContent = ({ colors }: any) => (
     <View>
-        <Text style={[styles.text, { color: colors.text }]}>
+        <Text style={[styles.text, { color: colors.onSurface }]}>
             Welcome to My Rights. By using our platform, you agree to these terms:
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. General Information</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             My Rights is an AI-powered legal information service. We provide educational information based on Nigerian law.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. No Legal Advice</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             The information provided by the AI is NOT legal advice and does not create an attorney-client relationship. Always consult a licensed lawyer for specific legal issues.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>3. User Conduct</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             Users must not use the service for illegal purposes or to generate fraudulent documents.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Limitation of Liability</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             My Rights is not liable for actions taken based on AI responses. Use the platform for informational enrichment only.
         </Text>
     </View>
@@ -91,23 +91,23 @@ const TermsContent = ({ colors }: any) => (
 
 const PrivacyContent = ({ colors }: any) => (
     <View>
-        <Text style={[styles.text, { color: colors.text }]}>
+        <Text style={[styles.text, { color: colors.onSurface }]}>
             Your privacy is our priority. Here is how we handle your data:
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. Data Collection</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             We collect your email, full name, and chat history (if authenticated) to provide a personalized experience.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. Encryption</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             All your data is encrypted at rest and in transit. Your chat history is private and accessible only by you.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>3. Third Parties</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             We do not sell your personal data. We use OpenRouter/NVIDIA for AI processing, and no personal identifiers are sent to them.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Data Deletion</Text>
-        <Text style={[styles.text, { color: colors.textSecondary }]}>
+        <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             You can request data deletion at any time via the Settings menu.
         </Text>
     </View>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         padding: 24,
-        ...theme.shadows.lg,
+        ...theme.shadows.glass,
     },
     header: {
         flexDirection: 'row',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     title: {
-        ...theme.typography.h3,
+        ...theme.typography.titleLg,
     },
     closeBtn: {
         padding: 4,
@@ -142,12 +142,12 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     sectionTitle: {
-        ...theme.typography.h4,
+        ...theme.typography.titleMd,
         marginTop: 20,
         marginBottom: 8,
     },
     text: {
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
         lineHeight: 22,
     },
     actionBtn: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     actionText: {
-        ...theme.typography.button,
+        ...theme.typography.bodyLg,
         fontWeight: '800',
     },
 });

@@ -75,27 +75,27 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <BlurView intensity={isDark ? 40 : 80} style={styles.overlay} tint="dark">
-                <View style={[styles.modal, { backgroundColor: colors.surfaceElevated1 }]}>
+                <View style={[styles.modal, { backgroundColor: colors.surfaceContainer }]}>
                     <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                        <Ionicons name="close" size={24} color={colors.textSecondary} />
+                        <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
                     </TouchableOpacity>
 
                     <View style={styles.header}>
                         <View style={[styles.iconCircle, { backgroundColor: theme.colors.error + '20' }]}>
                             <Ionicons name="call" size={32} color={theme.colors.error} />
                         </View>
-                        <Text style={[styles.title, { color: colors.text }]}>Talk to a Lawyer</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>Talk to a Lawyer</Text>
+                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                             Connect with a licensed legal aid partner for personalized help.
                         </Text>
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={[styles.label, { color: colors.text }]}>Why do you need help?</Text>
+                        <Text style={[styles.label, { color: colors.onSurface }]}>Why do you need help?</Text>
                         <TextInput
-                            style={[styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                            style={[styles.textArea, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.outline }]}
                             placeholder="Describe your situation briefly..."
-                            placeholderTextColor={colors.textTertiary}
+                            placeholderTextColor={colors.onSurfaceVariant}
                             value={reason}
                             onChangeText={setReason}
                             multiline
@@ -104,14 +104,14 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={[styles.label, { color: colors.text }]}>Urgency Level</Text>
+                        <Text style={[styles.label, { color: colors.onSurface }]}>Urgency Level</Text>
                         <View style={styles.urgencyGrid}>
                             {urgencyOptions.map((opt) => (
                                 <TouchableOpacity
                                     key={opt.value}
                                     style={[
                                         styles.urgencyBtn,
-                                        { borderColor: colors.border },
+                                        { borderColor: colors.outline },
                                         urgency === opt.value && { backgroundColor: opt.color + '20', borderColor: opt.color },
                                     ]}
                                     onPress={() => setUrgency(opt.value)}
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
         width: '100%',
         borderRadius: 32,
         padding: 24,
-        ...theme.shadows.lg,
+        ...theme.shadows.glass,
     },
     closeBtn: {
         position: 'absolute',
@@ -176,18 +176,18 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     title: {
-        ...theme.typography.h3,
+        ...theme.typography.titleLg,
         marginBottom: 4,
     },
     subtitle: {
-        ...theme.typography.bodySmall,
+        ...theme.typography.bodyMd,
         textAlign: 'center',
     },
     formGroup: {
         marginBottom: 20,
     },
     label: {
-        ...theme.typography.body,
+        ...theme.typography.bodyLg,
         fontWeight: '700',
         marginBottom: 8,
     },
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 16,
         padding: 16,
-        ...theme.typography.bodySmall,
+        ...theme.typography.bodyMd,
     },
     urgencyGrid: {
         flexDirection: 'row',
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     urgencyText: {
-        ...theme.typography.bodySmall,
+        ...theme.typography.bodyMd,
         fontWeight: '600',
     },
     submitBtn: {

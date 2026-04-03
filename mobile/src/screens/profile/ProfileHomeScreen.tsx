@@ -20,6 +20,7 @@ import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Animated, { ZoomIn, FadeInUp } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 
 export const ProfileHomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -31,97 +32,150 @@ export const ProfileHomeScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.header}>
-                    <Animated.View
-                        style={[styles.avatar, { backgroundColor: colors.primary }]}
-                        entering={ZoomIn.duration(600).springify()}
-                    >
-                        <Ionicons name="person" size={48} color={colors.onPrimary} />
-                    </Animated.View>
-                    <Text style={[styles.name, { color: colors.text }]}>
-                        {user?.full_name || 'User'}
-                    </Text>
-                    <Text style={[styles.email, { color: colors.textSecondary }]}>
-                        {user?.email || 'guest@myrights.ng'}
-                    </Text>
-                </View>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            {/* Background Layering */}
+            <View style={StyleSheet.absoluteFillObject}>
+                <View style={[styles.blob1, { backgroundColor: colors.primary + '10' }]} />
+                <View style={[styles.blob2, { backgroundColor: colors.secondary + '05' }]} />
+            </View>
 
-                <Animated.View style={styles.menu} entering={FadeInUp.delay(200).springify()}>
-                    <TouchableOpacity
-                        style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                        onPress={() => {
-                            if (isGuest) {
-                                Alert.alert(
-                                    "Locked Feature",
-                                    "Chat history is only available for registered accounts. Would you like to sign up now?",
-                                    [
-                                        { text: "Later", style: "cancel" },
-                                        { text: "Sign Up", onPress: () => logout() }
-                                    ]
-                                );
-                            } else {
-                                navigation.navigate('ChatHistory');
-                            }
-                        }}
-                    >
-                        <Ionicons name="chatbubbles-outline" size={24} color={colors.textSecondary} />
-                        <Text style={[styles.menuText, { color: colors.text }]}>Chat History</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                <Animated.View 
+                    entering={FadeInUp.duration(600).springify()}
+                    style={styles.header}
+                >
+                    <View style={styles.headerTop}>
+                        <View style={[styles.avatarWrapper, { backgroundColor: colors.surfaceContainerHighest }]}>
+                            <Ionicons name="person" size={32} color={colors.primary} />
+                        </View>
+                        <TouchableOpacity 
+                            style={[styles.settingsButton, { backgroundColor: colors.surfaceContainerHigh }]}
+                            onPress={() => navigation.navigate('Settings')}
+                        >
+                            <Ionicons name="settings-sharp" size={20} color={colors.onSurface} />
+                        </TouchableOpacity>
+                    </View>
 
-                    <TouchableOpacity
-                        style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                        onPress={() => navigation.navigate('Settings')}
-                    >
-                        <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
-                        <Text style={[styles.menuText, { color: colors.text }]}>Settings</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                        onPress={() => { }}
-                    >
-                        <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
-                        <Text style={[styles.menuText, { color: colors.text }]}>Help & Support</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                        onPress={() => { }}
-                    >
-                        <Ionicons name="document-text-outline" size={24} color={colors.textSecondary} />
-                        <Text style={[styles.menuText, { color: colors.text }]}>Privacy Policy</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                        onPress={() => { }}
-                    >
-                        <Ionicons name="shield-checkmark-outline" size={24} color={colors.textSecondary} />
-                        <Text style={[styles.menuText, { color: colors.text }]}>Terms of Service</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                    </TouchableOpacity>
+                    <View style={styles.titleSection}>
+                        <Text style={[styles.greeting, { color: colors.onSurfaceVariant }]}>
+                            {isGuest ? 'Welcome,' : 'Good Day,'}
+                        </Text>
+                        <Text style={[styles.name, { color: colors.onSurface }]}>
+                            {user?.full_name?.split(' ')[0] || 'Jurist'}
+                        </Text>
+                        <View style={[styles.roleBadge, { backgroundColor: colors.primary + '15' }]}>
+                            <Text style={[styles.roleText, { color: colors.primary }]}>
+                                {isGuest ? 'Public Observer' : 'Verified Member'}
+                            </Text>
+                        </View>
+                    </View>
                 </Animated.View>
 
-                <TouchableOpacity
-                    style={styles.logoutButton}
-                    onPress={handleLogout}
-                    activeOpacity={0.8}
+                <Animated.View 
+                    entering={FadeInUp.delay(200).duration(600).springify()}
+                    style={styles.statsContainer}
                 >
-                    <Ionicons name="log-out-outline" size={20} color="#000000" style={{ marginRight: 8 }} />
-                    <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
+                    <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
+                        <Text style={[styles.statValue, { color: colors.onSurface }]}>12</Text>
+                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Legal Consults</Text>
+                    </View>
+                    <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
+                        <Text style={[styles.statValue, { color: colors.onSurface }]}>24</Text>
+                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Documents</Text>
+                    </View>
+                </Animated.View>
 
-                <Text style={[styles.version, { color: colors.textTertiary }]}>
-                    Version 1.0.0
-                </Text>
+                <Animated.View 
+                    entering={FadeInUp.delay(400).duration(600).springify()}
+                    style={styles.menuSection}
+                >
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Your Legal Vault</Text>
+                    
+                    <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                if (isGuest) {
+                                    Alert.alert(
+                                        "Locked Feature",
+                                        "Chat history is only available for registered accounts.",
+                                        [
+                                            { text: "Later", style: "cancel" },
+                                            { text: "Sign Up", onPress: () => logout() }
+                                        ]
+                                    );
+                                } else {
+                                    navigation.navigate('ChatHistory');
+                                }
+                            }}
+                        >
+                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="chatbubbles" size={20} color={colors.primary} />
+                            </View>
+                            <View style={styles.menuTextContent}>
+                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Consultation History</Text>
+                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Review past legal briefings</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
+
+                        <TouchableOpacity style={styles.menuItem}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
+                                <Ionicons name="document-text" size={20} color={colors.secondary} />
+                            </View>
+                            <View style={styles.menuTextContent}>
+                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Saved Rights</Text>
+                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Quick access to your bookmarks</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant, marginTop: 32 }]}>Application</Text>
+
+                    <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
+                        <TouchableOpacity style={styles.menuItem}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '10' }]}>
+                                <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}>Security & Privacy</Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
+
+                        <TouchableOpacity style={styles.menuItem}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.onSurfaceVariant + '15' }]}>
+                                <Ionicons name="information-circle" size={20} color={colors.onSurface} />
+                            </View>
+                            <Text style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}>Legal Notices</Text>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
+
+                <Animated.View 
+                    entering={FadeInUp.delay(600).duration(600).springify()}
+                    style={styles.footer}
+                >
+                    <TouchableOpacity
+                        style={[styles.logoutButton, { borderColor: colors.error + '40' }]}
+                        onPress={handleLogout}
+                    >
+                        <Text style={[styles.logoutText, { color: colors.error }]}>End Session</Text>
+                        <Ionicons name="log-out-outline" size={18} color={colors.error} />
+                    </TouchableOpacity>
+                    <Text style={[styles.version, { color: colors.onSurfaceVariant }]}>
+                        DIGITAL JURIST v1.0.4
+                    </Text>
+                </Animated.View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
@@ -129,65 +183,170 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    content: {
-        padding: theme.spacing.lg,
+    scrollContent: {
+        paddingTop: 60,
+        paddingHorizontal: 24,
+        paddingBottom: 40,
+    },
+    blob1: {
+        position: 'absolute',
+        top: -100,
+        right: -50,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+    },
+    blob2: {
+        position: 'absolute',
+        bottom: 50,
+        left: -100,
+        width: 400,
+        height: 400,
+        borderRadius: 200,
     },
     header: {
-        alignItems: 'center',
-        marginBottom: theme.spacing.xl,
+        marginBottom: 32,
     },
-    avatar: {
-        width: 96,
-        height: 96,
-        borderRadius: 48,
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    avatarWrapper: {
+        width: 64,
+        height: 64,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: theme.spacing.md,
-        ...theme.shadows.md,
+    },
+    settingsButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    titleSection: {
+        gap: 2,
+    },
+    greeting: {
+        fontFamily: theme.typography.fontFamily.bodyMedium,
+        fontSize: 16,
+        letterSpacing: 0.2,
     },
     name: {
-        ...theme.typography.h2,
-        marginBottom: theme.spacing.xs,
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 40,
+        fontWeight: '700',
+        letterSpacing: -1.2,
+        lineHeight: 48,
     },
-    email: {
-        ...theme.typography.body,
+    roleBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginTop: 8,
     },
-    menu: {
-        marginBottom: theme.spacing.xl,
+    roleText: {
+        fontFamily: theme.typography.fontFamily.bodyBold,
+        fontSize: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 40,
+    },
+    statBox: {
+        flex: 1,
+        padding: 20,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    statValue: {
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 24,
+        fontWeight: '700',
+        letterSpacing: -0.48,
+    },
+    statLabel: {
+        fontFamily: theme.typography.fontFamily.body,
+        fontSize: 12,
+        opacity: 0.7,
+    },
+    menuSection: {
+        marginBottom: 32,
+    },
+    sectionHeader: {
+        fontFamily: theme.typography.fontFamily.bodyBold,
+        fontSize: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginBottom: 16,
+        paddingLeft: 4,
+    },
+    menuCard: {
+        borderRadius: 28,
+        overflow: 'hidden',
+        padding: 8,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: 1,
-        gap: theme.spacing.md,
+        padding: 16,
+        gap: 16,
     },
-    menuText: {
-        ...theme.typography.body,
+    iconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    menuTextContent: {
         flex: 1,
+        gap: 2,
     },
-    version: {
-        ...theme.typography.caption,
-        textAlign: 'center',
-        marginTop: theme.spacing.lg,
+    menuTitle: {
+        fontFamily: theme.typography.fontFamily.bodyBold,
+        fontSize: 16,
+    },
+    menuSub: {
+        fontFamily: theme.typography.fontFamily.body,
+        fontSize: 12,
+        opacity: 0.7,
+    },
+    divider: {
+        height: 1,
+        marginHorizontal: 16,
+    },
+    footer: {
+        alignItems: 'center',
+        gap: 16,
     },
     logoutButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        paddingVertical: 16,
-        borderRadius: theme.borderRadius.lg,
-        backgroundColor: '#FFFFFF',
-        borderWidth: 2,
-        borderColor: theme.colors.error,
-        marginTop: 8,
-        ...theme.shadows.lg,
+        gap: 10,
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 20,
+        borderWidth: 1.5,
     },
     logoutText: {
-        ...theme.typography.button,
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#000000',
+        fontFamily: theme.typography.fontFamily.bodyBold,
+        fontSize: 14,
+        letterSpacing: 0.5,
+    },
+    version: {
+        fontFamily: theme.typography.fontFamily.bodyMedium,
+        fontSize: 10,
+        letterSpacing: 1,
+        opacity: 0.4,
     },
 });

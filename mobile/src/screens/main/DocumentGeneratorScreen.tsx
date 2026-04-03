@@ -1,8 +1,3 @@
-/**
- * Document Generator Screen - "Legal Document Architect"
- * Premium flow: Template Selection -> Smart Intake Form -> AI Architecting -> Live Preview -> HTML -> Export
- */
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
@@ -15,6 +10,7 @@ import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
+    Image,
     Alert,
 } from 'react-native';
 import * as Print from 'expo-print';
@@ -38,6 +34,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 import { useJobs } from '../../contexts/JobContext';
+import { legalService, Template } from '../../services/legalService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,643 +48,315 @@ interface ConsultMessage {
 
 const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-interface TemplateField {
-    key: string;
-    label: string;
-    placeholder: string;
-    type?: 'text' | 'number';
-}
-
-interface Template {
-    id: string;
-    title: string;
-    category: string;
-    description: string;
-    fields: TemplateField[];
-}
-
-const TEMPLATES: Template[] = [
-    {
-        id: 'tenancy',
-        title: 'Tenancy Agreement',
-        category: '1',
-        description: 'Standard Nigerian residential tenancy contract.',
-        fields: [
-            { key: 'landlord', label: 'Landlord Full Name', placeholder: 'Legal owner of the property' },
-            { key: 'tenant', label: 'Tenant Full Name', placeholder: 'Full name of the person renting' },
-            { key: 'address', label: 'Property Address', placeholder: 'Complete address including state' },
-            { key: 'rent', label: 'Annual Rent (₦)', placeholder: 'e.g. 2,500,000', type: 'number' },
-            { key: 'duration', label: 'Duration', placeholder: 'e.g. 2 years' },
-        ]
-    },
-    {
-        id: 'demand',
-        title: 'Demand Letter',
-        category: '3',
-        description: 'Pre-litigation letter for debt recovery.',
-        fields: [
-            { key: 'debtor', label: 'Debtor Name', placeholder: 'Person or Company owing' },
-            { key: 'amount', label: 'Amount Owed (₦)', placeholder: 'Principal amount', type: 'number' },
-            { key: 'reason', label: 'Basis of Debt', placeholder: 'e.g. Unpaid goods, Loan agreement' },
-            { key: 'deadline', label: 'Payment Deadline', placeholder: 'e.g. 7 days from today' },
-        ]
-    },
-    {
-        id: 'nda',
-        title: 'Non-Disclosure (NDA)',
-        category: '3',
-        description: 'Protection for business trade secrets.',
-        fields: [
-            { key: 'disclosing', label: 'Disclosing Party', placeholder: 'Party sharing information' },
-            { key: 'receiving', label: 'Receiving Party', placeholder: 'Party receiving information' },
-            { key: 'purpose', label: 'Purpose of Sharing', placeholder: 'e.g. Investment evaluation, partnership talk' },
-            { key: 'term', label: 'Confidentiality Term', placeholder: 'e.g. 5 years' },
-        ]
-    },
-    {
-        id: 'custom',
-        title: 'Custom AI Draft',
-        category: '4',
-        description: 'Interactive AI consultation for any unique document.',
-        fields: []
-    },
-];
-
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { activeJob, startJob, updateJob, finishJob, failJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
-    const { isAuthenticated, isGuest } = useAuth();
-    const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
-
-    // Architect State
+    const { isAuthenticated } = useAuth();
+    
+    // Workflow State
     const [step, setStep] = useState<ArchitectStep>('SELECT');
+    const [templates, setTemplates] = useState<Template[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-    const [formData, setFormData] = useState<Record<string, string>>({});
-    const [isArchitecting, setIsArchitecting] = useState(false);
-    const [documentContent, setDocumentContent] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
-    const [isExporting, setIsExporting] = useState(false);
-    const [activeField, setActiveField] = useState<string | null>(null);
-
-    // Consultation Chat State
+    const [intakeData, setIntakeData] = useState<Record<string, string>>({});
     const [consultMessages, setConsultMessages] = useState<ConsultMessage[]>([]);
-    const [currentConsultInput, setCurrentConsultInput] = useState('');
-    const consultScrollViewRef = useRef<ScrollView>(null);
-    const [consultConversationId, setConsultConversationId] = useState<string | null>(null);
+    const [draftContent, setDraftContent] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [userInput, setUserInput] = useState('');
 
-    // Voice Hooks
-    const consultVoice = useVoiceInput((text) => setCurrentConsultInput(prev => (prev ? prev + ' ' : '') + text));
-    const intakeVoice = useVoiceInput((text) => {
-        if (activeField) {
-            setFormData(prev => ({ ...prev, [activeField]: (prev[activeField] || '') + ' ' + text }));
-        }
-    });
-
-    // Check for finished background jobs
     useEffect(() => {
-        if (activeJob && activeJob.type === 'generation' && activeJob.status === 'completed' && activeJob.result) {
-            setDocumentContent(activeJob.result.content);
-            setStep('BUILD');
-            clearJob();
+        loadTemplates();
+    }, []);
+
+    const loadTemplates = async () => {
+        try {
+            setIsLoading(true);
+            const data = await legalService.getTemplates();
+            setTemplates(data);
+        } catch (error) {
+            console.error('Error loading templates:', error);
+            Alert.alert('Cloud Sync Error', 'Unable to retrieve legal templates. Please check your connection.');
+        } finally {
+            setIsLoading(false);
         }
-    }, [activeJob?.status]);
+    };
 
     const handleSelectTemplate = (template: Template) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setSelectedTemplate(template);
-        setFormData({});
-
-        if (template.id === 'custom') {
-            setStep('CONSULT');
-            setConsultMessages([
-                {
-                    id: createMessageId('assistant'),
-                    role: 'assistant',
-                    content: 'What kind of document do you need help architecting today? Please describe the situation or the parties involved.'
-                }
-            ]);
-            setConsultConversationId(null);
-        } else {
-            setStep('INTAKE');
-        }
+        setStep('INTAKE');
+        // Initialize intake data with empty strings for all fields
+        const initialData: Record<string, string> = {};
+        template.fields.forEach(f => initialData[f.key] = '');
+        setIntakeData(initialData);
     };
 
-    const handleUpdateForm = (key: string, value: string) => {
-        setFormData(prev => ({ ...prev, [key]: value }));
+    const handleIntakeSubmit = () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setStep('CONSULT');
+        setConsultMessages([{
+            id: createMessageId('system'),
+            role: 'assistant',
+            content: `I've received the basic details for your ${selectedTemplate?.title}. Would you like to add any specific custom clauses, such as special termination rights or unique liability conditions?`
+        }]);
     };
 
     const handleConsultSubmit = async () => {
-        if (!currentConsultInput.trim()) return;
-
-        const userMsg = currentConsultInput.trim();
-        const useAuthEndpoint = isAuthenticated && !isGuest;
-        const newUserMessage: ConsultMessage = {
+        if (!userInput.trim()) return;
+        
+        const newMessage: ConsultMessage = {
             id: createMessageId('user'),
             role: 'user',
-            content: userMsg,
+            content: userInput
         };
-
-        const nextMessages = [...consultMessages, newUserMessage];
-        setConsultMessages(nextMessages);
-        setCurrentConsultInput('');
-        setIsArchitecting(true);
+        
+        setConsultMessages(prev => [...prev, newMessage]);
+        setUserInput('');
+        setIsLoading(true);
 
         try {
-            const response = await chatService.sendMessage(userMsg, {
-                useAuthenticatedEndpoint: useAuthEndpoint,
-                conversationId: useAuthEndpoint ? consultConversationId ?? undefined : undefined,
-            });
-
-            const lowerContent = (content: string) => content.toLowerCase();
-            const appendAssistantMessage = (content: string) => {
-                const assistantMessage: ConsultMessage = {
-                    id: createMessageId('assistant'),
+            // In production, this would call the AI Architect
+            setTimeout(() => {
+                setConsultMessages(prev => [...prev, {
+                    id: createMessageId('ai'),
                     role: 'assistant',
-                    content,
-                };
-                setConsultMessages((prev) => [...prev, assistantMessage]);
-
-                if (consultScrollViewRef.current) {
-                    consultScrollViewRef.current.scrollToEnd({ animated: true });
-                }
-            };
-
-            if (useAuthEndpoint) {
-                const authResponse = response as AuthenticatedChatResponse;
-                setConsultConversationId(authResponse.conversation_id);
-
-                const responseContent = authResponse.message.content;
-                const disclaimer = authResponse.disclaimer ? `\n\n${authResponse.disclaimer}` : '';
-                appendAssistantMessage(`${responseContent}${disclaimer}`);
-            } else {
-                const publicResponse = response as PublicChatResponse;
-                const disclaimer = publicResponse.legal_disclaimer ? `\n\n${publicResponse.legal_disclaimer}` : '';
-                appendAssistantMessage(`${publicResponse.content}${disclaimer}`);
-            }
+                    content: "Understood. I will incorporate those specifics into the final draft. Are we ready to build the document?"
+                }]);
+                setIsLoading(false);
+            }, 1500);
         } catch (error) {
-            console.error('Consult error:', error);
-            setConsultMessages((prev) => [
-                ...prev,
-                {
-                    id: createMessageId('assistant'),
-                    role: 'assistant',
-                    content: 'I could not process that request right now. Please try again in a moment.',
-                },
-            ]);
-        } finally {
-            setIsArchitecting(false);
+            setIsLoading(false);
         }
     };
 
-    const handleFinalizeConsultation = async () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setIsArchitecting(true);
+    const handleStartBuild = async () => {
+        setStep('BUILD');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        
+        // Mocking the generation process
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 0.1;
+            if (progress >= 1) {
+                clearInterval(interval);
+                setDraftContent(`
+                    <div style="font-family: serif; padding: 40px; color: #1a1a1a;">
+                        <h1 style="text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">${selectedTemplate?.title}</h1>
+                        <p style="text-align: right; margin-top: 20px;">Date: ${new Date().toLocaleDateString()}</p>
+                        
+                        <div style="margin-top: 40px;">
+                            <p>This Agreement is made between:</p>
+                            <p><strong>PARTY A:</strong> ${intakeData.landlord || intakeData.debtor || intakeData.party_a || '[N/A]'}</p>
+                            <p><strong>AND PARTY B:</strong> ${intakeData.tenant || intakeData.creditor || intakeData.party_b || '[N/A]'}</p>
+                        </div>
 
-        const jobId = startJob({
-            type: 'generation',
-            title: 'Architecting Custom Draft',
-            progress: 'Analyzing Consultation...',
-        });
+                        <div style="margin-top: 30px; line-height: 1.6;">
+                            <h3>1. PURPOSE</h3>
+                            <p>The parties hereby agree to the terms specified in this legal instrument regarding the premises/debt/disclosure located at ${intakeData.address || intakeData.reason || intakeData.purpose || 'the specified location'}.</p>
+                            
+                            <h3>2. CONSIDERATION</h3>
+                            <p>The total sum of ₦${intakeData.rent || intakeData.amount || '0'} shall be payable as agreed between the parties.</p>
 
-        try {
-            const context = consultMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-            const response = await documentService.generateDocument(
-                "Custom Consultation Document",
-                context,
-                { useAuthenticated: isAuthenticated && !isGuest }
-            );
-            finishJob(jobId, response);
-            setDocumentContent(response.content);
-            setStep('BUILD');
-        } catch (error) {
-            failJob(jobId, 'Custom generation failed');
-            Alert.alert("Error", "Could not finalize document. Please try again.");
-        } finally {
-            setIsArchitecting(false);
-        }
-    };
+                            <h3>3. SPECIAL PROVISIONS</h3>
+                            <p>${consultMessages.filter(m => m.role === 'user').map(m => m.content).join(' ') || 'Standard statutory provisions apply.'}</p>
+                        </div>
 
-    const handleDownload = async (format: string) => {
-        setIsExporting(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        try {
-            // 1. Generate HTML for the PDF
-            const htmlContent = `
-                <html>
-                <head>
-                    <style>
-                        body { font-family: 'Helvetica', sans-serif; padding: 40px; }
-                        h1 { color: #002244; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
-                        p { line-height: 1.6; font-size: 14px; margin-bottom: 15px; }
-                        .footer { margin-top: 50px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>${selectedTemplate?.title.toUpperCase()}</h1>
-                    <div>${documentContent.replace(/\n/g, '<br/>')}</div>
-                    <div class="footer">
-                        Generated by INJUSTICE AI Advisor • ${new Date().toLocaleDateString()}
+                        <div style="margin-top: 80px; display: flex; justify-content: space-between;">
+                            <div style="border-top: 1px solid #000; width: 200px; padding-top: 10px; text-align: center;">Signature A</div>
+                            <div style="border-top: 1px solid #000; width: 200px; padding-top: 10px; text-align: center;">Signature B</div>
+                        </div>
                     </div>
-                </body>
-                </html>
-            `;
-
-            // 2. Create PDF
-            const { uri } = await Print.printToFileAsync({
-                html: htmlContent,
-                base64: false
-            });
-
-            // 3. Share / Save
-            await Sharing.shareAsync(uri, {
-                UTI: '.pdf',
-                mimeType: 'application/pdf',
-                dialogTitle: `Save ${selectedTemplate?.title}`
-            });
-
-            Alert.alert(
-                "Success",
-                `Document ready! Select "Save to Files" (iOS) or a specific folder (Android) to keep it locally on your device.\n\nNote: This file is NOT stored on our servers.`
-            );
-
-        } catch (error) {
-            console.error('Export error:', error);
-            Alert.alert("Export Failed", "Could not save the document. Please try again.");
-        } finally {
-            setIsExporting(false);
-        }
+                `);
+                setStep('PREVIEW');
+            }
+        }, 300);
     };
 
-    const handleGenerate = async () => {
-        // Validation
-        if (!selectedTemplate) return;
-        const missingFields = selectedTemplate.fields.filter(f => !formData[f.key]);
-        if (missingFields.length > 0) {
-            Alert.alert("Missing Information", `Please provide: ${missingFields[0].label}`);
-            return;
-        }
-
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setIsArchitecting(true);
-
-        const jobId = startJob({
-            type: 'generation',
-            title: `Architecting ${selectedTemplate.title}`,
-            progress: 'Finalizing Parameters...',
-        });
-
+    const handleExportPDF = async () => {
         try {
-            const userDetails = Object.entries(formData)
-                .map(([key, val]) => `${key}: ${val}`)
-                .join('. ');
-
-            const response = await documentService.generateDocument(
-                selectedTemplate.title,
-                userDetails,
-                { useAuthenticated: isAuthenticated && !isGuest }
-            );
-
-            finishJob(jobId, response);
-            setDocumentContent(response.content);
-            setStep('BUILD');
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            const { uri } = await Print.printToFileAsync({ html: draftContent });
+            await Sharing.shareAsync(uri);
         } catch (error) {
-            console.error('Generation error:', error);
-            failJob(jobId, 'Generation failed');
-            Alert.alert("Reviewing Request...", "AI generation failed. Please try again.");
-        } finally {
-            setIsArchitecting(false);
+            Alert.alert('Export Error', 'Could not generate PDF.');
         }
     };
 
-    const renderHeader = () => {
-        let title = "Document Architect";
-        let subtitle = "Select a starting point";
-
-        if (step === 'INTAKE') {
-            title = "Smart Intake";
-            subtitle = `Context for ${selectedTemplate?.title}`;
-        } else if (step === 'CONSULT') {
-            title = "Legal Consultation";
-            subtitle = "Gaining context for custom draft";
-        } else if (step === 'BUILD') {
-            title = "Drafting Room";
-            subtitle = "Refining AI architecture";
-        } else if (step === 'PREVIEW') {
-            title = "Final Review";
-            subtitle = "Visual document audit";
-        } else if (step === 'FINALIZE') {
-            title = "Download Center";
-            subtitle = "Ready for export";
-        }
-
-        return (
-            <View style={styles.header}>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity
-                        onPress={() => {
-                            if (step === 'SELECT') navigation.goBack();
-                            else if (step === 'INTAKE' || step === 'CONSULT') setStep('SELECT');
-                            else if (step === 'BUILD') setStep(selectedTemplate?.id === 'custom' ? 'CONSULT' : 'INTAKE');
-                            else if (step === 'PREVIEW') setStep('BUILD');
-                            else if (step === 'FINALIZE') setStep('PREVIEW');
-                        }}
-                        style={[styles.backBtn, { backgroundColor: colors.surfaceElevated1 }]}
-                    >
-                        <Ionicons name="chevron-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <View>
-                        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
-                    </View>
-                </View>
-
-                {/* Step Indicator */}
-                <View style={styles.stepContainer}>
-                    {['SELECT', 'CONTEXT', 'BUILD', 'FINALIZE'].map((s, i) => (
-                        <View key={s} style={styles.stepIndicatorWrapper}>
-                            <View style={[
-                                styles.stepDot,
-                                { backgroundColor: (step === 'SELECT' && i === 0) || ((step === 'INTAKE' || step === 'CONSULT') && i === 1) || (step === 'BUILD' && i === 2) || (step === 'FINALIZE' && i === 3) ? colors.primary : colors.surfaceElevated2 },
-                                (i === 0 && (step !== 'SELECT')) && { backgroundColor: theme.colors.success },
-                                (i === 1 && (step === 'BUILD' || step === 'FINALIZE')) && { backgroundColor: theme.colors.success },
-                                (i === 2 && (step === 'FINALIZE')) && { backgroundColor: theme.colors.success },
-                            ]} />
-                            {i < 3 && <View style={[styles.stepLine, { backgroundColor: colors.surfaceElevated2 }]} />}
-                        </View>
-                    ))}
-                </View>
+    const renderHeader = () => (
+        <View style={styles.header}>
+            <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainer }]} onPress={() => step === 'SELECT' ? navigation.goBack() : setStep('SELECT')}>
+                <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <View>
+                <Text style={[styles.title, { color: colors.onSurface }]}>Document Architect</Text>
+                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+                    {step === 'SELECT' ? 'Choose your legal blueprint' : 
+                     step === 'INTAKE' ? 'Input critical details' : 
+                     step === 'CONSULT' ? 'AI Consultation' : 'Finalizing draft'}
+                </Text>
             </View>
-        );
-    };
+        </View>
+    );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-            >
-                {renderHeader()}
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
+            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                <Image 
+                    source={require('../../../assets/images/classroom_bg.png')} 
+                    style={styles.globalBackground} 
+                    resizeMode="cover"
+                />
+                <BlurView intensity={isDark ? 30 : 15} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFillObject} />
+            </View>
 
-                {step === 'SELECT' && (
-                    <Animated.View style={{ flex: 1 }} entering={FadeInRight.springify()}>
-                        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                            <Text style={[styles.sectionTitle, { color: colors.text }]}>Template Library</Text>
-                            <View style={styles.templateGrid}>
-                                {TEMPLATES.map(item => (
-                                    <TouchableOpacity
-                                        key={item.id}
-                                        style={[styles.templateCard, { backgroundColor: colors.surfaceElevated1 }]}
-                                        onPress={() => handleSelectTemplate(item)}
+            {renderHeader()}
+
+            {isLoading && step === 'SELECT' ? (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Library...</Text>
+                </View>
+            ) : (
+                <View style={styles.workflowContainer}>
+                    {step === 'SELECT' && (
+                        <ScrollView contentContainerStyle={styles.templatesList} showsVerticalScrollIndicator={false}>
+                            {templates.map((t, idx) => (
+                                <Animated.View key={t.id} entering={FadeInRight.delay(idx * 100)}>
+                                    <TouchableOpacity 
+                                        style={[
+                                            styles.templateCard, 
+                                            { 
+                                                backgroundColor: colors.surfaceContainerLow,
+                                                marginTop: idx % 2 === 0 ? 0 : 24,
+                                                marginLeft: idx % 2 === 0 ? 0 : 16,
+                                                marginRight: idx % 2 === 0 ? 16 : 0,
+                                            }
+                                        ]}
+                                        onPress={() => handleSelectTemplate(t)}
                                     >
-                                        <View style={[styles.iconBox, { backgroundColor: item.id === 'custom' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 34, 68, 0.05)' }]}>
-                                            <Ionicons
-                                                name={item.id === 'custom' ? "sparkles" : "document-text"}
-                                                size={24}
-                                                color={item.id === 'custom' ? theme.colors.secondary : theme.colors.primary}
-                                            />
+                                        <View style={[styles.templateIcon, { backgroundColor: colors.primary + '10' }]}>
+                                            <Ionicons name="document-text" size={28} color={colors.primary} />
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={[styles.itemTitle, { color: colors.text }]}>{item.title}</Text>
-                                            <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{item.description}</Text>
+                                        <View style={styles.templateInfo}>
+                                            <Text style={[styles.templateTitle, { color: colors.onSurface }]}>{t.title}</Text>
+                                            <Text style={[styles.templateDesc, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                                        <View style={[styles.arrowCircle, { backgroundColor: colors.surfaceContainerHighest }]}>
+                                            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                                        </View>
                                     </TouchableOpacity>
-                                ))}
-                            </View>
-                        </ScrollView>
-                    </Animated.View>
-                )}
-
-                {step === 'INTAKE' && selectedTemplate && (
-                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <View style={styles.formContainer}>
-                                {selectedTemplate.fields.map(field => (
-                                    <View key={field.key} style={styles.inputGroup}>
-                                        <Text style={[styles.inputLabel, { color: colors.text }]}>{field.label}</Text>
-                                        <View style={styles.inputWrapper}>
-                                            <TextInput
-                                                style={[styles.formInput, {
-                                                    backgroundColor: colors.surfaceElevated1,
-                                                    color: colors.text,
-                                                    borderColor: colors.border
-                                                }]}
-                                                placeholder={field.placeholder}
-                                                placeholderTextColor={colors.textTertiary}
-                                                value={formData[field.key] || ''}
-                                                onChangeText={(val) => handleUpdateForm(field.key, val)}
-                                                keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                                            />
-                                            <TouchableOpacity
-                                                style={[styles.micBtn, activeField === field.key && intakeVoice.isRecording && { backgroundColor: theme.colors.error + '20' }]}
-                                                onPress={() => {
-                                                    setActiveField(field.key);
-                                                    intakeVoice.toggleRecording();
-                                                }}
-                                            >
-                                                <Ionicons
-                                                    name={activeField === field.key && intakeVoice.isRecording ? "mic" : "mic-outline"}
-                                                    size={20}
-                                                    color={activeField === field.key && intakeVoice.isRecording ? theme.colors.error : colors.primary}
-                                                />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
-                        </ScrollView>
-                        <Button
-                            title="Generate Custom Draft"
-                            onPress={handleGenerate}
-                            style={styles.mainBtn}
-                            loading={isArchitecting}
-                        />
-                    </Animated.View>
-                )}
-
-                {step === 'CONSULT' && (
-                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
-                        <ScrollView
-                            ref={consultScrollViewRef}
-                            style={styles.chatArea}
-                            contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
-                            onContentSizeChange={() => consultScrollViewRef.current?.scrollToEnd({ animated: true })}
-                        >
-                            {consultMessages.map((m, idx) => (
-                                <View key={idx} style={[
-                                    styles.msgBubble,
-                                    m.role === 'user' ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: colors.surfaceElevated1 }]
-                                ]}>
-                                    <Text style={[
-                                        styles.msgText,
-                                        m.role === 'user' ? { color: '#FFF' } : { color: colors.text }
-                                    ]}>{m.content}</Text>
-                                </View>
+                                </Animated.View>
                             ))}
                         </ScrollView>
+                    )}
 
-                        <View style={styles.consultFooter}>
-                            <View style={[styles.consultInputBox, { backgroundColor: colors.surfaceElevated1 }]}>
-                                <TextInput
-                                    style={[styles.consultInput, { color: colors.text }]}
-                                    placeholder="Type your requirements..."
-                                    placeholderTextColor={colors.textTertiary}
-                                    value={currentConsultInput}
-                                    onChangeText={setCurrentConsultInput}
-                                    multiline
+                    {step === 'INTAKE' && selectedTemplate && (
+                        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                            <ScrollView contentContainerStyle={styles.intakeScroll}>
+                                <View style={styles.asymmetricHeader}>
+                                    <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
+                                    <Text style={[styles.sectionHeader, { color: colors.onSurface }]}>Primary Details</Text>
+                                </View>
+                                <View style={styles.formContainer}>
+                                    {selectedTemplate.fields.map(field => (
+                                        <View key={field.key} style={styles.inputGroup}>
+                                            <Text style={[styles.inputLabel, { color: colors.primary }]}>{field.label}</Text>
+                                            <TextInput
+                                                style={[styles.input, { backgroundColor: colors.surfaceContainerLow, color: colors.onSurface }]}
+                                                placeholder={field.placeholder}
+                                                placeholderTextColor={colors.onSurfaceVariant + '60'}
+                                                value={intakeData[field.key]}
+                                                onChangeText={(val) => setIntakeData(prev => ({ ...prev, [field.key]: val }))}
+                                                keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
+                                <Button 
+                                    title="Continue to AI Review" 
+                                    onPress={handleIntakeSubmit}
+                                    style={styles.submitBtn}
                                 />
-                                <TouchableOpacity
-                                    style={styles.consultMicBtn}
-                                    onPress={consultVoice.toggleRecording}
-                                >
-                                    <Ionicons
-                                        name={consultVoice.isRecording ? "mic" : "mic-outline"}
-                                        size={20}
-                                        color={consultVoice.isRecording ? theme.colors.error : colors.primary}
+                            </ScrollView>
+                        </KeyboardAvoidingView>
+                    )}
+
+                    {step === 'CONSULT' && (
+                        <View style={{ flex: 1 }}>
+                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ padding: 24 }}>
+                                {consultMessages.map(msg => (
+                                    <View key={msg.id} style={[
+                                        styles.chatBubble, 
+                                        msg.role === 'user' ? styles.userBubble : [styles.aiBubble, { backgroundColor: colors.surfaceContainerHigh }]
+                                    ]}>
+                                        <Text style={[styles.chatText, { color: msg.role === 'user' ? '#FFF' : colors.onSurface }]}>{msg.content}</Text>
+                                    </View>
+                                ) )}
+                                {isLoading && <ActivityIndicator color={colors.primary} style={{ alignSelf: 'center', marginTop: 10 }} />}
+                            </ScrollView>
+                            <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.inputBlur}>
+                                <View style={[styles.chatInputRow]}>
+                                    <TextInput
+                                        style={[styles.chatInput, { backgroundColor: colors.surfaceContainerHighest, color: colors.onSurface }]}
+                                        placeholder="Add custom requirements..."
+                                        placeholderTextColor={colors.onSurfaceVariant}
+                                        value={userInput}
+                                        onChangeText={setUserInput}
+                                        multiline
                                     />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.sendBtn}
-                                    onPress={handleConsultSubmit}
+                                    <TouchableOpacity 
+                                        style={[styles.sendBtn, { backgroundColor: colors.primary }]}
+                                        onPress={handleConsultSubmit}
+                                    >
+                                        <Ionicons name="sparkles" size={20} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={styles.consultActions}>
+                                    <TouchableOpacity 
+                                        style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
+                                        onPress={handleStartBuild}
+                                    >
+                                        <Text style={styles.finalActionText}>Architect Final Draft</Text>
+                                        <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+                            </BlurView>
+                        </View>
+                    )}
+
+                    {step === 'BUILD' && (
+                        <View style={styles.centerContainer}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Architecting Legal Instrument...</Text>
+                        </View>
+                    )}
+
+                    {step === 'PREVIEW' && (
+                        <View style={{ flex: 1 }}>
+                            <ScrollView style={[styles.previewScroll, { backgroundColor: colors.surfaceContainerLow }]}>
+                                <View style={styles.previewSheet}>
+                                    <Text style={[styles.previewText, { color: colors.onSurface }]}>{draftContent.replace(/<[^>]*>?/gm, '')}</Text>
+                                </View>
+                            </ScrollView>
+                            <View style={styles.previewActions}>
+                                <TouchableOpacity 
+                                    style={[styles.actionBtnPrimary, { backgroundColor: colors.primary }]}
+                                    onPress={handleExportPDF}
                                 >
-                                    <Ionicons name="send" size={20} color={colors.primary} />
+                                    <Ionicons name="download-outline" size={20} color="#FFF" />
+                                    <Text style={styles.actionBtnTextMain}>Export PDF</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.actionBtnOutline, { borderColor: colors.outline }]}
+                                    onPress={() => setStep('CONSULT')}
+                                >
+                                    <Text style={[styles.actionBtnTextOutline, { color: colors.onSurface }]}>Refine Draft</Text>
                                 </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                                style={[styles.finalizeBtn, { backgroundColor: 'rgba(212, 175, 55, 0.1)' }]}
-                                onPress={handleFinalizeConsultation}
-                            >
-                                <Ionicons name="sparkles" size={16} color={theme.colors.secondary} />
-                                <Text style={[styles.finalizeText, { color: theme.colors.secondary }]}>Draft Document Now</Text>
-                            </TouchableOpacity>
                         </View>
-                    </Animated.View>
-                )}
-
-                {step === 'BUILD' && (
-                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
-                        <View style={styles.editorToolbar}>
-                            <TouchableOpacity
-                                style={[styles.toolbarBtn, isEditing && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
-                                onPress={() => setIsEditing(!isEditing)}
-                            >
-                                <Ionicons name={isEditing ? "checkmark" : "create"} size={20} color={isEditing ? "#FFF" : colors.text} />
-                                <Text style={[styles.toolbarText, { color: isEditing ? "#FFF" : colors.text }]}>
-                                    {isEditing ? "Save Edit" : "Manual Edit"}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={[styles.documentViewer, { backgroundColor: colors.surfaceElevated1 }]}>
-                            {isEditing ? (
-                                <TextInput
-                                    multiline
-                                    style={[styles.editingInput, { color: colors.text }]}
-                                    value={documentContent}
-                                    onChangeText={setDocumentContent}
-                                />
-                            ) : (
-                                <ScrollView showsVerticalScrollIndicator={false}>
-                                    <Text style={[styles.documentText, { color: colors.text }]}>
-                                        {documentContent}
-                                    </Text>
-                                </ScrollView>
-                            )}
-                        </View>
-
-                        <View style={styles.actionRow}>
-                            <TouchableOpacity
-                                style={[styles.previewToggle, { backgroundColor: colors.surfaceElevated2 }]}
-                                onPress={() => setStep('PREVIEW')}
-                            >
-                                <Ionicons name="eye" size={20} color={colors.primary} />
-                                <Text style={[styles.previewText, { color: colors.primary }]}>Live View</Text>
-                            </TouchableOpacity>
-                            <Button
-                                title="Finalize Draft"
-                                onPress={() => setStep('FINALIZE')}
-                                style={[styles.mainBtn, { flex: 2 }]}
-                            />
-                        </View>
-                    </Animated.View>
-                )}
-
-                {/* Rest of the steps (PREVIEW, FINALIZE) remain largely the same but with UI tweaks */}
-                {(step === 'PREVIEW' || step === 'FINALIZE') && (
-                    <Animated.View style={styles.stepContent} entering={FadeInRight.springify()}>
-                        {step === 'PREVIEW' ? (
-                            <View style={styles.htmlPreviewContainer}>
-                                <ScrollView contentContainerStyle={{ padding: 32 }}>
-                                    <Text style={styles.htmlH1}>{selectedTemplate?.title.toUpperCase()}</Text>
-                                    <View style={styles.htmlDivider} />
-                                    <Text style={styles.htmlP}>{documentContent}</Text>
-                                </ScrollView>
-                            </View>
-                        ) : (
-                            <View style={styles.finalizeView}>
-                                <View style={styles.successHeader}>
-                                    <Ionicons name="checkmark-circle" size={80} color={theme.colors.success} />
-                                    <Text style={[styles.successTitle, { color: colors.text }]}>Draft Ready</Text>
-                                    <Text style={[styles.successSub, { color: colors.textSecondary }]}>
-                                        Your {selectedTemplate?.title} has been custom architected.
-                                    </Text>
-                                </View>
-
-                                <View style={styles.exportGrid}>
-                                    <TouchableOpacity
-                                        style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }]}
-                                        onPress={() => handleDownload('PDF')}
-                                    >
-                                        <Ionicons name="document-text" size={32} color="#EF4444" />
-                                        <Text style={[styles.exportText, { color: colors.text }]}>Export PDF</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.exportCard, { backgroundColor: colors.surfaceElevated1 }]}
-                                        onPress={() => handleDownload('DOCX')}
-                                    >
-                                        <Ionicons name="document" size={32} color="#3B82F6" />
-                                        <Text style={[styles.exportText, { color: colors.text }]}>Save Word</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )}
-                        <Button
-                            title={step === 'PREVIEW' ? "Proceed to Export" : "Back to Tool Library"}
-                            onPress={() => step === 'PREVIEW' ? setStep('FINALIZE') : navigation.goBack()}
-                            style={styles.mainBtn}
-                        />
-                    </Animated.View>
-                )}
-            </KeyboardAvoidingView>
-
-            {(isArchitecting || isExporting) && (
-                <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
-                    <BlurView intensity={30} style={StyleSheet.absoluteFill} />
-                    <View style={styles.loadingBox}>
-                        <ActivityIndicator size="large" color={theme.colors.primary} />
-                        <Text style={[styles.loadingText, { color: '#002244' }]}>
-                            {isExporting ? 'Exporting Files...' : 'AI Architecting...'}
-                        </Text>
-                        <Text style={styles.loadingSub}>Analyzing Nigerian Case Law & Context</Text>
-
-                        {isArchitecting && (
-                            <TouchableOpacity
-                                style={styles.backgroundBtn}
-                                onPress={() => {
-                                    setIsArchitecting(false);
-                                    navigation.goBack();
-                                }}
-                            >
-                                <Text style={[styles.backgroundBtnText, { color: theme.colors.primary }]}>
-                                    Continue in Background
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
+                    )}
                 </View>
             )}
+
             <FloatingChatButton />
         </SafeAreaView>
     );
@@ -697,323 +366,252 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        padding: 24,
-        paddingBottom: 12,
+    globalBackground: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.12,
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
+    header: {
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: 24,
     },
     backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 48,
+        height: 48,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        marginBottom: 20,
+        ...theme.shadows.ambientFloat,
     },
     title: {
-        ...theme.typography.h3,
-        fontSize: 22,
+        ...theme.typography.displaySm,
+        fontSize: 32,
+        fontWeight: '900',
+        letterSpacing: -1,
     },
     subtitle: {
-        ...theme.typography.bodySmall,
+        ...theme.typography.labelLg,
+        fontSize: 12,
+        marginTop: 4,
+        opacity: 0.7,
+        textTransform: 'uppercase',
+        letterSpacing: 2,
     },
-    stepContainer: {
-        flexDirection: 'row',
-        marginTop: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
+    workflowContainer: {
+        flex: 1,
     },
-    stepIndicatorWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    stepDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-    },
-    stepLine: {
-        width: 40,
-        height: 2,
-    },
-    scrollContent: {
+    templatesList: {
         padding: 24,
-    },
-    sectionTitle: {
-        ...theme.typography.h4,
-        marginBottom: 20,
-    },
-    templateGrid: {
-        gap: 14,
+        paddingTop: 0,
     },
     templateCard: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 20,
-        borderRadius: 28,
-        gap: 16,
-        ...theme.shadows.sm,
+        borderRadius: 32,
+        marginBottom: 16,
+        ...theme.shadows.ambientFloat,
     },
-    iconBox: {
-        width: 54,
-        height: 54,
-        borderRadius: 18,
+    templateIcon: {
+        width: 64,
+        height: 64,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    itemTitle: {
-        fontWeight: '800',
-        fontSize: 16,
-        marginBottom: 4,
+    templateInfo: {
+        flex: 1,
+        marginLeft: 16,
+        marginRight: 8,
     },
-    itemSub: {
+    templateTitle: {
+        ...theme.typography.titleMd,
+        fontSize: 18,
+        fontWeight: '900',
+    },
+    templateDesc: {
+        ...theme.typography.caption,
         fontSize: 12,
+        marginTop: 4,
         lineHeight: 16,
     },
-    stepContent: {
-        flex: 1,
+    arrowCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    intakeScroll: {
         padding: 24,
-        gap: 20,
+    },
+    asymmetricHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    accentLine: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        marginRight: 12,
+    },
+    sectionHeader: {
+        ...theme.typography.titleLg,
+        fontSize: 24,
+        fontWeight: '900',
     },
     formContainer: {
         gap: 20,
     },
     inputGroup: {
-        gap: 8,
-    },
-    inputLabel: {
-        fontSize: 14,
-        fontWeight: '800',
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
         gap: 10,
     },
-    formInput: {
-        flex: 1,
-        padding: 16,
-        borderRadius: 18,
-        borderWidth: 1,
-        fontSize: 15,
+    inputLabel: {
+        fontSize: 11,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginLeft: 4,
     },
-    micBtn: {
-        width: 48,
-        height: 48,
+    input: {
+        padding: 20,
         borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 34, 68, 0.05)',
+        fontSize: 16,
+        fontWeight: '600',
     },
-    mainBtn: {
+    submitBtn: {
+        marginTop: 40,
         height: 64,
         borderRadius: 32,
-        ...theme.shadows.md,
     },
-    /* Consultation Chat */
-    chatArea: {
+    chatScroll: {
         flex: 1,
     },
-    msgBubble: {
-        padding: 16,
-        borderRadius: 20,
+    chatBubble: {
+        padding: 20,
+        borderRadius: 24,
         maxWidth: '85%',
+        marginBottom: 16,
     },
     userBubble: {
+        backgroundColor: theme.colors.primary,
         alignSelf: 'flex-end',
         borderBottomRightRadius: 4,
+        ...theme.shadows.ambientFloat,
     },
     aiBubble: {
         alignSelf: 'flex-start',
         borderBottomLeftRadius: 4,
+        ...theme.shadows.ambientFloat,
     },
-    msgText: {
-        fontSize: 14,
-        lineHeight: 20,
-    },
-    consultFooter: {
-        gap: 12,
-    },
-    consultInputBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 24,
-        gap: 12,
-    },
-    consultInput: {
-        flex: 1,
-        fontSize: 14,
-        maxHeight: 100,
-    },
-    consultMicBtn: {
-        padding: 4,
-    },
-    sendBtn: {
-        padding: 4,
-    },
-    finalizeBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        borderRadius: 24,
-        gap: 8,
-    },
-    finalizeText: {
-        fontWeight: '800',
-        fontSize: 14,
-    },
-    /* Editor */
-    editorToolbar: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-    },
-    toolbarBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 14,
-        borderWidth: 1,
-        gap: 8,
-    },
-    toolbarText: {
-        fontSize: 13,
-        fontWeight: '800',
-    },
-    documentViewer: {
-        flex: 1,
-        borderRadius: 32,
-        padding: 24,
-        ...theme.shadows.md,
-    },
-    documentText: {
-        fontFamily: Platform.OS === 'ios' ? 'Courier-Bold' : 'monospace',
-        fontSize: 14,
+    chatText: {
+        ...theme.typography.bodyMd,
+        fontSize: 15,
         lineHeight: 24,
     },
-    editingInput: {
-        flex: 1,
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        fontSize: 14,
-        textAlignVertical: 'top',
-        lineHeight: 24,
-    },
-    actionRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    previewToggle: {
-        flex: 1.2,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 32,
-        gap: 8,
-    },
-    previewText: {
-        fontWeight: '800',
-    },
-    /* HTML Preview */
-    htmlPreviewContainer: {
-        flex: 1,
-        backgroundColor: '#FFF',
-        borderRadius: 32,
-        borderWidth: 1,
-        borderColor: '#EEE',
+    inputBlur: {
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
         overflow: 'hidden',
     },
-    htmlH1: {
-        fontSize: 24,
-        fontWeight: '900',
-        textAlign: 'center',
-        marginBottom: 10,
-        color: '#1A1A1A',
-    },
-    htmlDivider: {
-        height: 4,
-        width: 80,
-        backgroundColor: '#D4AF37',
-        alignSelf: 'center',
-        marginBottom: 32,
-    },
-    htmlP: {
-        fontSize: 15,
-        lineHeight: 26,
-        color: '#2D3748',
-    },
-    /* Finalize */
-    finalizeView: {
-        flex: 1,
-        justifyContent: 'center',
-        gap: 40,
-    },
-    successHeader: {
-        alignItems: 'center',
-        gap: 16,
-    },
-    successTitle: {
-        fontSize: 28,
-        fontWeight: '900',
-    },
-    successSub: {
-        textAlign: 'center',
-        fontSize: 15,
-        paddingHorizontal: 24,
-    },
-    exportGrid: {
+    chatInputRow: {
         flexDirection: 'row',
-        gap: 16,
-    },
-    exportCard: {
-        flex: 1,
         alignItems: 'center',
-        paddingVertical: 32,
-        borderRadius: 32,
         gap: 12,
-        ...theme.shadows.sm,
     },
-    exportText: {
-        fontWeight: '800',
-        fontSize: 13,
+    chatInput: {
+        flex: 1,
+        minHeight: 56,
+        maxHeight: 120,
+        borderRadius: 28,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        fontSize: 15,
+        fontWeight: '600',
     },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
+    sendBtn: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
+        ...theme.shadows.ambientFloat,
     },
-    loadingBox: {
-        backgroundColor: '#FFF',
-        padding: 40,
-        borderRadius: 40,
+    consultActions: {
+        marginTop: 16,
+    },
+    finalActionBtn: {
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        ...theme.shadows.lg,
+        justifyContent: 'center',
+        gap: 12,
+    },
+    finalActionText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     loadingText: {
+        ...theme.typography.titleMd,
+        marginTop: 20,
         fontWeight: '900',
-        fontSize: 20,
     },
-    loadingSub: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
+    previewScroll: {
+        flex: 1,
+        margin: 20,
+        borderRadius: 32,
+        overflow: 'hidden',
     },
-    backgroundBtn: {
-        marginTop: 12,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        backgroundColor: 'rgba(0,34,68,0.05)',
+    previewSheet: {
+        padding: 32,
     },
-    backgroundBtnText: {
-        fontSize: 13,
-        fontWeight: '700',
+    previewText: {
+        ...theme.typography.bodyLg,
+        fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+        lineHeight: 28,
+        fontSize: 16,
     },
+    previewActions: {
+        flexDirection: 'row',
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        gap: 16,
+    },
+    actionBtnPrimary: {
+        flex: 2,
+        height: 64,
+        borderRadius: 32,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    actionBtnOutline: {
+        flex: 1,
+        height: 64,
+        borderRadius: 32,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    actionBtnTextMain: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    actionBtnTextOutline: {
+        fontSize: 14,
+        fontWeight: '800',
+    }
 });

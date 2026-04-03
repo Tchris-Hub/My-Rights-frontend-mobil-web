@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.xl,
         overflow: 'hidden',
         // Outer shadow (soft elevation)
-        ...theme.shadows.lg,
+        ...theme.shadows.glass,
     },
 
     glassBackground: {
@@ -210,11 +210,11 @@ const styles = StyleSheet.create({
         width: FOCUS_HUB_SIZE,
         height: FOCUS_HUB_SIZE,
         borderRadius: FOCUS_HUB_SIZE / 2,
-        backgroundColor: theme.colors.tabBarFocusHub,
+        backgroundColor: theme.colors.primaryContainer,
         alignItems: 'center',
         justifyContent: 'center',
         // Slightly overlaps the tab bar visually
-        ...theme.shadows.md,
+        ...theme.shadows.ambientFloat,
     },
 
     focusHubActive: {

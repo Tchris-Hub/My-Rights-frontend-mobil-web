@@ -1,88 +1,83 @@
 import { Platform } from 'react-native';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
+// Lincoln College color tokens
 export const colors = {
-    // Primary - Nigerian Emerald (Land, Prosperity, Flag)
-    primary: '#006B3F',
-    primaryLight: '#008751',
-    primaryDark: '#004529',
+    // Primary - Emerald Refresh
+    primary: '#047857',
+    primaryContainer: '#ECFDF5',
     onPrimary: '#FFFFFF',
+    onPrimaryContainer: '#022C22',
+    onPrimaryFixed: '#022C22',
+    onPrimaryFixedVariant: '#059669',
 
-    // Secondary - Gold (Premium, Excellence)
-    secondary: '#D4AF37',
-    secondaryLight: '#E5C158',
-    secondaryDark: '#B8941F',
-    onSecondary: '#002244',
+    // Secondary - Dark Slate / School Blue
+    secondary: '#0B1326',
+    secondaryContainer: '#1B2436',
+    onSecondary: '#FFFFFF',
+    onSecondaryContainer: '#D1E4FF',
+    onSecondaryFixed: '#001D36',
+    onSecondaryFixedVariant: '#004A77',
 
-    // Surfaces (Elevation System)
-    background: '#FFFFFF',
-    backgroundDark: '#000000',
-    surface: '#FFFFFF',
-    surfaceElevated1: '#F8F9FA',  // 1dp elevation
-    surfaceElevated2: '#F1F3F5',  // 2dp elevation
-    surfaceElevated3: '#E9ECEF',  // 4dp elevation
+    // Tertiary - Gold Accent (Legacy)
+    tertiary: '#E9C349',
+    tertiaryContainer: '#AF8D11',
+    onTertiary: '#3C2F00',
+    onTertiaryContainer: '#342800',
 
-    // Dark mode surfaces
-    surfaceDark: '#1A1A1A',
-    surfaceDarkElevated1: '#2A2A2A',
-    surfaceDarkElevated2: '#3A3A3A',
-    surfaceDarkElevated3: '#4A4A4A',
+    // Surfaces (Physical Layers) - High Contrast White/Grey
+    surface: '#FFFFFF',                  // Base Layer
+    surfaceBright: '#F8F9FA',
+    surfaceDim: '#EDF1F5',
+    surfaceContainerLowest: '#FFFFFF',
+    surfaceContainerLow: '#F8F9FA',      // Sectional Layer
+    surfaceContainer: '#F1F3F5',         
+    surfaceContainerHigh: '#E9ECEF',     // Actionable Layer
+    surfaceContainerHighest: '#DEE2E6',  // Peak Layer / Input Fields
+    surfaceVariant: '#E1E2EC',
 
-    // Text
-    text: '#1A1A1A',
-    textSecondary: '#6B7280',
-    textTertiary: '#9CA3AF',
-    textInverse: '#FFFFFF',
+    // Text & Outlines
+    onSurface: '#191C1E',
+    onSurfaceVariant: '#44474E',
+    outline: '#74777F',
+    outlineVariant: '#C4C7CF',           // Ghost border fallback (20% opacity)
 
-    // Text dark mode
-    textDark: '#FFFFFF',
-    textSecondaryDark: '#9CA3AF',
-    textTertiaryDark: '#6B7280',
+    error: '#BA1A1A',
+    errorContainer: '#FFDAD6',
+    onError: '#FFFFFF',
+    onErrorContainer: '#410002',
 
-    // Feedback
-    success: '#10B981',
-    successLight: '#34D399',
-    successDark: '#059669',
+    // Glassmorphism Values (Light Mode)
+    glassBackground: 'rgba(255, 255, 255, 0.7)', 
+    ghostBorder: 'rgba(116, 119, 127, 0.2)',     
+    
+    // Tab Bar
+    tabBarBackground: 'rgba(255, 255, 255, 0.9)', 
+    tabBarBorder: 'rgba(116, 119, 127, 0.2)',      
+    tabBarIconInactive: '#44474E',
+    tabBarIconActive: '#047857',                // Emerald Primary
 
-    warning: '#F59E0B',
-    warningLight: '#FBBF24',
-    warningDark: '#D97706',
-
-    error: '#EF4444',
-    errorLight: '#F87171',
-    errorDark: '#DC2626',
-
-    info: '#3B82F6',
-    infoLight: '#60A5FA',
-    infoDark: '#2563EB',
-
-    // Borders
-    border: '#E5E7EB',
-    borderFocus: '#006B3F',
-    borderDark: '#374151',
-
-    // Glassmorphic Tab Bar - Subtle Emerald Tint
-    tabBarBackground: 'rgba(0, 75, 41, 0.45)', // Emerald-Green tint
-    tabBarBorder: 'rgba(255, 255, 255, 0.15)', // Crisp edge
-    tabBarIconInactive: 'rgba(255, 255, 255, 0.6)',
-    tabBarIconActive: '#FFFFFF',
-    tabBarFocusHub: '#D4AF37',
-
-    // Overlays
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    overlayLight: 'rgba(0, 0, 0, 0.3)',
-    overlayHeavy: 'rgba(0, 0, 0, 0.7)',
+    // Compat layers for any old usages still floating around
+    background: '#FFFFFF',    // maps to surface
+    backgroundDark: '#F1F3F5',
+    border: '#C4C7CF',
+    borderDark: '#74777F',
+    text: '#191C1E',
+    textSecondary: '#44474E',
+    success: '#2E7D32',
+    warning: '#FBC02D',
 };
 
+// Precise styling for Fonts - Requires Inter & PlusJakartaSans 
 export const typography = {
-    // Platform-specific font families
-    fontFamily: Platform.select({
-        ios: 'System',
-        android: 'Roboto',
-        default: 'System',
-    }),
+    fontFamily: {
+        headline: 'PlusJakartaSans_700Bold',
+        headlineMedium: 'PlusJakartaSans_600SemiBold',
+        body: 'Inter_400Regular',
+        bodyMedium: 'Inter_500Medium',
+        bodyBold: 'Inter_700Bold',
+    },
 
-    // Font weights
     weights: {
         regular: '400' as const,
         medium: '500' as const,
@@ -90,149 +85,155 @@ export const typography = {
         bold: '700' as const,
     },
 
-    // Sizes with optical adjustments (negative letter spacing for large text)
-    h1: {
+    // Outfit/PlusJakartaSans - "The Statement" tight spacing
+    displayLg: {
+        fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: moderateScale(32),
         lineHeight: moderateScale(40),
-        fontWeight: '700' as const,
-        letterSpacing: -0.5,
+        letterSpacing: -0.64, // -0.02em mandate
+        color: colors.onSurface,
     },
-    h2: {
+    displayMd: {
+        fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: moderateScale(28),
         lineHeight: moderateScale(36),
-        fontWeight: '700' as const,
-        letterSpacing: -0.3,
+        letterSpacing: -0.56,
+        color: colors.onSurface,
     },
-    h3: {
+    displaySm: {
+        fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: moderateScale(24),
         lineHeight: moderateScale(32),
-        fontWeight: '600' as const,
-        letterSpacing: -0.2,
+        letterSpacing: -0.48,
+        color: colors.onSurface,
     },
-    h4: {
+    headlineLg: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: moderateScale(22),
+        lineHeight: moderateScale(28),
+        letterSpacing: -0.44,
+        color: colors.onSurface,
+    },
+    titleLg: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: moderateScale(24),
+        lineHeight: moderateScale(32),
+        letterSpacing: -0.48,
+        color: colors.onSurface,
+    },
+    titleMd: {
+        fontFamily: 'PlusJakartaSans_600SemiBold',
         fontSize: moderateScale(20),
         lineHeight: moderateScale(28),
-        fontWeight: '600' as const,
-        letterSpacing: 0,
+        letterSpacing: -0.4,
+        color: colors.onSurface,
     },
-    body: {
+
+    // Inter - "The Evidence" precise legibility
+    bodyLg: {
+        fontFamily: 'Inter_400Regular',
         fontSize: moderateScale(16),
         lineHeight: moderateScale(24),
-        fontWeight: '400' as const,
         letterSpacing: 0,
+        color: colors.onSurfaceVariant,
     },
-    bodySmall: {
+    labelLg: {
+        fontFamily: 'Inter_500Medium',
+        fontSize: moderateScale(16),
+        lineHeight: moderateScale(24),
+        letterSpacing: 0.1,
+        color: colors.onSurface,
+    },
+    bodyMd: {
+        fontFamily: 'Inter_400Regular',
         fontSize: moderateScale(14),
         lineHeight: moderateScale(20),
-        fontWeight: '400' as const,
         letterSpacing: 0,
+        color: colors.onSurfaceVariant,
     },
-    caption: {
+    labelMd: {
+        fontFamily: 'Inter_500Medium',
+        fontSize: moderateScale(14),
+        lineHeight: moderateScale(20),
+        letterSpacing: 0.1, 
+        color: colors.onSurface,
+    },
+    labelSm: {
+        fontFamily: 'Inter_500Medium',
         fontSize: moderateScale(12),
         lineHeight: moderateScale(16),
-        fontWeight: '400' as const,
-        letterSpacing: 0.3,
+        letterSpacing: 0.1,
+        color: colors.onSurface,
     },
-    button: {
-        fontSize: moderateScale(16),
-        lineHeight: moderateScale(24),
-        fontWeight: '600' as const,
-        letterSpacing: 0.5,
+    caption: {
+        fontFamily: 'Inter_400Regular',
+        fontSize: moderateScale(12),
+        lineHeight: moderateScale(16),
+        letterSpacing: 0,
+        color: colors.onSurfaceVariant,
     },
 };
 
 export const spacing = {
     xs: scale(4),
     sm: scale(8),
-    md: scale(16),
+    md: scale(16), // No 1px dividers. Use this vertical whitespace.
     lg: scale(24),
     xl: scale(32),
-    xxl: scale(48),
+    xxl: scale(48), // Spacing '12' (3rem) for Hero Section margins
     xxxl: scale(64),
 };
 
 export const borderRadius = {
     sm: 8,
     md: 12,
-    lg: 16,
+    lg: 16, // All cards and containers MUST use 16px
     xl: 24,
     full: 9999,
 };
 
 export const shadows = {
-    sm: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+    none: {
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        elevation: 0,
     },
-    md: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 4,
+    // Ambient light - Tonal shadows (never pure black)
+    // Tinted ambient shadow for floating elements (0px 20px 40px rgba(x,x,x, 0.4))
+    ambientFloat: {
+        shadowColor: '#0b1326', 
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.4,
+        shadowRadius: 40,
+        elevation: 15,
     },
-    lg: {
-        shadowColor: '#000',
+    glass: {
+        shadowColor: '#0b1326',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.3,
         shadowRadius: 16,
         elevation: 8,
-    },
-    xl: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-        elevation: 12,
-    },
+    }
 };
 
 export const animations = {
-    // Duration in milliseconds
     fast: 150,
     normal: 250,
     slow: 350,
-
-    // Easing curves (for Animated API)
     easing: {
-        // Material Design standard curve
         standard: [0.4, 0.0, 0.2, 1] as const,
-        // Deceleration curve (entering)
         decelerate: [0.0, 0.0, 0.2, 1] as const,
-        // Acceleration curve (exiting)
         accelerate: [0.4, 0.0, 1, 1] as const,
-    },
-
-    // Spring configurations (for react-native-reanimated)
-    spring: {
-        damping: 15,
-        stiffness: 150,
-        mass: 1,
-    },
-
-    springGentle: {
-        damping: 20,
-        stiffness: 100,
-        mass: 1,
-    },
-
-    springBouncy: {
-        damping: 10,
-        stiffness: 200,
-        mass: 1,
     },
 };
 
-// Touch target sizes (minimum 44x44 for accessibility)
 export const touchTargets = {
     min: 44,
     comfortable: 56,
 };
 
-// Z-index layers
 export const zIndex = {
     base: 0,
     dropdown: 1000,

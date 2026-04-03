@@ -1,8 +1,3 @@
-/**
- * Settings Screen
- * App preferences and configuration
- */
-
 import React from 'react';
 import {
     View,
@@ -12,6 +7,7 @@ import {
     Switch,
     TouchableOpacity,
     Alert,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +15,8 @@ import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+
+const { width } = Dimensions.get('window');
 
 export const SettingsScreen: React.FC = () => {
     const { colors, isDark, toggleTheme } = useTheme();
@@ -36,76 +34,102 @@ export const SettingsScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]}>
             <View style={styles.header}>
                 <View style={styles.headerTop}>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
-                    <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
+                    <View>
+                        <Text style={[styles.headerSubtitle, { color: colors.primary }]}>PREFERENCES</Text>
+                        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Vault Settings</Text>
+                    </View>
+                    <View style={[styles.headerIcon, { backgroundColor: colors.surfaceContainerHigh }]}>
+                        <Ionicons name="settings" size={20} color={colors.primary} />
+                    </View>
                 </View>
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView 
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
-
-                    <View style={[styles.setting, { borderBottomColor: colors.border }]}>
-                        <View style={styles.settingLeft}>
-                            <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Visual Configuration</Text>
+                    
+                    <View style={[styles.settingCard, { backgroundColor: colors.surface }]}>
+                        <View style={styles.settingInfo}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color={colors.primary} />
                             </View>
-                            <View style={styles.settingText}>
-                                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
-                                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-                                    {isDark ? 'High-contrast emerald theme' : 'Standard clean theme'}
+                            <View style={styles.textContainer}>
+                                <Text style={[styles.settingLabel, { color: colors.onSurface }]}>Dark Mode</Text>
+                                <Text style={[styles.settingDesc, { color: colors.onSurfaceVariant }]}>
+                                    {isDark ? 'Nigerian Emerald (Midnight)' : 'Classic Editorial (Light)'}
                                 </Text>
                             </View>
                         </View>
                         <Switch
                             value={isDark}
                             onValueChange={toggleTheme}
-                            trackColor={{ false: colors.border, true: colors.primary }}
-                            thumbColor={colors.onPrimary}
+                            trackColor={{ false: colors.surfaceContainerHigh, true: colors.primary }}
+                            thumbColor={colors.surface}
                         />
                     </View>
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support & Legal</Text>
-
-                    <TouchableOpacity style={[styles.setting, { borderBottomColor: colors.border }]}>
-                        <View style={styles.settingLeft}>
-                            <View style={[styles.iconBox, { backgroundColor: 'rgba(212, 175, 55, 0.1)' }]}>
-                                <Ionicons name="shield-checkmark" size={20} color="#D4AF37" />
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Security & Legal</Text>
+                    
+                    <View style={[styles.multiCard, { backgroundColor: colors.surface }]}>
+                        <TouchableOpacity style={styles.multiItem}>
+                            <View style={styles.settingInfo}>
+                                <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
+                                    <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.settingLabel, { color: colors.onSurface }]}>Privacy Protocol</Text>
                             </View>
-                            <View style={styles.settingText}>
-                                <Text style={[styles.settingLabel, { color: colors.text }]}>Privacy Policy</Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.setting, { borderBottomColor: colors.border }]}>
-                        <View style={styles.settingLeft}>
-                            <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 107, 63, 0.1)' }]}>
+                        <View style={[styles.separator, { backgroundColor: colors.surfaceContainerLowest }]} />
+
+                        <TouchableOpacity style={styles.multiItem}>
+                            <View style={styles.settingInfo}>
+                                <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
+                                    <Ionicons name="document-text" size={20} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.settingLabel, { color: colors.onSurface }]}>Terms of Service</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Help & Support</Text>
+                    
+                    <TouchableOpacity style={[styles.settingCard, { backgroundColor: colors.surface }]}>
+                        <View style={styles.settingInfo}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name="help-buoy" size={20} color={colors.primary} />
                             </View>
-                            <View style={styles.settingText}>
-                                <Text style={[styles.settingLabel, { color: colors.text }]}>Help Center</Text>
-                            </View>
+                            <Text style={[styles.settingLabel, { color: colors.onSurface }]}>Support Center</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
                     </TouchableOpacity>
                 </View>
 
-                <View style={[styles.section, { marginTop: 20 }]}>
-                    <TouchableOpacity
-                        style={[styles.logoutButton]}
+                <View style={styles.footer}>
+                    <TouchableOpacity 
+                        style={[styles.logoutBtn, { backgroundColor: colors.errorContainer }]}
                         onPress={handleLogout}
                     >
-                        <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-                        <Text style={styles.logoutText}>Logout of Vault</Text>
+                        <Text style={[styles.logoutText, { color: colors.error }]}>Termimate Session</Text>
+                        <Ionicons name="log-out" size={18} color={colors.error} />
                     </TouchableOpacity>
-                    <Text style={styles.versionText}>Version 1.0.0 (Nigerian Emerald Build)</Text>
+                    
+                    <View style={styles.versionContainer}>
+                        <Text style={[styles.versionText, { color: colors.onSurfaceVariant }]}>Digital Jurist v1.2.4</Text>
+                        <Text style={[styles.builtText, { color: colors.onSurfaceVariant }]}>Emerald Build • Secured with Bio-Auth</Text>
+                    </View>
                 </View>
             </ScrollView>
             <FloatingChatButton />
@@ -118,86 +142,130 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.md,
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 16,
     },
     headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
+    headerSubtitle: {
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 2,
+        marginBottom: 4,
+    },
     headerTitle: {
-        ...theme.typography.h2,
-        fontSize: 28,
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 32,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+    },
+    headerIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     content: {
-        padding: theme.spacing.lg,
-        paddingTop: 0,
+        paddingHorizontal: 24,
+        paddingBottom: 40,
     },
     section: {
-        marginBottom: theme.spacing.xl,
+        marginTop: 32,
     },
-    sectionTitle: {
-        ...theme.typography.caption,
+    sectionHeader: {
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 14,
         fontWeight: '700',
+        letterSpacing: 1,
+        marginBottom: 16,
         textTransform: 'uppercase',
-        marginBottom: theme.spacing.md,
-        letterSpacing: 1.5,
     },
-    setting: {
+    settingCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing.lg,
-        borderBottomWidth: 1,
+        padding: 16,
+        borderRadius: 24,
     },
-    settingLeft: {
+    multiCard: {
+        borderRadius: 24,
+        overflow: 'hidden',
+    },
+    multiItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
+        justifyContent: 'space-between',
+        padding: 16,
+    },
+    settingInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
         flex: 1,
     },
     iconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 44,
+        height: 44,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    settingText: {
+    textContainer: {
         flex: 1,
     },
     settingLabel: {
-        ...theme.typography.body,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    settingDescription: {
-        ...theme.typography.caption,
-    },
-    logoutButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        height: 56,
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#FF3B30',
-        backgroundColor: 'transparent',
-    },
-    logoutText: {
-        color: '#FF3B30',
-        fontSize: 16,
+        ...theme.typography.bodyLg,
         fontWeight: '700',
     },
+    settingDesc: {
+        ...theme.typography.caption,
+        marginTop: 2,
+        opacity: 0.7,
+    },
+    separator: {
+        height: 2,
+        marginHorizontal: 16,
+    },
+    footer: {
+        marginTop: 48,
+        alignItems: 'center',
+    },
+    logoutBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        borderRadius: 28,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    logoutText: {
+        fontFamily: theme.typography.fontFamily.headline,
+        fontSize: 16,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
+    versionContainer: {
+        marginTop: 32,
+        alignItems: 'center',
+    },
     versionText: {
-        textAlign: 'center',
-        marginTop: 20,
-        color: 'rgba(0,0,0,0.3)',
-        fontSize: 12,
-        fontWeight: '500',
+        ...theme.typography.bodyLg,
+        fontWeight: '800',
+        opacity: 0.9,
+    },
+    builtText: {
+        ...theme.typography.caption,
+        marginTop: 4,
+        opacity: 0.5,
+        fontWeight: '600',
     },
 });
 

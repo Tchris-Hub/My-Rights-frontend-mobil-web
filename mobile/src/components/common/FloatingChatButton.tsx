@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
         height: 56,
         borderRadius: 28,
         overflow: 'hidden',
-        ...theme.shadows.lg,
+        ...theme.shadows.glass,
         zIndex: theme.zIndex.fixed,
     },
     blur: {
