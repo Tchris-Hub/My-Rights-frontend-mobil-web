@@ -1,12 +1,3 @@
-import 'dotenv/config';
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('[My Rights] Missing Supabase environment configuration.');
-}
-
 export default {
     expo: {
         name: 'My Rights',
@@ -38,8 +29,6 @@ export default {
         },
         plugins: ['react-native-document-scanner-plugin', 'expo-web-browser'],
         extra: {
-            supabaseUrl,
-            supabaseAnonKey,
             eas: {
                 projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4',
             },
