@@ -8,13 +8,9 @@ import type {
 } from '../types';
 
 export const chatService = {
-    /**
-     * Send a single message to AI via Supabase Edge Function
-     */
     async sendMessage(message: string, options: { conversationId?: string } = {}): Promise<ChatResponse> {
         const { conversationId } = options;
         const { data: { session } } = await supabase.auth.getSession();
-
         let currentSessionId = conversationId;
         if (session && !currentSessionId) {
             const { data: newSession } = await supabase
@@ -39,7 +35,6 @@ export const chatService = {
                 conversation_id: currentSessionId
             }
         });
-
         if (error) throw error;
 
         const aiContent = data.choices[0].message.content;
@@ -64,7 +59,6 @@ export const chatService = {
         options: { conversationId?: string; onChunk: (chunk: string) => void }
     ): Promise<void> {
         const { conversationId, onChunk } = options;
-
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
             body: {
                 messages: [{ role: 'user', content: message }],
@@ -85,10 +79,8 @@ export const chatService = {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             const chunk = decoder.decode(value);
             const lines = chunk.split('\n');
-
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const dataLine = line.replace('data: ', '').trim();
@@ -98,7 +90,7 @@ export const chatService = {
                         const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) onChunk(content);
                     } catch (e) {
-                        // Ignore partial JSON chunks.
+                        // Handle partial JSON chunks
                     }
                 }
             }
@@ -110,7 +102,6 @@ export const chatService = {
             .from('chat_sessions')
             .select('*')
             .order('updated_at', { ascending: false });
-
         if (error) return [];
         return data.map(s => ({
             id: s.id,
@@ -125,39 +116,29 @@ export const chatService = {
             .select('*')
             .eq('session_id', conversationId)
             .order('created_at', { ascending: true });
-
         if (error) throw error;
-        return { messages: data as ChatMessage[], conversationId };
+        return {
+            conversationId,
+            messages: data.map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: new Date(m.created_at).getTime()
+            }))
+        };
     },
 
     async deleteConversation(conversationId: string): Promise<void> {
-        const { error } = await supabase.from('chat_sessions').delete().eq('id', conversationId);
-        if (error) throw error;
-    },
-
-    async escalateConversation(conversationId: string, details?: string): Promise<EscalationResponse> {
-        const { data, error } = await supabase.functions.invoke('legal-advisor', {
-            body: {
-                action: 'escalate',
-                conversation_id: conversationId,
-                details,
-            },
-        });
-        if (error) throw error;
-        return data as EscalationResponse;
+        await supabase.from('chat_sessions').delete().eq('id', conversationId);
+        await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
     async cacheMessages(messages: ChatMessage[]): Promise<void> {
         await AsyncStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(messages));
     },
 
-    async getCachedConversation(): Promise<ChatMessage[]> {
-        const raw = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
-        if (!raw) return [];
-        try {
-            return JSON.parse(raw) as ChatMessage[];
-        } catch {
-            return [];
-        }
-    },
+    async getCachedMessages(): Promise<ChatMessage[]> {
+        const cached = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
+        return cached ? JSON.parse(cached) : [];
+    }
 };
