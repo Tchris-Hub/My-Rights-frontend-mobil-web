@@ -9,7 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
 import { authService } from '../services/auth.service';
-import { supabase } from '../services/supabaseClient'; // Corrected path
+import { supabase } from '../services/supabase';
 import { STORAGE_KEYS } from '../constants/config';
 import { logger } from '../utils/logger';
 import type { User, LoginCredentials, RegisterData } from '../types';
@@ -47,7 +47,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const isAuthenticated = user !== null;
 
-    // Helper to generate consistent redirect URIs
     const getRedirectUri = (path: string = '') => {
         return makeRedirectUri({
             scheme: 'myrights',
@@ -56,25 +55,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     };
 
-    /**
-     * Initialize authentication state
-     */
     useEffect(() => {
         const initializeAuth = async () => {
             try {
                 setIsLoading(true);
 
-                // Check onboarding status
                 const onboardingStatus = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
                 setOnboardingCompleted(onboardingStatus === 'true');
 
-                // Check guest status
                 const guestStatus = await AsyncStorage.getItem(STORAGE_KEYS.IS_GUEST);
                 setIsGuest(guestStatus === 'true');
 
-                // Get current session from Supabase
                 const { data: { session } } = await supabase.auth.getSession();
-                
                 if (session?.user) {
                     const profile = await authService.getCurrentUser();
                     setUser(profile);
@@ -88,10 +80,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         initializeAuth();
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
             logger.log('Auth event caught:', event);
-            
             if (session?.user) {
                 const profile = await authService.getCurrentUser();
                 setUser(profile);
@@ -215,4 +205,3 @@ export const useAuth = () => {
     if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };
-
