@@ -1,12 +1,11 @@
 import 'dotenv/config';
 
-const devApiUrl = process.env.DEV_API_URL ?? 'https://injustice-production.up.railway.app/';
-const stagingApiUrl = process.env.STAGING_API_URL ?? 'https://staging-api.myrights.ng';
-const prodApiUrl = process.env.PROD_API_URL ?? 'https://injustice-production.up.railway.app/';
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-// Keys are injected via environment variables or defaults
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[My Rights] Missing Supabase environment configuration.');
+}
 
 export default {
     expo: {
@@ -39,9 +38,6 @@ export default {
         },
         plugins: ['react-native-document-scanner-plugin', 'expo-web-browser'],
         extra: {
-            devApiUrl,
-            stagingApiUrl,
-            prodApiUrl,
             supabaseUrl,
             supabaseAnonKey,
             eas: {
