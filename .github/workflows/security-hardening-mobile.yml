@@ -1,0 +1,57 @@
+name: Mobile Security Hardening Verification
+
+on:
+  push:
+    branches:
+      - security-hardening-v1
+  pull_request:
+    branches:
+      - security-hardening-v1
+
+permissions:
+  contents: read
+
+jobs:
+  verify-mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript verification
+        run: npx tsc --noEmit
+
+      - name: Expo project health verification
+        run: npx expo-doctor
+
+      - name: Release-path integrity verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIn --exclude-dir=node_modules --exclude='package-lock.json' \
+            -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' .; then
+            echo 'Forbidden legacy backend/config reference detected.'
+            exit 1
+          fi
+          if [ -e .env ]; then
+            echo 'Tracked mobile/.env must not exist in the release branch.'
+            exit 1
+          fi
+          test -f .env.example
+          node -e "const c=require('./package.json'); if(!c.scripts || !c.scripts.start) process.exit(1)"
+
+      - name: Expo config inspection
+        run: npx expo config --json > /tmp/expo-config.json && node -e "const c=require('/tmp/expo-config.json'); if(JSON.stringify(c).includes('injustice-production.up.railway.app')) process.exit(1)"
