@@ -1,15 +1,12 @@
 /**
  * Authentication Service
- * Refactored to use Supabase Auth for production reliability.
+ * Uses the single canonical Supabase client for production authentication.
  */
 
-import { supabase } from './supabaseClient';
-import type { LoginCredentials, RegisterData, AuthTokens, User } from '../types';
+import { supabase } from './supabase';
+import type { LoginCredentials, RegisterData, User } from '../types';
 
 export const authService = {
-    /**
-     * Register a new user account via Supabase Auth
-     */
     async register(data: RegisterData): Promise<any> {
         const { data: authData, error } = await supabase.auth.signUp({
             email: data.email,
@@ -21,40 +18,28 @@ export const authService = {
                 }
             }
         });
-
         if (error) throw error;
         return authData;
     },
 
-    /**
-     * Login with email and password via Supabase
-     */
     async login(credentials: LoginCredentials): Promise<any> {
         const { data, error } = await supabase.auth.signInWithPassword({
             email: credentials.email,
             password: credentials.password,
         });
-
         if (error) throw error;
         return data;
     },
 
-    /**
-     * Logout and clear local session
-     */
     async logout(): Promise<void> {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     },
 
-    /**
-     * Get current authenticated user session/profile
-     */
     async getCurrentUser(): Promise<User | null> {
         const { data: { user: authUser }, error } = await supabase.auth.getUser();
         if (error || !authUser) return null;
 
-        // 2. Fetch extended profile info from public.users
         const { data: profile } = await supabase
             .from('users')
             .select('*')
@@ -69,16 +54,10 @@ export const authService = {
         } as User;
     },
 
-    /**
-     * Update user metadata in Supabase
-     */
     async updateProfile(data: Partial<User>): Promise<User | null> {
         const { data: { user }, error } = await supabase.auth.updateUser({
-            data: {
-                full_name: data.full_name,
-            }
+            data: { full_name: data.full_name }
         });
-
         if (error || !user) throw error;
 
         return {
@@ -90,21 +69,12 @@ export const authService = {
         } as User;
     },
 
-    /**
-     * Reset password / Change password
-     */
     async changePassword(newPassword: string): Promise<void> {
-        const { error } = await supabase.auth.updateUser({
-            password: newPassword
-        });
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) throw error;
     },
 
-    /**
-     * Get active session
-     */
     async getSession() {
         return await supabase.auth.getSession();
     }
 };
-
