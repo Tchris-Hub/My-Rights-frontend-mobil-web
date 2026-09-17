@@ -1,23 +1,20 @@
+import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { logger } from '../utils/logger';
 
-const extras = Constants.expoConfig?.extra ?? {};
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const supabasePublishableKey =
+    process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-const supabaseUrl = typeof extras.supabaseUrl === 'string' ? extras.supabaseUrl : '';
-const supabaseAnonKey = typeof extras.supabaseAnonKey === 'string' ? extras.supabaseAnonKey : '';
-
-logger.log('[Supabase] Initializing client...');
-
-if (!supabaseUrl || !supabaseAnonKey) {
-    logger.warn('[Supabase] Missing URL or anon key in Expo config extras.');
+if (!supabaseUrl || !supabasePublishableKey) {
+    throw new Error('[My Rights] Supabase configuration is missing.');
 }
 
 const storageWrapper = {
     getItem: async (key: string) => {
         const value = await AsyncStorage.getItem(key);
-        // Only log existence for debugging, never the value
         if (__DEV__ && key.includes('auth')) {
             logger.debug(`[Storage] GET ${key}:`, value ? 'EXISTS' : 'MISSING');
         }
@@ -37,7 +34,7 @@ const storageWrapper = {
     },
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
         storageKey: 'myrights-auth',
         storage: storageWrapper as any,
