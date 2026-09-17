@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase, supabaseAnonKey } from './supabaseClient';
+import { supabase } from './supabase';
 import { STORAGE_KEYS } from '../constants/config';
 import type {
     ChatMessage,
@@ -15,7 +15,6 @@ export const chatService = {
         const { conversationId } = options;
         const { data: { session } } = await supabase.auth.getSession();
 
-        // 1. If authenticated, save user message to DB first
         let currentSessionId = conversationId;
         if (session && !currentSessionId) {
             const { data: newSession } = await supabase
@@ -34,17 +33,15 @@ export const chatService = {
             });
         }
 
-        // 2. Call AI Proxy
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
-            body: { 
+            body: {
                 messages: [{ role: 'user', content: message }],
-                conversation_id: currentSessionId 
+                conversation_id: currentSessionId
             }
         });
 
         if (error) throw error;
 
-        // 3. Save AI response to DB
         const aiContent = data.choices[0].message.content;
         if (session && currentSessionId) {
             await supabase.from('chat_messages').insert({
@@ -62,10 +59,6 @@ export const chatService = {
         } as unknown as ChatResponse;
     },
 
-    /**
-     * Stream message via SSE using the secure legal-advisor proxy.
-     * This uses the Supabase Edge Function to protect your API keys on the server.
-     */
     async streamMessage(
         message: string,
         options: { conversationId?: string; onChunk: (chunk: string) => void }
@@ -73,7 +66,7 @@ export const chatService = {
         const { conversationId, onChunk } = options;
 
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
-            body: { 
+            body: {
                 messages: [{ role: 'user', content: message }],
                 stream: true,
                 conversation_id: conversationId
@@ -85,7 +78,6 @@ export const chatService = {
             throw new Error('AI Stream Error');
         }
 
-        // The invoke method with stream: true returns a Response-like body in Supabase v2
         const reader = data.getReader?.() || (data as Response).body?.getReader();
         if (!reader) throw new Error('Streaming not supported by this device environment');
 
@@ -93,10 +85,10 @@ export const chatService = {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             const chunk = decoder.decode(value);
             const lines = chunk.split('\n');
-            
+
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const dataLine = line.replace('data: ', '').trim();
@@ -106,18 +98,13 @@ export const chatService = {
                         const content = parsed.choices?.[0]?.delta?.content || '';
                         if (content) onChunk(content);
                     } catch (e) {
-                        // Handle partial JSON chunks
+                        // Ignore partial JSON chunks.
                     }
                 }
             }
         }
     },
 
-
-
-    /**
-     * History fetching from Supabase
-     */
     async getChatHistory(): Promise<any[]> {
         const { data, error } = await supabase
             .from('chat_sessions')
@@ -140,36 +127,37 @@ export const chatService = {
             .order('created_at', { ascending: true });
 
         if (error) throw error;
-
-        return {
-            conversationId,
-            messages: data.map(m => ({
-                id: m.id,
-                role: m.role,
-                content: m.content,
-                timestamp: new Date(m.created_at).getTime()
-            }))
-        };
+        return { messages: data as ChatMessage[], conversationId };
     },
 
-    /**
-     * Delete a conversation
-     */
     async deleteConversation(conversationId: string): Promise<void> {
-        await supabase.from('chat_sessions').delete().eq('id', conversationId);
-        await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
+        const { error } = await supabase.from('chat_sessions').delete().eq('id', conversationId);
+        if (error) throw error;
     },
 
-    /**
-     * Utility: Store locally as secondary cache
-     */
+    async escalateConversation(conversationId: string, details?: string): Promise<EscalationResponse> {
+        const { data, error } = await supabase.functions.invoke('legal-advisor', {
+            body: {
+                action: 'escalate',
+                conversation_id: conversationId,
+                details,
+            },
+        });
+        if (error) throw error;
+        return data as EscalationResponse;
+    },
+
     async cacheMessages(messages: ChatMessage[]): Promise<void> {
         await AsyncStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(messages));
     },
 
-    async getCachedMessages(): Promise<ChatMessage[]> {
-        const cached = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
-        return cached ? JSON.parse(cached) : [];
-    }
+    async getCachedConversation(): Promise<ChatMessage[]> {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
+        if (!raw) return [];
+        try {
+            return JSON.parse(raw) as ChatMessage[];
+        } catch {
+            return [];
+        }
+    },
 };
-
