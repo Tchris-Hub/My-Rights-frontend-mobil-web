@@ -1,15 +1,11 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabase';
 import { Chapter, Section, Template, LegalAidCenter, Lawyer } from '../types';
 
 export { Chapter, Section, Template, LegalAidCenter as Center, Lawyer };
 
 // Interfaces moved to src/types/index.ts
 
-
 export const legalService = {
-  /**
-   * Fetch all constitution chapters with their sections
-   */
   async getConstitution() {
     const { data: chapters, error: chapterError } = await supabase
       .from('constitution_chapters')
@@ -23,9 +19,6 @@ export const legalService = {
     return chapters as Chapter[];
   },
 
-  /**
-   * Fetch legal aid centers
-   */
   async getLegalAidCenters() {
     const { data, error } = await supabase
       .from('legal_aid_centers')
@@ -35,8 +28,7 @@ export const legalService = {
       `);
 
     if (error) throw error;
-    
-    // Map to frontend interface if needed
+
     return data.map(item => ({
       ...item,
       type: item.organization?.type || 'Government',
@@ -46,9 +38,6 @@ export const legalService = {
     })) as LegalAidCenter[];
   },
 
-  /**
-   * Fetch lawyer directory
-   */
   async getLawyers() {
     const { data, error } = await supabase
       .from('lawyers')
@@ -64,16 +53,12 @@ export const legalService = {
     })) as Lawyer[];
   },
 
-  /**
-   * Fetch legal templates for architecting
-   */
   async getTemplates() {
     const { data, error } = await supabase
       .from('legal_templates')
       .select('*');
 
     if (error) throw error;
-    
     return data as Template[];
   }
 };
