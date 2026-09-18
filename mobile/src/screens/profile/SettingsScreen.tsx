@@ -122,13 +122,13 @@ export const SettingsScreen: React.FC = () => {
                         style={[styles.logoutBtn, { backgroundColor: colors.errorContainer }]}
                         onPress={handleLogout}
                     >
-                        <Text style={[styles.logoutText, { color: colors.error }]}>Termimate Session</Text>
+                        <Text style={[styles.logoutText, { color: colors.error }]}>Terminate Session</Text>
                         <Ionicons name="log-out" size={18} color={colors.error} />
                     </TouchableOpacity>
                     
                     <View style={styles.versionContainer}>
                         <Text style={[styles.versionText, { color: colors.onSurfaceVariant }]}>Digital Jurist v1.2.4</Text>
-                        <Text style={[styles.builtText, { color: colors.onSurfaceVariant }]}>Emerald Build • Secured with Bio-Auth</Text>
+                        <Text style={[styles.builtText, { color: colors.onSurfaceVariant }]}>Emerald Build • Secured with Supabase Auth</Text>
                     </View>
                 </View>
             </ScrollView>
