@@ -44,7 +44,7 @@ jobs:
 
           # Scope release-path checks to executable app/config files. Historical
           # audit notes and generated evidence files must not create false positives.
-          if git grep -n -E 'injustice-production\\.up\\.railway\\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- \
+          if git grep -n -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- \
             mobile/App.tsx \
             mobile/app.config.ts \
             mobile/app.json \
