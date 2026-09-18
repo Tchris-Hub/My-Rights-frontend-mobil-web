@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { chatService } from '../services/chat.service';
+import { logger } from '../utils/logger';
 
 export const useVoiceInput = (onTranscription: (text: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
@@ -42,7 +43,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
             setIsRecording(true);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (err) {
-            if (__DEV__) console.error('Failed to start recording', err);
+            logger.error('Failed to start recording', err);
             Alert.alert('Error', 'Could not start recording. Please try again.');
         }
     }, []);
@@ -78,7 +79,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
                 }
             }
         } catch (err) {
-            if (__DEV__) console.error('Failed to transcribe', err);
+            logger.error('Failed to transcribe', err);
             Alert.alert('Transcription Failed', 'Could not process your voice. Please try typing.');
         } finally {
             setIsTranscribing(false);
