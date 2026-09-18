@@ -153,6 +153,8 @@ export const chatService = {
     },
 
     async getChatHistory(): Promise<any[]> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('Sign in to view conversations.');
         const { data, error } = await supabase
             .from('chat_sessions')
             .select('*')
@@ -166,6 +168,8 @@ export const chatService = {
     },
 
     async getConversationDetails(conversationId: string): Promise<{ messages: ChatMessage[], conversationId: string }> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('Sign in to view conversation details.');
         const { data, error } = await supabase
             .from('chat_messages')
             .select('*')
