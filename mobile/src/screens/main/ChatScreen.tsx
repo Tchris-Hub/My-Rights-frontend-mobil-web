@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { logger } from '../../utils/logger';
 import {
     View,
     Text,
@@ -107,7 +108,7 @@ export const ChatScreen: React.FC = () => {
                 setConversationId(fetchedId);
 
             } catch (error) {
-                console.error("Failed to load chat history:", error);
+                logger.error("Failed to load chat history:", error);
                 Alert.alert("Error", "Could not load conversation history.");
             } finally {
                 setIsLoading(false);
@@ -210,7 +211,7 @@ export const ChatScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Chat error:', error);
+            logger.error('Chat error:', error);
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.id === loadingMessage.id
@@ -267,7 +268,7 @@ export const ChatScreen: React.FC = () => {
                 ]
             );
         } catch (error) {
-            console.error('Error picking document:', error);
+            logger.error('Error picking document:', error);
             Alert.alert('Error', 'Failed to pick document');
         }
     };
@@ -297,7 +298,7 @@ export const ChatScreen: React.FC = () => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         } catch (error) {
-            console.error('Error picking image:', error);
+            logger.error('Error picking image:', error);
             Alert.alert('Error', 'Failed to pick image');
         }
     };
@@ -327,7 +328,7 @@ export const ChatScreen: React.FC = () => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         } catch (error) {
-            console.error('Error picking file:', error);
+            logger.error('Error picking file:', error);
             Alert.alert('Error', 'Failed to pick document');
         }
     };
