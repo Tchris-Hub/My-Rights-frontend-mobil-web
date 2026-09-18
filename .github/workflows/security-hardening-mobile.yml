@@ -41,17 +41,62 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIn --exclude-dir=node_modules --exclude='package-lock.json' \
-            -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' .; then
+
+          # Scope release-path checks to executable app/config files. Historical
+          # audit notes and generated evidence files must not create false positives.
+          if git grep -n -E 'injustice-production\\.up\\.railway\\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- \
+            mobile/App.tsx \
+            mobile/app.config.ts \
+            mobile/app.json \
+            mobile/eas.json \
+            mobile/package.json \
+            mobile/src; then
             echo 'Forbidden legacy backend/config reference detected.'
             exit 1
           fi
+
           if [ -e .env ]; then
-            echo 'Tracked mobile/.env must not exist in the release branch.'
+            echo 'mobile/.env must not exist in the release branch.'
             exit 1
           fi
+
           test -f .env.example
+          test ! -e src/services/supabaseClient.ts
+          test ! -e src/services/api.ts
+
           node -e "const c=require('./package.json'); if(!c.scripts || !c.scripts.start) process.exit(1)"
+
+      - name: Supabase project reachability check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          project_ref='prwcbruqvywakcvoknai'
+          url="https://${project_ref}.supabase.co/auth/v1/health"
+          status="$(curl -sS -o /tmp/supabase-health.txt -w '%{http_code}' --connect-timeout 10 --max-time 20 "$url")"
+
+          echo "Supabase health HTTP status: ${status}"
+
+          if [ "$status" = "540" ]; then
+            echo 'Supabase project is paused.'
+            exit 1
+          fi
+
+          case "$status" in
+            2??)
+              echo 'Supabase Auth health endpoint responded successfully.'
+              ;;
+            4??|5??)
+              echo 'Supabase project endpoint responded, but the service did not return a successful health response.'
+              cat /tmp/supabase-health.txt
+              exit 1
+              ;;
+            *)
+              echo 'Unexpected Supabase health response.'
+              cat /tmp/supabase-health.txt
+              exit 1
+              ;;
+          esac
 
       - name: Expo config inspection
         run: npx expo config --json > /tmp/expo-config.json && node -e "const c=require('/tmp/expo-config.json'); if(JSON.stringify(c).includes('injustice-production.up.railway.app')) process.exit(1)"
