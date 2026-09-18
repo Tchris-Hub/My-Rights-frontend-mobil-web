@@ -183,7 +183,7 @@ export const ChatScreen: React.FC = () => {
             // explicitly ephemeral: it suppresses database persistence.
             if (isAuthenticated) {
                 let firstChunk = true;
-                await chatService.streamMessage(messageText, {
+                const persistedConversationId = await chatService.streamMessage(messageText, {
                     jurisdiction: LEGAL_JURISDICTION,
                     conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
                     persist: !isIncognito,
@@ -205,18 +205,11 @@ export const ChatScreen: React.FC = () => {
                     },
                 });
 
-                if (!isIncognito) {
-                    const persistedConversationId = await chatService.streamMessage(messageText, {
-                        jurisdiction: LEGAL_JURISDICTION,
-                        conversationId: conversationId ?? undefined,
-                        persist: false,
-                        onChunk: () => {},
-                    });
-                    if (persistedConversationId && persistedConversationId !== conversationId) {
-                        setConversationId(persistedConversationId);
-                    }
+                if (persistedConversationId && persistedConversationId !== conversationId) {
+                    setConversationId(persistedConversationId);
                 }
-            }        } catch (error) {
+            }
+        } catch (error) {
             console.error('Chat error:', error);
             setMessages((prev) =>
                 prev.map((msg) =>
