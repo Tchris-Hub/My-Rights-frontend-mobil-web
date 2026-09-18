@@ -40,6 +40,9 @@ jobs:
       - name: Deterministic release integrity verification
         run: npm run verify:release
 
+      - name: High-severity dependency audit
+        run: npm audit --audit-level=high
+
       - name: Release-path integrity verification
         shell: bash
         run: |
