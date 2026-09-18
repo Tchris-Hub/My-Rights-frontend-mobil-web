@@ -13,9 +13,9 @@
 
 ### Current supply-chain evidence
 
-Current public Axios security advisories show multiple 2026 vulnerabilities affecting older 1.x releases, including issues with fixes at later 1.x versions. The repository did not need Axios for its current mobile code path, so removal is preferred to carrying an unnecessary vulnerable dependency. citeturn1search1turn1search5turn1search6
+Current public Axios security advisories show multiple 2026 vulnerabilities affecting older 1.x releases, including issues with fixes at later 1.x versions. The repository did not need Axios for its current mobile code path, so removal is preferred to carrying an unnecessary vulnerable dependency.
 
-Supabase's current security guidance recommends pinning Edge Function npm dependencies, using lockfiles, and using provenance/signature checks where appropriate. The repository's Edge Function currently uses an exact JSR import for `@supabase/supabase-js`, while the mobile app uses a committed npm lockfile. citeturn0search0
+Supabase's current security guidance recommends pinning Edge Function npm dependencies, using lockfiles, and using provenance/signature checks where appropriate. The repository's Edge Function currently uses an exact JSR import for `@supabase/supabase-js`, while the mobile app uses a committed npm lockfile.
 
 ### Verification
 
