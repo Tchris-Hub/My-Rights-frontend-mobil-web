@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { logger } from '../utils/logger';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
@@ -11,32 +11,96 @@ if (!supabaseUrl || !supabasePublishableKey) {
     throw new Error('[My Rights] Supabase configuration is missing.');
 }
 
-const storageWrapper = {
-    getItem: async (key: string) => {
-        const value = await AsyncStorage.getItem(key);
-        if (__DEV__ && key.includes('auth')) {
-            logger.debug(`[Storage] GET ${key}:`, value ? 'EXISTS' : 'MISSING');
+const SECURE_CHUNK_SIZE = 1800;
+const CHUNK_MARKER = '__MYRIGHTS_SECURE_CHUNKS__:';
+
+const secureStorage = {
+    async getItem(key: string): Promise<string | null> {
+        const marker = await SecureStore.getItemAsync(key);
+
+        if (!marker) {
+            return null;
         }
-        return value;
+
+        if (!marker.startsWith(CHUNK_MARKER)) {
+            if (__DEV__ && key.includes('auth')) {
+                logger.debug(`[SecureStorage] GET ${key}: EXISTS`);
+            }
+            return marker;
+        }
+
+        const count = Number(marker.slice(CHUNK_MARKER.length));
+        if (!Number.isInteger(count) || count <= 0 || count > 64) {
+            throw new Error('Secure auth storage is corrupted.');
+        }
+
+        const chunks = await Promise.all(
+            Array.from({ length: count }, (_, index) =>
+                SecureStore.getItemAsync(`${key}.__chunk_${index}`)
+            )
+        );
+
+        if (chunks.some((chunk) => typeof chunk !== 'string')) {
+            throw new Error('Secure auth storage is incomplete.');
+        }
+
+        return chunks.join('');
     },
-    setItem: async (key: string, value: string) => {
-        if (__DEV__ && key.includes('auth')) {
-            logger.debug(`[Storage] SET ${key}`);
+
+    async setItem(key: string, value: string): Promise<void> {
+        await secureStorage.removeItem(key);
+
+        if (value.length <= SECURE_CHUNK_SIZE) {
+            await SecureStore.setItemAsync(key, value);
+        } else {
+            const count = Math.ceil(value.length / SECURE_CHUNK_SIZE);
+            if (count > 64) {
+                throw new Error('Secure auth session is too large.');
+            }
+
+            await Promise.all(
+                Array.from({ length: count }, (_, index) =>
+                    SecureStore.setItemAsync(
+                        `${key}.__chunk_${index}`,
+                        value.slice(index * SECURE_CHUNK_SIZE, (index + 1) * SECURE_CHUNK_SIZE),
+                    )
+                )
+            );
+
+            await SecureStore.setItemAsync(key, `${CHUNK_MARKER}${count}`);
         }
-        return await AsyncStorage.setItem(key, value);
+
+        if (__DEV__ && key.includes('auth')) {
+            logger.debug(`[SecureStorage] SET ${key}`);
+        }
     },
-    removeItem: async (key: string) => {
-        if (__DEV__ && key.includes('auth')) {
-            logger.debug(`[Storage] REMOVE ${key}`);
+
+    async removeItem(key: string): Promise<void> {
+        const marker = await SecureStore.getItemAsync(key);
+
+        if (marker?.startsWith(CHUNK_MARKER)) {
+            const count = Number(marker.slice(CHUNK_MARKER.length));
+            if (Number.isInteger(count) && count > 0 && count <= 64) {
+                await Promise.all(
+                    Array.from({ length: count }, (_, index) =>
+                        SecureStore.deleteItemAsync(`${key}.__chunk_${index}`)
+                    )
+                );
+            }
         }
-        return await AsyncStorage.removeItem(key);
+
+        await SecureStore.deleteItemAsync(key);
+
+        if (__DEV__ && key.includes('auth')) {
+            logger.debug(`[SecureStorage] REMOVE ${key}`);
+        }
     },
 };
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
         storageKey: 'myrights-auth',
-        storage: storageWrapper as any,
+        storage: secureStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
