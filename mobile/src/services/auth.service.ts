@@ -10,6 +10,7 @@
 
 import { supabase } from './supabase';
 import type { LoginCredentials, RegisterData, User } from '../types';
+import { APP_CONFIG } from '../constants/config';
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
@@ -38,6 +39,9 @@ export const authService = {
                 data: {
                     full_name: data.full_name?.trim() || '',
                     phone_number: data.phone_number?.trim() || '',
+                    accepted_terms: true,
+                    terms_version: APP_CONFIG.TERMS_VERSION,
+                    privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION,
                 }
             }
         });
