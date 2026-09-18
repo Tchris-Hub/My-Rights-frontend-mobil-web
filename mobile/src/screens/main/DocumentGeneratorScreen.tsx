@@ -32,7 +32,6 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
-import { APP_CONFIG } from '../../constants/config';
 
 import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
@@ -48,6 +47,14 @@ interface ConsultMessage {
 }
 
 const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const escapeHtml = (value: string): string => value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/\n/g, '<br/>');
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -174,7 +181,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
     const handleExportPDF = async () => {
         try {
-            const { uri } = await Print.printToFileAsync({ html: draftContent });
+            const safeHtml = `<html><body style="font-family: serif; padding: 32px; line-height: 1.6;"><h2>${escapeHtml(selectedTemplate?.title || 'Document Draft')}</h2><p>${escapeHtml(draftContent)}</p><hr/><p style="font-size: 11px;">AI-generated draft for general information. Verify applicable Nigerian law, facts and formalities with a qualified legal professional before signing or relying on this document.</p></body></html>`;
+            const { uri } = await Print.printToFileAsync({ html: safeHtml });
             await Sharing.shareAsync(uri);
         } catch (error) {
             Alert.alert('Export Error', 'Could not generate PDF.');
