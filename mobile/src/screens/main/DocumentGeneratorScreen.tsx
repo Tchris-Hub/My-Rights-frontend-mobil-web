@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { logger } from '../../utils/logger';
 import {
     View,
     Text,
@@ -80,7 +81,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
             const data = await legalService.getTemplates();
             setTemplates(data);
         } catch (error) {
-            console.error('Error loading templates:', error);
+            logger.error('Error loading templates:', error);
             Alert.alert('Cloud Sync Error', 'Unable to retrieve legal templates. Please check your connection.');
         } finally {
             setIsLoading(false);
