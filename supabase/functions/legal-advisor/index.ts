@@ -8,6 +8,7 @@ const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
 const MAX_OUTPUT_CHARS = 20_000;
 const MAX_STREAM_BYTES = 128 * 1024;
+const MAX_JURISDICTION_CHARS = 120;
 
 type RateState = { windowStart: number; count: number };
 const rateState = new Map<string, RateState>();
@@ -160,9 +161,10 @@ const systemPrompt = {
     'You are the Digital Jurist, an AI legal information assistant for the My Rights app. ' +
     'Provide general legal information, not legal advice or representation. ' +
     'Do not claim to be a human lawyer. Do not invent statutes, cases, regulations, citations, ' +
-    'licenses, deadlines, outcomes, or facts. State uncertainty when authoritative verification ' +
-    'is unavailable. The user-selected jurisdiction must be treated as authoritative application ' +
-    'context only when the server supplies it; never silently assume a jurisdiction for a user.',
+    'licenses, deadlines, outcomes, or facts. Never present an unverified citation as authoritative. ' +
+    'If no verified legal source is supplied, explicitly say that source verification is unavailable ' +
+    'and give general information only. State uncertainty when authoritative verification is unavailable. ' +
+    'The jurisdiction must be explicitly supplied by the server/request context; never silently assume one.' ,
 };
 
 Deno.serve(async (req: Request) => {
@@ -217,6 +219,10 @@ Deno.serve(async (req: Request) => {
     const payload = JSON.parse(body) as Record<string, unknown>;
     const messages = parseAndValidateMessages(payload);
     const stream = payload.stream === true;
+    const jurisdiction = typeof payload.jurisdiction === 'string' ? payload.jurisdiction.trim() : '';
+    if (jurisdiction.length > MAX_JURISDICTION_CHARS) {
+      return response({ error: 'Jurisdiction value is too long.' }, 400, cors);
+    }
 
     const clientAddress =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -229,7 +235,11 @@ Deno.serve(async (req: Request) => {
       throw new Error('AI provider is not configured.');
     }
 
-    const apiMessages = [systemPrompt, ...messages];
+    const jurisdictionPrompt = jurisdiction
+      ? { role: 'system' as const, content: `Explicit jurisdiction supplied by the application: ${jurisdiction}. Do not infer a different jurisdiction.` }
+      : { role: 'system' as const, content: 'No jurisdiction has been supplied. Do not assume Nigerian or any other law; state that jurisdiction-specific verification is unavailable.' };
+
+    const apiMessages = [systemPrompt, jurisdictionPrompt, ...messages];
 
     const providerResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -282,6 +292,8 @@ Deno.serve(async (req: Request) => {
     // metadata, request IDs and internal fields are intentionally not exposed.
     return response({
       choices: [{ message: { role: 'assistant', content: content.trim() } }],
+      citation_status: 'unverified',
+      jurisdiction: jurisdiction || null,
     }, 200, cors);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Request failed.';
