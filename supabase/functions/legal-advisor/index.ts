@@ -56,7 +56,7 @@ function response(
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...jsonHeaders, ...cors, 'X-Request-Id': crypto.randomUUID() },
+    headers: { ...jsonHeaders, ...cors },
   });
 }
 
