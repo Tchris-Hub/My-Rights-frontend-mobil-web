@@ -11,6 +11,16 @@ const MAX_STREAM_BYTES = 128 * 1024;
 const MAX_JURISDICTION_CHARS = 120;
 const SUPPORTED_JURISDICTIONS = new Set(['Nigeria']);
 
+function auditLog(event: string, requestId: string, details: Record<string, unknown> = {}): void {
+  // Never include legal text, prompts, tokens, provider responses, or request bodies.
+  console.info(JSON.stringify({
+    service: 'legal-advisor',
+    event,
+    request_id: requestId,
+    ...details,
+  }));
+}
+
 type RateState = { windowStart: number; count: number };
 const rateState = new Map<string, RateState>();
 
@@ -46,7 +56,7 @@ function response(
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...jsonHeaders, ...cors },
+    headers: { ...jsonHeaders, ...cors, 'X-Request-Id': crypto.randomUUID() },
   });
 }
 
@@ -165,6 +175,7 @@ const systemPrompt = {
 };
 
 Deno.serve(async (req: Request) => {
+  const requestId = crypto.randomUUID();
   let cors: Record<string, string> = {};
 
   try {
@@ -180,11 +191,13 @@ Deno.serve(async (req: Request) => {
 
     const authorization = req.headers.get('authorization') ?? '';
     if (!authorization.startsWith('Bearer ')) {
+      auditLog('auth_rejected', requestId, { reason: 'missing_bearer' });
       return response({ error: 'Authentication required.' }, 401, cors);
     }
 
     const token = authorization.slice('Bearer '.length).trim();
     if (!token || token.startsWith('sb_')) {
+      auditLog('auth_rejected', requestId, { reason: 'invalid_token_shape' });
       return response({ error: 'A valid user session is required.' }, 401, cors);
     }
 
@@ -205,6 +218,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
+      auditLog('auth_rejected', requestId, { reason: 'session_validation_failed' });
       return response({ error: 'Authentication required.' }, 401, cors);
     }
 
@@ -238,7 +252,12 @@ Deno.serve(async (req: Request) => {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
       req.headers.get('x-real-ip') ??
       'unknown';
-    consumeRateLimit(`user:${user.id}:ip:${clientAddress}`);
+    try {
+      consumeRateLimit(`user:${user.id}:ip:${clientAddress}`);
+    } catch (error) {
+      auditLog('rate_limited', requestId);
+      throw error;
+    }
 
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY');
     if (!openRouterKey) {
@@ -268,10 +287,12 @@ Deno.serve(async (req: Request) => {
     });
 
     if (stream && !providerResponse.ok) {
+      auditLog('provider_rejected', requestId, { status: providerResponse.status, stream: true });
       return response({ error: 'AI provider request failed.' }, 502, cors);
     }
 
     if (stream && providerResponse.body) {
+      auditLog('provider_stream_started', requestId);
       return new Response(limitStream(providerResponse.body), {
         status: 200,
         headers: {
@@ -285,6 +306,7 @@ Deno.serve(async (req: Request) => {
     const providerBody = await providerResponse.json().catch(() => null);
 
     if (!providerResponse.ok) {
+      auditLog('provider_rejected', requestId, { status: providerResponse.status, stream: false });
       return response(
         { error: 'AI provider request failed.' },
         providerResponse.status >= 500 ? 502 : 400,
@@ -296,15 +318,18 @@ Deno.serve(async (req: Request) => {
     try {
       content = capProviderOutput(providerBody?.choices?.[0]?.message?.content);
     } catch {
+      auditLog('provider_invalid_response', requestId);
       return response({ error: 'AI provider returned an invalid response.' }, 502, cors);
     }
 
+    auditLog('request_completed', requestId, { stream });
     return response({
       choices: [{ message: { role: 'assistant', content: content.trim() } }],
       citation_status: 'unverified',
       jurisdiction,
     }, 200, cors);
   } catch (error) {
+    auditLog('request_failed', requestId);
     const message = error instanceof Error ? error.message : '';
     const status =
       message.includes('Rate limit') ? 429 :
