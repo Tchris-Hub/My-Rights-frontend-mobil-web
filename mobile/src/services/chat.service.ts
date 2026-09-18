@@ -11,6 +11,10 @@ export const chatService = {
     async sendMessage(message: string, options: { conversationId?: string } = {}): Promise<ChatResponse> {
         const { conversationId } = options;
         const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+            throw new Error('Sign in to use the legal advisor.');
+        }
+
         let currentSessionId = conversationId;
         if (session && !currentSessionId) {
             const { data: newSession } = await supabase
@@ -59,6 +63,11 @@ export const chatService = {
         options: { conversationId?: string; onChunk: (chunk: string) => void }
     ): Promise<void> {
         const { conversationId, onChunk } = options;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+            throw new Error('Sign in to use the legal advisor.');
+        }
+
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
             body: {
                 messages: [{ role: 'user', content: message }],
