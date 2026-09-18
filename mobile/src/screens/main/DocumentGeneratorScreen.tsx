@@ -23,7 +23,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
-import { chatService } from '../../services/chat.service';
 import { documentService } from '../../services/document.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -31,7 +30,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
-import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
@@ -126,23 +124,23 @@ export const DocumentGeneratorScreen: React.FC = () => {
         setUserInput('');
         setIsLoading(true);
 
-        try {
-            // In production, this would call the AI Architect
-            setTimeout(() => {
-                setConsultMessages(prev => [...prev, {
-                    id: createMessageId('ai'),
-                    role: 'assistant',
-                    content: "Understood. I will incorporate those specifics into the final draft. Are we ready to build the document?"
-                }]);
-                setIsLoading(false);
-            }, 1500);
-        } catch (error) {
-            setIsLoading(false);
-        }
+        // This step is an intake/editorial workflow, not an AI response.
+        // Never simulate a successful AI call when no backend request was made.
+        setConsultMessages(prev => [...prev, {
+            id: createMessageId('note'),
+            role: 'assistant',
+            content: 'Your additional requirements have been added to this draft session. You can review them before generating the document.'
+        }]);
+        setIsLoading(false);
     };
 
     const handleStartBuild = async () => {
-        if (!selectedTemplate || !isAuthenticated) {
+        if (!selectedTemplate) {
+            Alert.alert('Template required', 'Select a document template before generating a draft.');
+            return;
+        }
+
+        if (!isAuthenticated) {
             Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
             return;
         }
@@ -169,6 +167,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 selectedTemplate.title,
                 generationInput.slice(0, 12000),
             );
+            if (!response?.content?.trim()) {
+                throw new Error('No draft was returned.');
+            }
             setDraftContent(response.content.trim());
             setStep('PREVIEW');
         } catch (error: any) {
