@@ -198,19 +198,17 @@ export const DocumentReviewScreen: React.FC = () => {
                         <View style={styles.resultsSection}>
                             <TouchableOpacity style={styles.resetBtn} onPress={() => setResult(null)}>
                                 <Ionicons name="refresh-outline" size={16} color={colors.primary} />
-                                <Text style={[styles.resetText, { color: colors.primary }]}>NEW AUDIT</Text>
+                                <Text style={[styles.resetText, { color: colors.primary }]}>NEW REVIEW</Text>
                             </TouchableOpacity>
 
-                            {/* Risk Summary Hero */}
+                            {/* General findings summary — no numerical risk/confidence score is shown. */}
                             <View style={[styles.riskHero, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <View style={styles.riskHeader}>
                                     <View>
                                         <Text style={[styles.riskTitle, { color: colors.onSurface }]}>{result.document_type}</Text>
                                         <Text style={[styles.riskStatus, { color: colors.primary }]}>{result.overall_verdict.toUpperCase()}</Text>
                                     </View>
-                                    <View style={[styles.scoreBubble, { backgroundColor: colors.primary }]}>
-                                        <Text style={styles.scoreText}>{result.risk_score}</Text>
-                                    </View>
+
                                 </View>
                                 <Text style={[styles.riskSummary, { color: colors.onSurfaceVariant }]}>{result.summary}</Text>
                             </View>
@@ -294,7 +292,7 @@ export const DocumentReviewScreen: React.FC = () => {
                     <BlurView intensity={30} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={[styles.loadingTitle, { color: colors.onSurface }]}>Audit in Progress</Text>
+                        <Text style={[styles.loadingTitle, { color: colors.onSurface }]}>Review in Progress</Text>
                         <Text style={[styles.loadingSub, { color: colors.onSurfaceVariant }]}>{loadingPhase}</Text>
                     </View>
                 </View>
@@ -430,18 +428,6 @@ const styles = StyleSheet.create({
         ...theme.typography.labelSm,
         fontWeight: '800',
         marginTop: 4,
-    },
-    scoreBubble: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    scoreText: {
-        ...theme.typography.titleLg,
-        color: '#FFF',
-        fontWeight: '900',
     },
     riskSummary: {
         ...theme.typography.bodyMd,
