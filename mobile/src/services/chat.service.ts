@@ -142,12 +142,22 @@ export const chatService = {
         await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
-    async cacheMessages(messages: ChatMessage[]): Promise<void> {
-        await AsyncStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(messages));
+    /**
+     * Legal chat content is intentionally not persisted in generic AsyncStorage.
+     * The backend conversation store is the canonical authenticated history;
+     * logout/account switching must not leave legal text in a device cache.
+     * Extra arguments are accepted for compatibility with older callers and
+     * deliberately ignored.
+     */
+    async cacheMessages(_messages: ChatMessage[], ..._legacyArgs: unknown[]): Promise<void> {
+        await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
     async getCachedMessages(): Promise<ChatMessage[]> {
-        const cached = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
-        return cached ? JSON.parse(cached) : [];
+        return [];
+    },
+
+    async getCachedConversation(): Promise<{ messages: ChatMessage[]; conversationId: string | null }> {
+        return { messages: [], conversationId: null };
     }
 };
