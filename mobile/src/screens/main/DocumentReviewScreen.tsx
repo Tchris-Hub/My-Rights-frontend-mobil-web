@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { logger } from '../../utils/logger';
 import {
     View,
     Text,
@@ -118,7 +119,7 @@ export const DocumentReviewScreen: React.FC = () => {
             setResult(analysis);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
-            console.error('Analysis failed:', error);
+            logger.error('Analysis failed:', error);
             failJob(jobId, error.message || 'Analysis failed');
             Alert.alert('Analysis Failed', error.message || 'Please ensure it is a text-based format.');
         } finally {
