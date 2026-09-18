@@ -9,6 +9,7 @@ const RATE_WINDOW_MS = 60_000;
 const MAX_OUTPUT_CHARS = 20_000;
 const MAX_STREAM_BYTES = 128 * 1024;
 const MAX_JURISDICTION_CHARS = 120;
+const SUPPORTED_JURISDICTIONS = new Set(['Nigeria']);
 
 type RateState = { windowStart: number; count: number };
 const rateState = new Map<string, RateState>();
@@ -220,8 +221,14 @@ Deno.serve(async (req: Request) => {
     const messages = parseAndValidateMessages(payload);
     const stream = payload.stream === true;
     const jurisdiction = typeof payload.jurisdiction === 'string' ? payload.jurisdiction.trim() : '';
+    if (!jurisdiction) {
+      return response({ error: 'Legal jurisdiction is required.' }, 400, cors);
+    }
     if (jurisdiction.length > MAX_JURISDICTION_CHARS) {
       return response({ error: 'Jurisdiction value is too long.' }, 400, cors);
+    }
+    if (!SUPPORTED_JURISDICTIONS.has(jurisdiction)) {
+      return response({ error: 'This legal jurisdiction is not currently supported.' }, 400, cors);
     }
 
     const clientAddress =
@@ -235,9 +242,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('AI provider is not configured.');
     }
 
-    const jurisdictionPrompt = jurisdiction
-      ? { role: 'system' as const, content: `Explicit jurisdiction supplied by the application: ${jurisdiction}. Do not infer a different jurisdiction.` }
-      : { role: 'system' as const, content: 'No jurisdiction has been supplied. Do not assume Nigerian or any other law; state that jurisdiction-specific verification is unavailable.' };
+    const jurisdictionPrompt = { role: 'system' as const, content: `Explicit supported legal jurisdiction: ${jurisdiction}. Apply only this jurisdiction and do not infer or substitute another.` };
 
     const apiMessages = [systemPrompt, jurisdictionPrompt, ...messages];
 
@@ -293,7 +298,7 @@ Deno.serve(async (req: Request) => {
     return response({
       choices: [{ message: { role: 'assistant', content: content.trim() } }],
       citation_status: 'unverified',
-      jurisdiction: jurisdiction || null,
+      jurisdiction,
     }, 200, cors);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Request failed.';
