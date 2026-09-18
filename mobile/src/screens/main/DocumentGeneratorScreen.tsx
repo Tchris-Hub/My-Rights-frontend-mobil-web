@@ -32,6 +32,7 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AuthenticatedChatResponse, PublicChatResponse } from '../../types';
+import { APP_CONFIG } from '../../constants/config';
 
 import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
@@ -92,6 +93,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
     };
 
     const handleIntakeSubmit = () => {
+        if (!isAuthenticated) {
+            Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
+            return;
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStep('CONSULT');
         setConsultMessages([{
@@ -130,46 +135,41 @@ export const DocumentGeneratorScreen: React.FC = () => {
     };
 
     const handleStartBuild = async () => {
+        if (!selectedTemplate || !isAuthenticated) {
+            Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
+            return;
+        }
+
+        const details = Object.entries(intakeData)
+            .map(([key, value]) => `${key}: ${value.trim()}`)
+            .filter((entry) => !entry.endsWith(':'))
+            .join('\\n');
+        const customRequirements = consultMessages
+            .filter((message) => message.role === 'user')
+            .map((message) => message.content.trim())
+            .filter(Boolean)
+            .join('\\n');
+        const generationInput = [details, customRequirements ? `Additional requirements:\\n${customRequirements}` : '']
+            .filter(Boolean)
+            .join('\\n\\n');
+
         setStep('BUILD');
+        setIsLoading(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        
-        // Mocking the generation process
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 0.1;
-            if (progress >= 1) {
-                clearInterval(interval);
-                setDraftContent(`
-                    <div style="font-family: serif; padding: 40px; color: #1a1a1a;">
-                        <h1 style="text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px;">${selectedTemplate?.title}</h1>
-                        <p style="text-align: right; margin-top: 20px;">Date: ${new Date().toLocaleDateString()}</p>
-                        
-                        <div style="margin-top: 40px;">
-                            <p>This Agreement is made between:</p>
-                            <p><strong>PARTY A:</strong> ${intakeData.landlord || intakeData.debtor || intakeData.party_a || '[N/A]'}</p>
-                            <p><strong>AND PARTY B:</strong> ${intakeData.tenant || intakeData.creditor || intakeData.party_b || '[N/A]'}</p>
-                        </div>
 
-                        <div style="margin-top: 30px; line-height: 1.6;">
-                            <h3>1. PURPOSE</h3>
-                            <p>The parties hereby agree to the terms specified in this legal instrument regarding the premises/debt/disclosure located at ${intakeData.address || intakeData.reason || intakeData.purpose || 'the specified location'}.</p>
-                            
-                            <h3>2. CONSIDERATION</h3>
-                            <p>The total sum of ₦${intakeData.rent || intakeData.amount || '0'} shall be payable as agreed between the parties.</p>
-
-                            <h3>3. SPECIAL PROVISIONS</h3>
-                            <p>${consultMessages.filter(m => m.role === 'user').map(m => m.content).join(' ') || 'Standard statutory provisions apply.'}</p>
-                        </div>
-
-                        <div style="margin-top: 80px; display: flex; justify-content: space-between;">
-                            <div style="border-top: 1px solid #000; width: 200px; padding-top: 10px; text-align: center;">Signature A</div>
-                            <div style="border-top: 1px solid #000; width: 200px; padding-top: 10px; text-align: center;">Signature B</div>
-                        </div>
-                    </div>
-                `);
-                setStep('PREVIEW');
-            }
-        }, 300);
+        try {
+            const response = await documentService.generateDocument(
+                selectedTemplate.title,
+                generationInput.slice(0, 12000),
+            );
+            setDraftContent(response.content.trim());
+            setStep('PREVIEW');
+        } catch (error: any) {
+            setStep('CONSULT');
+            Alert.alert('Drafting failed', error?.message || 'Could not generate the draft. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleExportPDF = async () => {
@@ -191,7 +191,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                     {step === 'SELECT' ? 'Choose your legal blueprint' : 
                      step === 'INTAKE' ? 'Input critical details' : 
-                     step === 'CONSULT' ? 'AI Consultation' : 'Finalizing draft'}
+                     step === 'CONSULT' ? 'AI-assisted drafting' : 'Draft preview — review before use'}
                 </Text>
             </View>
         </View>
@@ -575,6 +575,12 @@ const styles = StyleSheet.create({
     },
     previewSheet: {
         padding: 32,
+    },
+    previewWarning: {
+        marginTop: 24,
+        fontSize: 12,
+        lineHeight: 18,
+        fontWeight: '600',
     },
     previewText: {
         ...theme.typography.bodyLg,
