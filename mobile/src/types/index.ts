@@ -110,9 +110,7 @@ export interface AuthenticityMarkers {
 
 export interface DocumentAnalysisResponse {
     document_type: string;
-    confidence_score: number;
     summary: string;
-    risk_score: number;
     analysis_results: AnalysisResult[];
     overall_verdict: string;
     disclaimer: string;
