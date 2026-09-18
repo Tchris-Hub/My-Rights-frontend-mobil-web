@@ -6,6 +6,8 @@ const MAX_MESSAGE_CHARS = 12_000;
 const MAX_TOTAL_CHARS = 48_000;
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
+const MAX_OUTPUT_CHARS = 20_000;
+const MAX_STREAM_BYTES = 128 * 1024;
 
 type RateState = { windowStart: number; count: number };
 const rateState = new Map<string, RateState>();
@@ -62,6 +64,45 @@ function consumeRateLimit(key: string): void {
   }
 
   existing.count += 1;
+}
+
+function capProviderOutput(content: unknown): string {
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('AI provider returned an invalid response.');
+  }
+  const normalized = content.trim();
+  if (normalized.length > MAX_OUTPUT_CHARS) {
+    throw new Error('AI provider response is too large.');
+  }
+  return normalized;
+}
+
+function limitStream(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  let bytes = 0;
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        controller.close();
+        return;
+      }
+
+      bytes += value.byteLength;
+      if (bytes > MAX_STREAM_BYTES) {
+        await reader.cancel('stream size limit exceeded');
+        controller.enqueue(new TextEncoder().encode('data: [DONE]\\n\\n'));
+        controller.close();
+        return;
+      }
+
+      controller.enqueue(value);
+    },
+    async cancel(reason) {
+      await reader.cancel(reason);
+    },
+  });
 }
 
 function parseAndValidateMessages(payload: unknown): Array<{ role: 'user'; content: string }> {
@@ -205,8 +246,12 @@ Deno.serve(async (req: Request) => {
       }),
     });
 
-    if (stream) {
-      return new Response(providerResponse.body, {
+    if (stream && !providerResponse.ok) {
+      return response({ error: 'AI provider request failed.' }, 502, cors);
+    }
+
+    if (stream && providerResponse.body) {
+      return new Response(limitStream(providerResponse.body), {
         status: providerResponse.ok ? 200 : providerResponse.status,
         headers: {
           ...cors,
@@ -226,8 +271,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const content = providerBody?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || !content.trim()) {
+    let content: string;
+    try {
+      content = capProviderOutput(providerBody?.choices?.[0]?.message?.content);
+    } catch {
       return response({ error: 'AI provider returned an invalid response.' }, 502, cors);
     }
 
