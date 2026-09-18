@@ -96,19 +96,19 @@ const PrivacyContent = ({ colors }: any) => (
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. Data Collection</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            We collect your email, full name, and chat history (if authenticated) to provide a personalized experience.
+            We may collect account information such as your email and name, authenticated chat history, and technical/security metadata needed to operate and protect the service.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. Encryption</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            All your data is encrypted at rest and in transit. Your chat history is private and accessible only by you.
+            Data is protected in transit and by access controls appropriate to the service. Authenticated chat history is intended to be account-scoped; do not treat the AI service as a confidential attorney-client channel.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>3. Third Parties</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            We do not sell your personal data. We use OpenRouter/NVIDIA for AI processing, and no personal identifiers are sent to them.
+            We do not sell your personal data. Legal queries are routed through OpenRouter to the configured AI provider for processing. Do not include unnecessary personal identifiers in a query.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Data Deletion</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            You can request data deletion at any time via the Settings menu.
+            Data deletion and account-management controls are being implemented as part of the security remediation. Until those controls are available, contact the published support channel to request assistance.
         </Text>
     </View>
 );
