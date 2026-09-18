@@ -33,6 +33,8 @@ import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
 const SUGGESTIONS = [
     { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
     { title: 'Demand Letter', query: 'How do I write a demand letter?' },
@@ -325,6 +327,10 @@ export const ChatScreen: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
+                if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_ATTACHMENT_BYTES) {
+                    Alert.alert('File too large', 'Please choose an image smaller than 10 MB.');
+                    return;
+                }
                 setInputText(prev => prev + `\n[Image: ${asset.fileName || 'photo.jpg'}]`);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
@@ -338,11 +344,15 @@ export const ChatScreen: React.FC = () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['application/pdf', 'image/*', 'text/plain'],
-                copyToCacheDirectory: true,
+                copyToCacheDirectory: false,
             });
 
             if (!result.canceled && result.assets && result.assets[0]) {
                 const asset = result.assets[0];
+                if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
+                    Alert.alert('File too large', 'Please choose a document smaller than 10 MB.');
+                    return;
+                }
                 setInputText(prev => prev + `\n[Document: ${asset.name}]`);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
