@@ -27,7 +27,7 @@ export default {
             resizeMode: 'contain',
             backgroundColor: '#FFFFFF',
         },
-        plugins: ['react-native-document-scanner-plugin', 'expo-web-browser'],
+        plugins: ['react-native-document-scanner-plugin'],
         extra: {
             eas: {
                 projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4',
