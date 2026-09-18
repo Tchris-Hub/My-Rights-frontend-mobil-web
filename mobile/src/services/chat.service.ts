@@ -140,7 +140,10 @@ export const chatService = {
     },
 
     async deleteConversation(conversationId: string): Promise<void> {
-        await supabase.from('chat_sessions').delete().eq('id', conversationId);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('Sign in to manage conversations.');
+        const { error } = await supabase.from('chat_sessions').delete().eq('id', conversationId);
+        if (error) throw error;
         await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
