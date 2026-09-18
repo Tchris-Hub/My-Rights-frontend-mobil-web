@@ -15,22 +15,25 @@ export const chatService = {
         }
 
         let currentSessionId = conversationId;
-        if (session && !currentSessionId) {
-            const { data: newSession } = await supabase
+        if (!currentSessionId) {
+            const { data: newSession, error: sessionError } = await supabase
                 .from('chat_sessions')
-                .insert({ title: message.substring(0, 50) })
-                .select()
+                .insert({ title: message.substring(0, 50), user_id: session.user.id })
+                .select('id')
                 .single();
-            currentSessionId = newSession?.id;
+
+            if (sessionError || !newSession?.id) {
+                throw new Error('Unable to create the conversation.');
+            }
+            currentSessionId = newSession.id;
         }
 
-        if (session && currentSessionId) {
-            await supabase.from('chat_messages').insert({
-                session_id: currentSessionId,
-                role: 'user',
-                content: message
-            });
-        }
+        const { error: userMessageError } = await supabase.from('chat_messages').insert({
+            session_id: currentSessionId,
+            role: 'user',
+            content: message
+        });
+        if (userMessageError) throw new Error('Unable to save the message.');
 
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
             body: {
@@ -39,16 +42,19 @@ export const chatService = {
                 jurisdiction
             }
         });
-        if (error) throw error;
+        if (error) throw new Error('AI request failed. Please try again.');
 
-        const aiContent = data.choices[0].message.content;
-        if (session && currentSessionId) {
-            await supabase.from('chat_messages').insert({
-                session_id: currentSessionId,
-                role: 'assistant',
-                content: aiContent
-            });
+        const aiContent = data?.choices?.[0]?.message?.content;
+        if (typeof aiContent !== 'string' || !aiContent.trim()) {
+            throw new Error('AI returned no usable response.');
         }
+
+        const { error: assistantMessageError } = await supabase.from('chat_messages').insert({
+            session_id: currentSessionId,
+            role: 'assistant',
+            content: aiContent.trim()
+        });
+        if (assistantMessageError) throw new Error('AI response could not be saved safely.');
 
         return {
             content: aiContent,
@@ -114,39 +120,68 @@ export const chatService = {
         const decoder = new TextDecoder();
         let assistantContent = '';
         let streamDone = false;
+        let buffer = '';
 
         while (!streamDone) {
             const { done, value } = await reader.read();
             if (done) break;
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\\n');
-            for (const line of lines) {
-                if (!line.startsWith('data: ')) continue;
-                const dataLine = line.replace('data: ', '').trim();
-                if (dataLine === '[DONE]') {
-                    streamDone = true;
-                    break;
-                }
-                try {
-                    const parsed = JSON.parse(dataLine);
-                    const chunkContent = parsed.choices?.[0]?.delta?.content || '';
-                    if (chunkContent) {
-                        assistantContent += chunkContent;
-                        onChunk(chunkContent);
+
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\\n\\n');
+            buffer = events.pop() ?? '';
+
+            for (const event of events) {
+                const dataLines = event
+                    .split('\\n')
+                    .filter((line) => line.startsWith('data: '))
+                    .map((line) => line.slice(6).trim());
+
+                for (const dataLine of dataLines) {
+                    if (dataLine === '[DONE]') {
+                        streamDone = true;
+                        break;
                     }
-                } catch {
-                    // Ignore incomplete SSE JSON frames; the provider may split a frame across chunks.
+
+                    try {
+                        const parsed = JSON.parse(dataLine);
+                        const chunkContent = parsed.choices?.[0]?.delta?.content;
+                        if (typeof chunkContent === 'string' && chunkContent) {
+                            assistantContent += chunkContent;
+                            if (assistantContent.length > 20_000) {
+                                throw new Error('AI response is too large.');
+                            }
+                            onChunk(chunkContent);
+                        }
+                    } catch (parseError) {
+                        if (parseError instanceof Error && parseError.message === 'AI response is too large.') {
+                            throw parseError;
+                        }
+                        throw new Error('AI stream returned an invalid response.');
+                    }
                 }
             }
         }
 
-        if (persist && currentSessionId && assistantContent) {
+        if (!streamDone) {
+            throw new Error('AI stream ended before a complete response was received.');
+        }
+
+        const finalChunk = decoder.decode();
+        if (finalChunk) {
+            buffer += finalChunk;
+        }
+
+        if (!assistantContent.trim()) {
+            throw new Error('AI stream returned no usable response.');
+        }
+
+        if (persist && currentSessionId) {
             const { error: assistantMessageError } = await supabase.from('chat_messages').insert({
                 session_id: currentSessionId,
                 role: 'assistant',
                 content: assistantContent,
             });
-            if (assistantMessageError) throw assistantMessageError;
+            if (assistantMessageError) throw new Error('AI response could not be saved safely.');
         }
 
         return currentSessionId;
@@ -159,8 +194,8 @@ export const chatService = {
             .from('chat_sessions')
             .select('*')
             .order('updated_at', { ascending: false });
-        if (error) return [];
-        return data.map(s => ({
+        if (error) throw new Error('Unable to load conversation history.');
+        return (data ?? []).map(s => ({
             id: s.id,
             title: s.title,
             updated_at: s.updated_at
