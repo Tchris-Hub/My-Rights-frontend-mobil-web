@@ -139,6 +139,12 @@ export const ChatScreen: React.FC = () => {
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim();
         if (!messageText || isLoading || isSubmitting.current) return;
+
+        if (!isAuthenticated) {
+            Alert.alert('Sign in required', 'Sign in to use the Legal Agent. Guest mode does not send legal queries to the AI service.');
+            return;
+        }
+
         isSubmitting.current = true;
 
         // Guest limit logic
@@ -381,7 +387,7 @@ export const ChatScreen: React.FC = () => {
                                 </Text>
                             </View>
                             <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
-                                {isIncognito ? 'Incognito • Zero-Trace' : 'Online • AI verified'}
+                                {isIncognito ? 'Private Session' : 'Online • AI-generated information'}
                             </Text>
                         </View>
 
@@ -434,7 +440,7 @@ export const ChatScreen: React.FC = () => {
                                                 setIsIncognito(val);
                                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                                 if (val) {
-                                                    Alert.alert("Incognito Mode", "Your queries in this mode will not be saved to your profile or traced back to you.");
+                                                    Alert.alert("Private Session", "Messages from this session are not added to your My Rights conversation history. The request is still processed by the AI service and may appear in service/security logs.");
                                                 }
                                             }}
                                             trackColor={{ false: colors.outline, true: colors.primary + '40' }}
