@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { wrapUntrustedText } from './documentSecurity.service';
 import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
 
 const MAX_DOCUMENT_TEXT_CHARS = 40_000;
