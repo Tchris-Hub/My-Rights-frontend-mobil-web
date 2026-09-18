@@ -31,10 +31,12 @@ import { chatService } from '../../services/chat.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
+import { APP_CONFIG } from '../../constants/config';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const LEGAL_JURISDICTION = APP_CONFIG.LEGAL_JURISDICTION;
 
 const SUGGESTIONS = [
     { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
@@ -197,6 +199,7 @@ export const ChatScreen: React.FC = () => {
                 // HANDLE STREAMING (Authenticated)
                 let firstChunk = true;
                 await chatService.streamMessage(messageText, {
+                    jurisdiction: LEGAL_JURISDICTION,
                     conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
                     onChunk: (chunk) => {
                         setMessages((prev) =>
@@ -225,7 +228,8 @@ export const ChatScreen: React.FC = () => {
                 // HANDLE STREAMING (Public/Guest)
                 let firstChunk = true;
                 await chatService.streamMessage(messageText, {
-                    useAuthenticatedEndpoint: false,
+                    jurisdiction: LEGAL_JURISDICTION,
+                    conversationId: undefined,
                     onChunk: (chunk) => {
                         setMessages((prev) =>
                             prev.map((msg) => {
