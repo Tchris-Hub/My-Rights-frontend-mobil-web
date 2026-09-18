@@ -4,7 +4,6 @@ import { STORAGE_KEYS } from '../constants/config';
 import type {
     ChatMessage,
     ChatResponse,
-    EscalationResponse,
 } from '../types';
 
 export const chatService = {
