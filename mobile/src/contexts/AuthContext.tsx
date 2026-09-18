@@ -13,6 +13,7 @@ import { authService } from '../services/auth.service';
 import { supabase } from '../services/supabase';
 import { STORAGE_KEYS } from '../constants/config';
 import { logger } from '../utils/logger';
+import { localDataService } from '../services/localData.service';
 import type { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthContextType {
@@ -65,6 +66,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (!mounted) return;
 
                 if (profile) {
+                    const previousUserId = await localDataService.getActiveUserId();
+                    if (previousUserId && previousUserId !== profile.id) {
+                        await localDataService.clearUserScopedData();
+                    }
+                    await localDataService.setActiveUserId(profile.id);
                     await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
                     setUser(profile);
                     setIsGuest(false);
@@ -174,7 +180,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsLoading(true);
             setError(null);
             await authService.logout();
-            await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+            await localDataService.clearUserScopedData();
             setUser(null);
             setIsGuest(false);
             setNeedsPasswordReset(false);
