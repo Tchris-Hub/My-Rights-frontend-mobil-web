@@ -305,13 +305,32 @@ Deno.serve(async (req: Request) => {
       jurisdiction,
     }, 200, cors);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Request failed.';
+    const message = error instanceof Error ? error.message : '';
     const status =
       message.includes('Rate limit') ? 429 :
       message.includes('Origin') ? 403 :
       message.includes('too large') || message.includes('too many') ? 413 :
       400;
 
-    return response({ error: message }, status, cors);
+    const safeClientMessage =
+      status === 429 ? 'Rate limit exceeded. Please try again shortly.' :
+      status === 403 ? 'Origin is not allowed.' :
+      status === 413 ? 'Request is too large.' :
+      message === 'Invalid request body.' ||
+      message === 'Invalid JSON request body.' ||
+      message === 'messages must be an array.' ||
+      message === 'Invalid message count.' ||
+      message === 'Invalid message.' ||
+      message === 'Only user messages are accepted from the client.' ||
+      message === 'Message content must be text.' ||
+      message === 'Message content is empty or too large.' ||
+      message === 'Request content is too large.' ||
+      message === 'Legal jurisdiction is required.' ||
+      message === 'Jurisdiction value is too long.' ||
+      message === 'This legal jurisdiction is not currently supported.' ?
+        message :
+        'Request could not be completed safely.';
+
+    return response({ error: safeClientMessage }, status, cors);
   }
 });
