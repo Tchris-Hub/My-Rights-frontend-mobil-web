@@ -50,13 +50,23 @@ export const documentService = {
             }
         });
 
-        if (error) throw error;
+        if (error) throw new Error('Document analysis failed. Please try again.');
+
         const payload = data as DocumentAnalysisResponse & Record<string, unknown>;
-        // Numerical risk/confidence fields are intentionally discarded at the client boundary.
-        // The UI must not turn model-generated numbers into apparent legal certainty.
         const { risk_score: _riskScore, confidence_score: _confidenceScore, ...safePayload } = payload;
         void _riskScore;
         void _confidenceScore;
+
+        if (
+            typeof safePayload !== 'object' ||
+            !safePayload ||
+            typeof safePayload.summary !== 'string' ||
+            !safePayload.document_type ||
+            !Array.isArray(safePayload.analysis_results)
+        ) {
+            throw new Error('Document analysis returned an invalid response.');
+        }
+
         return safePayload as DocumentAnalysisResponse;
     },
 
@@ -88,7 +98,7 @@ export const documentService = {
             }
         });
 
-        if (error) throw error;
+        if (error) throw new Error('Document drafting failed. Please try again.');
         const content = data?.choices?.[0]?.message?.content;
         if (typeof content !== 'string' || !content.trim()) {
             throw new Error('The document generator returned no usable draft.');
@@ -104,7 +114,7 @@ export const documentService = {
         if (!uri || typeof uri !== 'string') {
             throw new Error('A valid document URI is required.');
         }
-        return 'Feature coming soon: OCR integration via Supabase Storage.';
+        throw new Error('Document text extraction is not available yet. No document was analyzed.');
     },
 
     async verifyStamp(uri: string): Promise<AuthenticityMarkers> {
@@ -112,13 +122,6 @@ export const documentService = {
             throw new Error('A valid document URI is required.');
         }
 
-        return {
-            has_stamp: false,
-            has_signature: false,
-            verdict: 'Unknown',
-            confidence: 'Low',
-            details: 'Visual verification is not currently available.',
-            red_flags: []
-        };
+        throw new Error('Document authenticity verification is not available yet. No authenticity determination was made.');
     },
 };
