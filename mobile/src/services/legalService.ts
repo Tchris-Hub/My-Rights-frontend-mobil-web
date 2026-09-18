@@ -32,9 +32,9 @@ export const legalService = {
     return data.map(item => ({
       ...item,
       type: item.organization?.type || 'Government',
-      rating: item.rating || 4.5,
-      reviews: item.reviews_count || 100,
-      credibility: 'Verified Partner'
+      rating: item.rating || 0,
+      reviews: item.reviews_count || 0,
+      credibility: item.verification_status === 'verified' ? 'Verified by source registry' : 'Unverified'
     })) as LegalAidCenter[];
   },
 
@@ -48,8 +48,8 @@ export const legalService = {
     return data.map(l => ({
       ...l,
       specialization: l.category || 'General Practice',
-      reviews: l.reviews_count || 50,
-      credibility: l.rating >= 4.8 ? 'Highly Recommended' : 'Verified Professional'
+      reviews: l.reviews_count || 0,
+      credibility: l.verification_status === 'verified' ? 'Verified by source registry' : 'Unverified'
     })) as Lawyer[];
   },
 
