@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { wrapUntrustedText } from './documentSecurity.service';
+import { APP_CONFIG } from '../constants/config';
 import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
 
 const MAX_DOCUMENT_TEXT_CHARS = 40_000;
@@ -44,7 +45,8 @@ export const documentService = {
                             safeDocument
                     }
                 ],
-                mode: 'analysis'
+                mode: 'analysis',
+                jurisdiction: APP_CONFIG.LEGAL_JURISDICTION
             }
         });
 
@@ -75,12 +77,21 @@ export const documentService = {
                             `Document type: ${safeType}\nUser details: ${safeDetails}`
                     }
                 ],
-                mode: 'generation'
+                mode: 'generation',
+                jurisdiction: APP_CONFIG.LEGAL_JURISDICTION
             }
         });
 
         if (error) throw error;
-        return data as DocumentGenerationResponse;
+        const content = data?.choices?.[0]?.message?.content;
+        if (typeof content !== 'string' || !content.trim()) {
+            throw new Error('The document generator returned no usable draft.');
+        }
+        return {
+            content: content.trim(),
+            doc_type: safeType,
+            warning: 'AI-generated draft for general information. Review it for completeness, applicable Nigerian law, current requirements and your facts with a qualified legal professional before signing or relying on it.',
+        };
     },
 
     async extractText(uri: string): Promise<string> {
