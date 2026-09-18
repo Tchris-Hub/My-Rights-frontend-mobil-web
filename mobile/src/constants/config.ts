@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
     ONBOARDING_COMPLETED: 'myrights_onboarding_completed',
     CHAT_HISTORY: 'myrights_chat_history',
     IS_GUEST: 'myrights_is_guest',
+    ACTIVE_USER_ID: 'myrights_active_user_id',
 };
 
 export const APP_CONFIG = {
