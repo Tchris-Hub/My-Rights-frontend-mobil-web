@@ -59,7 +59,7 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
             const response = await chatService.escalateConversation(conversationId, reason.trim(), urgency);
             Alert.alert(
                 '✅ Escalation Submitted',
-                `Your reference number is: ${response.reference_number}\n\nA legal professional will contact you ${response.estimated_response_time}.`,
+                `Your reference number is: ${response.reference_number}\n\nIf a participating legal-service provider accepts the request, their stated response process will apply.`,
                 [{ text: 'Okay', onPress: onClose }]
             );
             setReason('');
@@ -84,9 +84,9 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
                         <View style={[styles.iconCircle, { backgroundColor: theme.colors.error + '20' }]}>
                             <Ionicons name="call" size={32} color={theme.colors.error} />
                         </View>
-                        <Text style={[styles.title, { color: colors.onSurface }]}>Talk to a Lawyer</Text>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>Request Human Legal Assistance</Text>
                         <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                            Connect with a licensed legal aid partner for personalized help.
+                            Submit a request for human legal assistance. Availability and response times depend on the service provider.
                         </Text>
                     </View>
 
