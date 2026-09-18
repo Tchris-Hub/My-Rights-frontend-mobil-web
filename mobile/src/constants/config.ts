@@ -24,4 +24,6 @@ export const APP_CONFIG = {
     TERMS_VERSION: '2026-09-18',
     PRIVACY_POLICY_VERSION: '2026-09-18',
     TERMS_URL: 'https://myrights.ng/terms',
+    LEGAL_JURISDICTION: 'Nigeria',
+    LEGAL_JURISDICTIONS: ['Nigeria'] as const,
 };
