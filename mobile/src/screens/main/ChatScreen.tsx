@@ -28,6 +28,7 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
+import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -349,11 +350,19 @@ export const ChatScreen: React.FC = () => {
 
             if (!result.canceled && result.assets && result.assets[0]) {
                 const asset = result.assets[0];
-                if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
-                    Alert.alert('File too large', 'Please choose a document smaller than 10 MB.');
+                try {
+                    validateDocumentMetadata({
+                        name: asset.name,
+                        size: asset.size,
+                        mimeType: asset.mimeType,
+                    });
+                } catch (validationError) {
+                    Alert.alert('Unsupported document', validationError instanceof Error ? validationError.message : 'This document cannot be attached.');
                     return;
                 }
-                setInputText(prev => prev + `\n[Document: ${asset.name}]`);
+                // Do not read, execute, preview, or upload the selected bytes here.
+                // The current chat flow sends only a sanitized display label.
+                setInputText(prev => prev + `\n[Document: ${sanitizeDocumentName(asset.name)}]`);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
         } catch (error) {
