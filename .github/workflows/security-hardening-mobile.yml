@@ -32,10 +32,13 @@ jobs:
         run: npm ci
 
       - name: TypeScript verification
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Expo project health verification
-        run: npx expo-doctor
+        run: npm run doctor
+
+      - name: Deterministic release integrity verification
+        run: npm run verify:release
 
       - name: Release-path integrity verification
         shell: bash
@@ -47,7 +50,6 @@ jobs:
           if git grep -n -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- \
             mobile/App.tsx \
             mobile/app.config.ts \
-            mobile/app.json \
             mobile/eas.json \
             mobile/package.json \
             mobile/src; then
@@ -63,8 +65,7 @@ jobs:
           test -f .env.example
           test ! -e src/services/supabaseClient.ts
           test ! -e src/services/api.ts
-
-          node -e "const c=require('./package.json'); if(!c.scripts || !c.scripts.start) process.exit(1)"
+          test ! -e app.json
 
       - name: Supabase project reachability check
         shell: bash
