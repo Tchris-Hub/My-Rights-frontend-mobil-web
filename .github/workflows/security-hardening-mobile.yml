@@ -43,6 +43,9 @@ jobs:
       - name: High-severity dependency audit
         run: npm audit --audit-level=high
 
+      - name: Static security regression suite
+        run: npm run test:security
+
       - name: Release-path integrity verification
         shell: bash
         run: |
