@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
+import { APP_CONFIG } from '../../constants/config';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TermsModalProps {
@@ -84,7 +85,7 @@ const TermsContent = ({ colors }: any) => (
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Limitation of Liability</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            My Rights is not liable for actions taken based on AI responses. Use the platform for informational enrichment only.
+            My Rights is not liable for actions taken based on AI-generated information. The service is informational and does not create an attorney-client relationship.
         </Text>
     </View>
 );
@@ -92,7 +93,7 @@ const TermsContent = ({ colors }: any) => (
 const PrivacyContent = ({ colors }: any) => (
     <View>
         <Text style={[styles.text, { color: colors.onSurface }]}>
-            Your privacy is our priority. Here is how we handle your data:
+            This notice describes the current data flow and privacy baseline. Effective date: ${APP_CONFIG.PRIVACY_POLICY_VERSION}.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. Data Collection</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
@@ -104,11 +105,11 @@ const PrivacyContent = ({ colors }: any) => (
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>3. Third Parties</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            We do not sell your personal data. Legal queries are routed through OpenRouter to the configured AI provider for processing. Do not include unnecessary personal identifiers in a query.
+            We do not sell your personal data. Legal queries are routed through OpenRouter to the configured AI provider for processing. The provider chain may process data outside Nigeria. We do not promise zero provider retention or zero logging. Do not include unnecessary personal identifiers in a query.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Data Deletion</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            Data deletion and account-management controls are being implemented as part of the security remediation. Until those controls are available, contact the published support channel to request assistance.
+            You may request access, correction, or deletion through the published support channel. Automated account deletion is not yet verified in this release, so a request is not an instant-erasure guarantee. Support: ${APP_CONFIG.SUPPORT_EMAIL}.
         </Text>
     </View>
 );
