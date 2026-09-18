@@ -8,8 +8,8 @@ import type {
 } from '../types';
 
 export const chatService = {
-    async sendMessage(message: string, options: { conversationId?: string } = {}): Promise<ChatResponse> {
-        const { conversationId } = options;
+    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string } ): Promise<ChatResponse> {
+        const { conversationId, jurisdiction } = options;
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
             throw new Error('Sign in to use the legal advisor.');
@@ -36,7 +36,8 @@ export const chatService = {
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
             body: {
                 messages: [{ role: 'user', content: message }],
-                conversation_id: currentSessionId
+                conversation_id: currentSessionId,
+                jurisdiction
             }
         });
         if (error) throw error;
@@ -60,9 +61,9 @@ export const chatService = {
 
     async streamMessage(
         message: string,
-        options: { conversationId?: string; onChunk: (chunk: string) => void }
+        options: { conversationId?: string; jurisdiction: string; onChunk: (chunk: string) => void }
     ): Promise<void> {
-        const { conversationId, onChunk } = options;
+        const { conversationId, jurisdiction, onChunk } = options;
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
             throw new Error('Sign in to use the legal advisor.');
@@ -72,7 +73,8 @@ export const chatService = {
             body: {
                 messages: [{ role: 'user', content: message }],
                 stream: true,
-                conversation_id: conversationId
+                conversation_id: conversationId,
+                jurisdiction
             }
         });
 
