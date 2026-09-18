@@ -13,6 +13,15 @@ const SENSITIVE_KEYS = [
     'confirmPassword',
     'Authorization',
     'code',
+    'content',
+    'document',
+    'documentText',
+    'details',
+    'reason',
+    'userDetails',
+    'intakeData',
+    'query',
+    'prompt',
 ];
 
 /**
