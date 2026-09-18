@@ -158,7 +158,7 @@ export const DocumentReviewScreen: React.FC = () => {
                     </TouchableOpacity>
                     <View style={styles.titleContainer}>
                         <Text style={[styles.title, { color: colors.onSurface }]}>Review</Text>
-                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>Precision AI Risk Audit</Text>
+                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>AI Document Review</Text>
                     </View>
                 </View>
             </SafeAreaView>
@@ -177,7 +177,7 @@ export const DocumentReviewScreen: React.FC = () => {
                                 <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE TEXT BELOW</Text>
                                 <TextInput
                                     style={[styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
-                                    placeholder="Insert contract text here for immediate verification..."
+                                    placeholder="Paste document text for general information and review..."
                                     placeholderTextColor={colors.onSurfaceVariant + '80'}
                                     value={documentText}
                                     onChangeText={setDocumentText}
@@ -186,7 +186,7 @@ export const DocumentReviewScreen: React.FC = () => {
                             </View>
 
                             <Button
-                                title="Run Audit"
+                                title="Review Document"
                                 onPress={() => handleAnalyze()}
                                 loading={isLoading}
                                 disabled={!documentText.trim() || isLoading}
@@ -262,25 +262,25 @@ export const DocumentReviewScreen: React.FC = () => {
                                 </View>
 
                                 <View style={styles.editorialMetric}>
-                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>THE PLAIN TRUTH</Text>
+                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>GENERAL EXPLANATION</Text>
                                     <Text style={[styles.metricValue, { color: colors.onSurface }]}>{selectedClause.explanation_ei}</Text>
                                 </View>
 
                                 <View style={styles.editorialMetric}>
-                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>LEGAL STANDING</Text>
+                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>LEGAL CONTEXT</Text>
                                     <Text style={[styles.metricValue, { color: colors.onSurface }]}>{selectedClause.legal_principle}</Text>
                                 </View>
 
                                 <View style={[styles.riskWarning, { backgroundColor: colors.error + '10' }]}>
                                     <Ionicons name="alert-circle" size={20} color={colors.error} />
                                     <View style={{ flex: 1 }}>
-                                        <Text style={[styles.warningTitle, { color: colors.error }]}>LONG-TERM EXPOSURE</Text>
+                                        <Text style={[styles.warningTitle, { color: colors.error }]}>POTENTIAL CONCERNS</Text>
                                         <Text style={[styles.warningText, { color: colors.onSurface }]}>{selectedClause.long_term_risk}</Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.actionSection}>
-                                    <Text style={[styles.metricLabel, { color: colors.primary }]}>RECOMMENDED ARCHITECTURE</Text>
+                                    <Text style={[styles.metricLabel, { color: colors.primary }]}>POSSIBLE NEXT STEP</Text>
                                     <Text style={[styles.actionText, { color: colors.onSurface }]}>{selectedClause.action_step}</Text>
                                 </View>
                             </ScrollView>
