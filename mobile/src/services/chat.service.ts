@@ -60,25 +60,51 @@ export const chatService = {
 
     async streamMessage(
         message: string,
-        options: { conversationId?: string; jurisdiction: string; onChunk: (chunk: string) => void }
-    ): Promise<void> {
-        const { conversationId, jurisdiction, onChunk } = options;
+        options: {
+            conversationId?: string;
+            jurisdiction: string;
+            persist?: boolean;
+            onChunk: (chunk: string) => void;
+        }
+    ): Promise<string | null> {
+        const { conversationId, jurisdiction, persist = true, onChunk } = options;
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
             throw new Error('Sign in to use the legal advisor.');
+        }
+
+        let currentSessionId = conversationId ?? null;
+        if (persist && !currentSessionId) {
+            const { data: newSession, error: sessionError } = await supabase
+                .from('chat_sessions')
+                .insert({ title: message.substring(0, 50), user_id: session.user.id })
+                .select('id')
+                .single();
+            if (sessionError || !newSession?.id) {
+                throw new Error('Unable to create the conversation.');
+            }
+            currentSessionId = newSession.id;
+        }
+
+        if (persist && currentSessionId) {
+            const { error: userMessageError } = await supabase.from('chat_messages').insert({
+                session_id: currentSessionId,
+                role: 'user',
+                content: message,
+            });
+            if (userMessageError) throw userMessageError;
         }
 
         const { data, error } = await supabase.functions.invoke('legal-advisor', {
             body: {
                 messages: [{ role: 'user', content: message }],
                 stream: true,
-                conversation_id: conversationId,
-                jurisdiction
-            }
+                conversation_id: currentSessionId ?? undefined,
+                jurisdiction,
+            },
         });
 
         if (error) {
-            console.error('Edge Function Error:', error);
             throw new Error('AI Stream Error');
         }
 
@@ -86,25 +112,44 @@ export const chatService = {
         if (!reader) throw new Error('Streaming not supported by this device environment');
 
         const decoder = new TextDecoder();
-        while (true) {
+        let assistantContent = '';
+        let streamDone = false;
+
+        while (!streamDone) {
             const { done, value } = await reader.read();
             if (done) break;
             const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            const lines = chunk.split('\\n');
             for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const dataLine = line.replace('data: ', '').trim();
-                    if (dataLine === '[DONE]') break;
-                    try {
-                        const parsed = JSON.parse(dataLine);
-                        const content = parsed.choices?.[0]?.delta?.content || '';
-                        if (content) onChunk(content);
-                    } catch (e) {
-                        // Handle partial JSON chunks
+                if (!line.startsWith('data: ')) continue;
+                const dataLine = line.replace('data: ', '').trim();
+                if (dataLine === '[DONE]') {
+                    streamDone = true;
+                    break;
+                }
+                try {
+                    const parsed = JSON.parse(dataLine);
+                    const chunkContent = parsed.choices?.[0]?.delta?.content || '';
+                    if (chunkContent) {
+                        assistantContent += chunkContent;
+                        onChunk(chunkContent);
                     }
+                } catch {
+                    // Ignore incomplete SSE JSON frames; the provider may split a frame across chunks.
                 }
             }
         }
+
+        if (persist && currentSessionId && assistantContent) {
+            const { error: assistantMessageError } = await supabase.from('chat_messages').insert({
+                session_id: currentSessionId,
+                role: 'assistant',
+                content: assistantContent,
+            });
+            if (assistantMessageError) throw assistantMessageError;
+        }
+
+        return currentSessionId;
     },
 
     async getChatHistory(): Promise<any[]> {
