@@ -192,7 +192,10 @@ export interface LegalAidCenter {
     longitude: number;
     rating: number;
     reviews: number;
-    credibility: string;
+    credibility: 'Verified by source registry' | 'Unverified';
+    verification_status?: 'verified' | 'unverified';
+    verification_source_url?: string;
+    verified_at?: string;
 }
 
 export interface Lawyer {
@@ -204,7 +207,10 @@ export interface Lawyer {
     cases_won: number;
     rating: number;
     reviews: number;
-    credibility: string;
+    credibility: 'Verified by source registry' | 'Unverified';
+    verification_status?: 'verified' | 'unverified';
+    verification_source_url?: string;
+    verified_at?: string;
     bio?: string;
 }
 
