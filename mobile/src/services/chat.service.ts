@@ -187,6 +187,44 @@ export const chatService = {
         return currentSessionId;
     },
 
+    async escalateConversation(
+        conversationId: string,
+        reason: string,
+        urgency: 'low' | 'medium' | 'high' | 'critical',
+    ): Promise<{ reference_number: string; status: string }> {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+            throw new Error('Sign in to request human legal assistance.');
+        }
+
+        const trimmedReason = reason.trim();
+        if (!conversationId || !trimmedReason) {
+            throw new Error('A conversation and reason are required.');
+        }
+        if (trimmedReason.length > 4000) {
+            throw new Error('Escalation reason is too long.');
+        }
+
+        const referenceNumber = `MR-${Date.now().toString(36).toUpperCase()}-${session.user.id.slice(0, 6).toUpperCase()}`;
+        const { data, error } = await supabase
+            .from('legal_escalation_requests')
+            .insert({
+                reference_number: referenceNumber,
+                user_id: session.user.id,
+                conversation_id: conversationId,
+                reason: trimmedReason,
+                urgency,
+            })
+            .select('reference_number, status')
+            .single();
+
+        if (error || !data?.reference_number) {
+            throw new Error('Human legal assistance is not currently available. No escalation was submitted.');
+        }
+
+        return data;
+    },
+
     async getChatHistory(): Promise<any[]> {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) throw new Error('Sign in to view conversations.');
