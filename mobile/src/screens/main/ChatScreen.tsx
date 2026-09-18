@@ -85,7 +85,7 @@ export const ChatScreen: React.FC = () => {
             return () => {
                 if (isGuest || !isAuthenticated) {
                     setMessages([]);
-                    chatService.cacheMessages([], false); // Clear cache too just in case
+    
                 }
             };
         }, [isGuest, isAuthenticated])
@@ -105,8 +105,7 @@ export const ChatScreen: React.FC = () => {
                 const { messages: fetchedMessages, conversationId: fetchedId } = await chatService.getConversationDetails(route.params.conversationId);
                 setMessages(fetchedMessages);
                 setConversationId(fetchedId);
-                // Also update local cache so it's the "active" chat if user kills app
-                await chatService.cacheMessages(fetchedMessages, true, fetchedId);
+
             } catch (error) {
                 console.error("Failed to load chat history:", error);
                 Alert.alert("Error", "Could not load conversation history.");
@@ -121,23 +120,11 @@ export const ChatScreen: React.FC = () => {
         }
     };
 
-    const loadCachedConversation = async () => {
-        const { messages: cachedMessages, conversationId: cachedConversationId } = await chatService.getCachedConversation();
-        if (cachedMessages.length > 0) {
-            setMessages(cachedMessages);
-            setConversationId(cachedConversationId);
-        }
-    };
-
     useEffect(() => {
         if (messages.length > 0) {
-            // Only cache if authenticated and NOT in incognito mode
-            if (isAuthenticated && !isIncognito) {
-                chatService.cacheMessages(messages, true, conversationId);
-            }
             flatListRef.current?.scrollToEnd({ animated: true });
         }
-    }, [messages, isIncognito, isAuthenticated, conversationId]);
+    }, [messages]);
 
 
     const isSubmitting = useRef(false);
@@ -192,15 +179,14 @@ export const ChatScreen: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Refined Incognito: If authenticated, use authenticated endpoint but suppress saving to DB.
-            const useAuthenticatedEndpoint = isAuthenticated;
-
-            if (useAuthenticatedEndpoint) {
-                // HANDLE STREAMING (Authenticated)
+            // Authenticated streaming is the only legal-query path. Incognito is
+            // explicitly ephemeral: it suppresses database persistence.
+            if (isAuthenticated) {
                 let firstChunk = true;
                 await chatService.streamMessage(messageText, {
                     jurisdiction: LEGAL_JURISDICTION,
                     conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
+                    persist: !isIncognito,
                     onChunk: (chunk) => {
                         setMessages((prev) =>
                             prev.map((msg) => {
@@ -219,40 +205,18 @@ export const ChatScreen: React.FC = () => {
                     },
                 });
 
-                // Get final state to update conversationId if needed
-                // Note: The stream itself doesn't return the full AuthResponse object, 
-                // but we can infer the conversationId if it was a new chat.
-                // In a production app, we'd probably include the conversation_id in the SSE stream metadata.
-                // For now, if it was a new chat, we might need a separate call or just rely on the next refresh.
-            } else {
-                // HANDLE STREAMING (Public/Guest)
-                let firstChunk = true;
-                await chatService.streamMessage(messageText, {
-                    jurisdiction: LEGAL_JURISDICTION,
-                    conversationId: undefined,
-                    onChunk: (chunk) => {
-                        setMessages((prev) =>
-                            prev.map((msg) => {
-                                if (msg.id !== loadingMessage.id) return msg;
-                                return {
-                                    ...msg,
-                                    content: firstChunk ? chunk : msg.content + chunk,
-                                    isLoading: false,
-                                };
-                            })
-                        );
-                        if (firstChunk) {
-                            firstChunk = false;
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }
-                    },
-                });
-
-                if (isGuest) {
-                    setGuestMessageCount(prev => prev + 1);
+                if (!isIncognito) {
+                    const persistedConversationId = await chatService.streamMessage(messageText, {
+                        jurisdiction: LEGAL_JURISDICTION,
+                        conversationId: conversationId ?? undefined,
+                        persist: false,
+                        onChunk: () => {},
+                    });
+                    if (persistedConversationId && persistedConversationId !== conversationId) {
+                        setConversationId(persistedConversationId);
+                    }
                 }
-            }
-        } catch (error) {
+            }        } catch (error) {
             console.error('Chat error:', error);
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -291,7 +255,7 @@ export const ChatScreen: React.FC = () => {
                         setConversationId(null);
                         setGuestMessageCount(0);
                         // Clear local cache
-                        await chatService.cacheMessages([], isAuthenticated);
+
                     }
                 }
             ]
