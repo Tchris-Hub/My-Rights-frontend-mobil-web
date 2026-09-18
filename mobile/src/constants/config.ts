@@ -21,5 +21,7 @@ export const APP_CONFIG = {
     APP_VERSION: '1.0.0',
     SUPPORT_EMAIL: 'support@myrights.ng',
     PRIVACY_URL: 'https://myrights.ng/privacy',
+    TERMS_VERSION: '2026-09-18',
+    PRIVACY_POLICY_VERSION: '2026-09-18',
     TERMS_URL: 'https://myrights.ng/terms',
 };
