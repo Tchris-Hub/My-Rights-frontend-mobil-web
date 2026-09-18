@@ -25,6 +25,7 @@ export default {
                 'ACCESS_COARSE_LOCATION',
                 'ACCESS_FINE_LOCATION',
             ],
+            usesCleartextTraffic: false,
             adaptiveIcon: {
                 foregroundImage: './assets/adaptive_icon.png',
                 backgroundColor: '#006B3F',
