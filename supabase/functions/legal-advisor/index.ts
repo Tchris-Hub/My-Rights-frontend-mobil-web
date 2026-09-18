@@ -26,8 +26,6 @@ function getCorsHeaders(req: Request): Record<string, string> {
     .map((value) => value.trim())
     .filter(Boolean);
 
-  // Native mobile requests normally have no Origin header. Browser callers
-  // must explicitly appear in the server allow-list; wildcard CORS is avoided.
   if (!origin) return {};
   if (!configured.includes(origin)) {
     throw new Error('Origin is not allowed.');
@@ -94,8 +92,7 @@ function limitStream(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Arra
       bytes += value.byteLength;
       if (bytes > MAX_STREAM_BYTES) {
         await reader.cancel('stream size limit exceeded');
-        controller.enqueue(new TextEncoder().encode('data: [DONE]\\n\\n'));
-        controller.close();
+        controller.error(new Error('AI response exceeded the allowed size.'));
         return;
       }
 
@@ -129,9 +126,6 @@ function parseAndValidateMessages(payload: unknown): Array<{ role: 'user'; conte
     }
 
     const item = message as Record<string, unknown>;
-
-    // The client is never allowed to provide system/developer/assistant
-    // instructions. Server-owned instructions are added below.
     if (item.role !== 'user') {
       throw new Error('Only user messages are accepted from the client.');
     }
@@ -167,7 +161,7 @@ const systemPrompt = {
     'and give general information only. State uncertainty when authoritative verification is unavailable. ' +
     'The jurisdiction must be explicitly supplied by the server/request context; never silently assume one. ' +
     'Do not make decisions for the user, predict case outcomes, assign a numerical legal risk or confidence score, or imply that using this service creates a lawyer-client relationship. ' +
-    'For urgent, high-stakes, deadline-sensitive, criminal, immigration, family, or court matters, recommend review by a qualified Nigerian legal practitioner or appropriate official service. For document analysis, describe concerns and uncertainty qualitatively rather than assigning numerical risk/confidence scores. For document generation, produce a draft/template only; never fabricate signatures, stamps, notarization, official approval, filing status, parties, facts, citations, or legal validity. Use explicit placeholders where required information is missing. ' ,
+    'For urgent, high-stakes, deadline-sensitive, criminal, immigration, family, or court matters, recommend review by a qualified Nigerian legal practitioner or appropriate official service. For document analysis, describe concerns and uncertainty qualitatively rather than assigning numerical risk/confidence scores. For document generation, produce a draft/template only; never fabricate signatures, stamps, notarization, official approval, filing status, parties, facts, citations, or legal validity. Use explicit placeholders where required information is missing.',
 };
 
 Deno.serve(async (req: Request) => {
@@ -219,10 +213,17 @@ Deno.serve(async (req: Request) => {
       return response({ error: 'Request body is too large.' }, 413, cors);
     }
 
-    const payload = JSON.parse(body) as Record<string, unknown>;
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(body) as Record<string, unknown>;
+    } catch {
+      return response({ error: 'Invalid JSON request body.' }, 400, cors);
+    }
+
     const messages = parseAndValidateMessages(payload);
     const stream = payload.stream === true;
     const jurisdiction = typeof payload.jurisdiction === 'string' ? payload.jurisdiction.trim() : '';
+
     if (!jurisdiction) {
       return response({ error: 'Legal jurisdiction is required.' }, 400, cors);
     }
@@ -244,7 +245,10 @@ Deno.serve(async (req: Request) => {
       throw new Error('AI provider is not configured.');
     }
 
-    const jurisdictionPrompt = { role: 'system' as const, content: `Explicit supported legal jurisdiction: ${jurisdiction}. Apply only this jurisdiction and do not infer or substitute another.` };
+    const jurisdictionPrompt = {
+      role: 'system' as const,
+      content: `Explicit supported legal jurisdiction: ${jurisdiction}. Apply only this jurisdiction and do not infer or substitute another.`,
+    };
 
     const apiMessages = [systemPrompt, jurisdictionPrompt, ...messages];
 
@@ -269,7 +273,7 @@ Deno.serve(async (req: Request) => {
 
     if (stream && providerResponse.body) {
       return new Response(limitStream(providerResponse.body), {
-        status: providerResponse.ok ? 200 : providerResponse.status,
+        status: 200,
         headers: {
           ...cors,
           'Content-Type': providerResponse.headers.get('Content-Type') ?? 'text/event-stream',
@@ -295,8 +299,6 @@ Deno.serve(async (req: Request) => {
       return response({ error: 'AI provider returned an invalid response.' }, 502, cors);
     }
 
-    // Return only the minimum response shape consumed by the client. Provider
-    // metadata, request IDs and internal fields are intentionally not exposed.
     return response({
       choices: [{ message: { role: 'assistant', content: content.trim() } }],
       citation_status: 'unverified',
