@@ -93,7 +93,7 @@ const TermsContent = ({ colors }: any) => (
 const PrivacyContent = ({ colors }: any) => (
     <View>
         <Text style={[styles.text, { color: colors.onSurface }]}>
-            This notice describes the current data flow and privacy baseline. Effective date: ' + APP_CONFIG.PRIVACY_POLICY_VERSION + '
+            {'This notice describes the current data flow and privacy baseline. Effective date: ' + APP_CONFIG.PRIVACY_POLICY_VERSION}
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. Data Collection</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
@@ -109,7 +109,7 @@ const PrivacyContent = ({ colors }: any) => (
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>4. Data Deletion</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            You may request access, correction, or deletion through the published support channel. Automated account deletion is not yet verified in this release, so a request is not an instant-erasure guarantee. Support: ' + APP_CONFIG.SUPPORT_EMAIL + '
+            {'You may request access, correction, or deletion through the published support channel. Automated account deletion is not yet verified in this release, so a request is not an instant-erasure guarantee. Support: ' + APP_CONFIG.SUPPORT_EMAIL}
         </Text>
     </View>
 );
