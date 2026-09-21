@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
-import { chatService } from '../services/chat.service';
 import { logger } from '../utils/logger';
 
 export const useVoiceInput = (onTranscription: (text: string) => void) => {
@@ -62,11 +61,9 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
 
             if (uri) {
                 try {
-                    const result = await chatService.transcribeAudio(uri);
-                    if (result.text) {
-                        onTranscriptionRef.current(result.text);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    }
+                    // Server-side voice transcription is not currently implemented.
+                    // Do not invent a transcription result or call a nonexistent API.
+                    Alert.alert('Voice-to-text unavailable', 'Voice recording is available, but transcription is not currently supported. Please type your question instead.');
                 } finally {
                     // Always clean up the temp file after use
                     // NOTE: expo-file-system SDK 54+ moved legacy functions to /legacy path
