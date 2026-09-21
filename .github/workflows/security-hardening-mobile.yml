@@ -30,7 +30,7 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Repair npm lockfile if needed
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
@@ -65,7 +65,7 @@ jobs:
         run: npm run test:security
 
       - name: Release-path integrity verification
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
 
@@ -89,7 +89,7 @@ jobs:
           if (Test-Path app.json) { Write-Error 'Duplicate app.json must not exist.' }
 
       - name: Supabase project reachability check
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
 
@@ -122,7 +122,7 @@ jobs:
           }
 
       - name: Expo config inspection
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           $expoConfig = Join-Path $env:TEMP 'expo-config.json'
