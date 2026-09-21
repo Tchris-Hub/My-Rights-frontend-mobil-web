@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-mobile:
@@ -28,6 +28,23 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: mobile/package-lock.json
+
+      - name: Repair npm lockfile if needed
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if (git diff --quiet -- mobile/package-lock.json) {
+            Write-Host 'package-lock.json is already synchronized.'
+          }
+          else {
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add mobile/package-lock.json
+            git commit -m 'chore: sync mobile npm lockfile'
+            git push origin HEAD:$env:GITHUB_REF_NAME
+            Write-Host 'Synchronized package-lock.json and pushed the repair commit.'
+          }
 
       - name: Install dependencies
         run: npm ci
