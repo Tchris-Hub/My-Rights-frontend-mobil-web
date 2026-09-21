@@ -7,13 +7,14 @@ on:
   pull_request:
     branches:
       - security-hardening-v1
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   verify-mobile:
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, windows, x64]
     defaults:
       run:
         working-directory: mobile
@@ -47,63 +48,69 @@ jobs:
         run: npm run test:security
 
       - name: Release-path integrity verification
-        shell: bash
+        shell: pwsh
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = 'Stop'
 
           # Scope release-path checks to executable app/config files. Historical
           # audit notes and generated evidence files must not create false positives.
-          if git grep -n -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- \
-            mobile/App.tsx \
-            mobile/app.config.ts \
-            mobile/eas.json \
-            mobile/package.json \
-            mobile/src; then
-            echo 'Forbidden legacy backend/config reference detected.'
-            exit 1
-          fi
+          git grep -n -E 'injustice-production\.up\.railway\.app|EXPO_PUBLIC_API_URL|RAILWAY|supabaseClient' -- mobile/App.tsx mobile/app.config.ts mobile/eas.json mobile/package.json mobile/src
+          if ($LASTEXITCODE -eq 0) {
+            Write-Error 'Forbidden legacy backend/config reference detected.'
+          }
+          elseif ($LASTEXITCODE -ne 1) {
+            Write-Error "git grep failed with exit code $LASTEXITCODE."
+          }
 
-          if [ -e .env ]; then
-            echo 'mobile/.env must not exist in the release branch.'
-            exit 1
-          fi
+          if (Test-Path .env) {
+            Write-Error 'mobile/.env must not exist in the release branch.'
+          }
 
-          test -f .env.example
-          test ! -e src/services/supabaseClient.ts
-          test ! -e src/services/api.ts
-          test ! -e app.json
+          if (-not (Test-Path .env.example)) { Write-Error '.env.example is missing.' }
+          if (Test-Path src/services/supabaseClient.ts) { Write-Error 'Legacy supabaseClient.ts must not exist.' }
+          if (Test-Path src/services/api.ts) { Write-Error 'Legacy api.ts must not exist.' }
+          if (Test-Path app.json) { Write-Error 'Duplicate app.json must not exist.' }
 
       - name: Supabase project reachability check
-        shell: bash
+        shell: pwsh
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = 'Stop'
 
-          project_ref='prwcbruqvywakcvoknai'
-          url="https://${project_ref}.supabase.co/auth/v1/health"
-          status="$(curl -sS -o /tmp/supabase-health.txt -w '%{http_code}' --connect-timeout 10 --max-time 20 "$url")"
+          $projectRef = 'prwcbruqvywakcvoknai'
+          $url = "https://$projectRef.supabase.co/auth/v1/health"
+          $bodyFile = Join-Path $env:TEMP 'supabase-health.txt'
 
-          echo "Supabase health HTTP status: ${status}"
+          $status = & curl.exe -sS -o $bodyFile -w '%{http_code}' --connect-timeout 10 --max-time 20 $url
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Supabase health request failed with curl exit code $LASTEXITCODE."
+          }
 
-          if [ "$status" = "540" ]; then
-            echo 'Supabase project is paused.'
-            exit 1
-          fi
+          Write-Host "Supabase health HTTP status: $status"
 
-          case "$status" in
-            2??)
-              echo 'Supabase Auth health endpoint responded successfully.'
-              ;;
-            4??|5??)
-              echo 'Supabase project endpoint responded, but the service did not return a successful health response.'
-              cat /tmp/supabase-health.txt
-              exit 1
-              ;;
-            *)
-              echo 'Unexpected Supabase health response.'
-              cat /tmp/supabase-health.txt
-              exit 1
-              ;;
-          esac
+          if ($status -eq '540') {
+            Write-Error 'Supabase project is paused.'
+          }
+
+          if ($status -match '^2') {
+            Write-Host 'Supabase Auth health endpoint responded successfully.'
+          }
+          elseif ($status -match '^[45]') {
+            Write-Host 'Supabase project endpoint responded, but the service did not return a successful health response.'
+            Get-Content $bodyFile
+            Write-Error 'Supabase health check failed.'
+          }
+          else {
+            Get-Content $bodyFile
+            Write-Error 'Unexpected Supabase health response.'
+          }
 
       - name: Expo config inspection
-        run: npx expo config --json > /tmp/expo-config.json && node -e "const c=require('/tmp/expo-config.json'); if(JSON.stringify(c).includes('injustice-production.up.railway.app')) process.exit(1)"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expoConfig = Join-Path $env:TEMP 'expo-config.json'
+          npx expo config --json | Out-File -FilePath $expoConfig -Encoding utf8
+          $config = Get-Content $expoConfig -Raw
+          if ($config.Contains('injustice-production.up.railway.app')) {
+            Write-Error 'Legacy Railway URL detected in Expo config.'
+          }
