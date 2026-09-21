@@ -11,11 +11,6 @@ import { LogBox } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-
-// Complete the auth session if the app was opened via a redirect
-WebBrowser.maybeCompleteAuthSession();
-
 // React Native LogBox suppression
 LogBox.ignoreLogs(['[expo-av]', 'Expo AV has been deprecated']);
 
