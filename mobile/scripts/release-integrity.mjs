@@ -19,11 +19,19 @@ for (const script of ['start', 'typecheck', 'doctor', 'verify:release']) {
   if (typeof packageJson.scripts?.[script] !== 'string') fail(`Required npm script missing: ${script}`);
 }
 
-if (lockJson.packages?.['']?.dependencies && JSON.stringify(lockJson.packages[''].dependencies) !== JSON.stringify(packageJson.dependencies)) {
+const canonicalize = (value) => {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, canonicalize(entry)]));
+  }
+  return value;
+};
+
+if (lockJson.packages?.['']?.dependencies && JSON.stringify(canonicalize(lockJson.packages[''].dependencies)) !== JSON.stringify(canonicalize(packageJson.dependencies))) {
   fail('package-lock.json root dependencies do not match package.json.');
 }
 
-if (lockJson.packages?.['']?.devDependencies && JSON.stringify(lockJson.packages[''].devDependencies) !== JSON.stringify(packageJson.devDependencies)) {
+if (lockJson.packages?.['']?.devDependencies && JSON.stringify(canonicalize(lockJson.packages[''].devDependencies)) !== JSON.stringify(canonicalize(packageJson.devDependencies))) {
   fail('package-lock.json root devDependencies do not match package.json.');
 }
 
