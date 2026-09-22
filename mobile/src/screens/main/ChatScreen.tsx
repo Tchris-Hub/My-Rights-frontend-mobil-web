@@ -29,6 +29,7 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
+import { usageService } from '../../services/usage.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
@@ -59,6 +60,7 @@ export const ChatScreen: React.FC = () => {
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
+    const [chatQuotaRemaining, setChatQuotaRemaining] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
@@ -88,6 +90,23 @@ export const ChatScreen: React.FC = () => {
             };
         }, [isAuthenticated])
     );
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setChatQuotaRemaining(null);
+            return;
+        }
+
+        usageService.getAiQuota()
+            .then((quotas) => {
+                const chatQuota = quotas.find((quota) => quota.feature === 'chat');
+                setChatQuotaRemaining(chatQuota?.remaining ?? null);
+            })
+            .catch((error) => {
+                logger.error('Failed to load AI quota:', error);
+                setChatQuotaRemaining(null);
+            });
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -345,7 +364,11 @@ export const ChatScreen: React.FC = () => {
                                 </Text>
                             </View>
                             <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
-                                {isIncognito ? 'Private Session' : 'Online • AI-generated information'}
+                                {isIncognito
+                                    ? 'Private Session'
+                                    : chatQuotaRemaining === null
+                                        ? 'Online • AI-generated information'
+                                        : `Online • ${chatQuotaRemaining} free questions left today`}
                             </Text>
                         </View>
 
