@@ -1,9 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest } from './api';
-import { STORAGE_KEYS, APP_CONFIG } from '../constants/config';
+import { STORAGE_KEYS } from '../constants/config';
 import type { ChatMessage } from '../types';
 
 type ChatSession = { id: string; title: string; updated_at: string };
+
+type ChatResult = {
+    content: string;
+    conversation_id: string | null;
+};
 
 export const chatService = {
     async createConversation(title: string): Promise<string> {
@@ -14,66 +19,43 @@ export const chatService = {
         return session.id;
     },
 
-    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string }): Promise<{ content: string; conversation_id: string }> {
-        const currentSessionId = options.conversationId ?? (await this.createConversation(message));
+    async sendMessage(
+        message: string,
+        options: { conversationId?: string; persist?: boolean },
+    ): Promise<ChatResult> {
+        const shouldPersist = options.persist !== false;
+        const currentSessionId = shouldPersist
+            ? (options.conversationId ?? (await this.createConversation(message)))
+            : null;
 
-        await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
-            method: 'POST',
-            body: JSON.stringify({ role: 'user', content: message }),
-        });
-
-        const result = await apiRequest<{ content: string }>('/api/ai/chat', {
+        const result = await apiRequest<ChatResult>('/api/ai/chat', {
             method: 'POST',
             body: JSON.stringify({
                 conversation_id: currentSessionId,
                 message,
-                jurisdiction: options.jurisdiction || APP_CONFIG.LEGAL_JURISDICTION,
             }),
         });
 
         if (!result?.content?.trim()) throw new Error('AI returned no usable response.');
-        return { ...result, conversation_id: currentSessionId };
+        return result;
     },
 
     async streamMessage(
         message: string,
         options: {
             conversationId?: string;
-            jurisdiction: string;
             persist?: boolean;
             onChunk: (chunk: string) => void;
         },
     ): Promise<string | null> {
-        const currentSessionId =
-            options.conversationId ?? (options.persist === false ? null : await this.createConversation(message));
-
-        if (options.persist !== false && currentSessionId) {
-            await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
-                method: 'POST',
-                body: JSON.stringify({ role: 'user', content: message }),
-            });
-        }
-
-        const result = await apiRequest<{ content: string }>('/api/ai/chat', {
-            method: 'POST',
-            body: JSON.stringify({
-                conversation_id: currentSessionId,
-                message,
-                jurisdiction: options.jurisdiction || APP_CONFIG.LEGAL_JURISDICTION,
-            }),
+        // The method name is retained for UI compatibility, but this request
+        // is deliberately non-streaming until the transport supports SSE.
+        const result = await this.sendMessage(message, {
+            conversationId: options.conversationId,
+            persist: options.persist,
         });
-
-        if (!result.content?.trim()) throw new Error('AI returned no usable response.');
         options.onChunk(result.content);
-
-        if (options.persist !== false && currentSessionId) {
-            await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
-                method: 'POST',
-                body: JSON.stringify({ role: 'assistant', content: result.content }),
-            });
-        }
-
-        return currentSessionId;
+        return result.conversation_id;
     },
 
     async escalateConversation(
