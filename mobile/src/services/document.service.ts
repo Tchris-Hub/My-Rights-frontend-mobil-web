@@ -1,4 +1,4 @@
-import { apiRequest, binaryApiRequest } from './api';
+import { apiRequest, binaryApiRequest, createIdempotencyKey } from './api';
 import { File } from 'expo-file-system';
 import { wrapUntrustedText } from './documentSecurity.service';
 import { APP_CONFIG } from '../constants/config';
@@ -25,9 +25,9 @@ export const documentService = {
         const safeDocument = normalizeUntrustedDocument(documentText);
         const payload = await apiRequest<DocumentAnalysisResponse>('/api/ai/document/analyze', {
             method: 'POST',
+            headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
                 document: safeDocument,
-                jurisdiction: APP_CONFIG.LEGAL_JURISDICTION,
             }),
         });
 
@@ -65,6 +65,7 @@ export const documentService = {
             '/api/ai/document/analyze-image',
             bytes,
             mimeType,
+            createIdempotencyKey(),
         );
 
         const unsafe = payload as DocumentAnalysisResponse & Record<string, unknown>;
@@ -93,10 +94,10 @@ export const documentService = {
 
         const result = await apiRequest<DocumentGenerationResponse>('/api/ai/document/generate', {
             method: 'POST',
+            headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
                 document_type: safeType,
                 details: safeDetails,
-                jurisdiction: APP_CONFIG.LEGAL_JURISDICTION,
             }),
         });
 
