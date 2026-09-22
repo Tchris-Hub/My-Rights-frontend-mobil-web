@@ -34,7 +34,7 @@ import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import type { DocumentAnalysisResponse, AnalysisResult, AuthenticityMarkers } from '../../types';
+import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
 
 import { useJobs } from '../../contexts/JobContext';
 import { useNavigation } from '@react-navigation/native';
