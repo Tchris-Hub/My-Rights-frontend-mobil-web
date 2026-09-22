@@ -88,4 +88,25 @@ export async function streamApiRequest(
   return response;
 }
 
+export async function binaryApiRequest<T>(
+  path: string,
+  body: ArrayBuffer | Uint8Array,
+  contentType: string,
+): Promise<T> {
+  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
+    method: 'POST',
+    credentials: 'omit',
+    body,
+    headers: await getHeaders({
+      Accept: 'application/json',
+      'Content-Type': contentType,
+    }),
+  });
+
+  if (response.status === 401) {
+    await authClient.getSession();
+  }
+  return parseResponse<T>(response);
+}
+
 export { API_BASE_URL };
