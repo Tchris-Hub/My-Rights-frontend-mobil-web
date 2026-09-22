@@ -51,14 +51,14 @@ export const documentService = {
         if (!uri || typeof uri !== 'string') throw new Error('A valid image is required.');
         const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
         if (!allowedTypes.has(mimeType)) throw new Error('Only JPG, PNG, GIF, and WebP images are supported.');
-        if (typeof size === 'number' && size > 10 * 1024 * 1024) {
-            throw new Error('Image is too large. Please choose an image smaller than 10 MB.');
+        if (typeof size === 'number' && size > 4 * 1024 * 1024) {
+            throw new Error('Image is too large. Please choose an image smaller than 4 MB.');
         }
 
         const file = new File(uri);
         const bytes = await file.bytes();
         if (bytes.byteLength === 0) throw new Error('The selected image is empty.');
-        if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('Image is too large. Please choose an image smaller than 10 MB.');
+        if (bytes.byteLength > 4 * 1024 * 1024) throw new Error('Image is too large. Please choose an image smaller than 4 MB.');
 
         const payload = await binaryApiRequest<DocumentAnalysisResponse>(
             '/api/ai/document/analyze-image',
