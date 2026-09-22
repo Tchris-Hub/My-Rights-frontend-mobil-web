@@ -2,29 +2,41 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/config';
 
 /**
- * Clears local account-scoped data.
- *
- * This is deliberately separate from auth-session storage: Supabase Auth owns
- * its session lifecycle, while the app owns cached legal/chat/profile data.
- * Never clear onboarding or theme preferences during account switching.
+ * Local storage is limited to non-authoritative app preferences and transient
+ * account-scoped UI data. Better Auth owns authentication/session persistence
+ * through SecureStore; this service never stores access or refresh tokens.
  */
 export const localDataService = {
     async clearUserScopedData(): Promise<void> {
         await AsyncStorage.multiRemove([
-            STORAGE_KEYS.ACCESS_TOKEN,
-            STORAGE_KEYS.REFRESH_TOKEN,
-            STORAGE_KEYS.USER_DATA,
             STORAGE_KEYS.CHAT_HISTORY,
             STORAGE_KEYS.IS_GUEST,
-            STORAGE_KEYS.ACTIVE_USER_ID,
+            STORAGE_KEYS.PENDING_CONSENT,
         ]);
     },
 
-    async getActiveUserId(): Promise<string | null> {
-        return AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_USER_ID);
+    async getPendingConsent(): Promise<{ terms_version: string; privacy_version: string } | null> {
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_CONSENT);
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            if (
+                parsed?.terms_version === '2026-09-18' &&
+                parsed?.privacy_version === '2026-09-18'
+            ) {
+                return parsed;
+            }
+        } catch {
+            // Corrupt local state is treated as absent.
+        }
+        return null;
     },
 
-    async setActiveUserId(userId: string): Promise<void> {
-        await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_USER_ID, userId);
+    async setPendingConsent(consent: { terms_version: string; privacy_version: string }): Promise<void> {
+        await AsyncStorage.setItem(STORAGE_KEYS.PENDING_CONSENT, JSON.stringify(consent));
+    },
+
+    async clearPendingConsent(): Promise<void> {
+        await AsyncStorage.removeItem(STORAGE_KEYS.PENDING_CONSENT);
     },
 };
