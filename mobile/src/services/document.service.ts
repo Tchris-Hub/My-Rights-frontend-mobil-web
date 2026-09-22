@@ -1,7 +1,6 @@
 import { apiRequest, binaryApiRequest, createIdempotencyKey } from './api';
 import { File } from 'expo-file-system';
 import { wrapUntrustedText } from './documentSecurity.service';
-import { APP_CONFIG } from '../constants/config';
 import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
 
 const MAX_DOCUMENT_TEXT_CHARS = 40_000;
