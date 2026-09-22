@@ -29,19 +29,6 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 
-// Sophisticated Native Module Detection
-const getScannerInstance = () => {
-    try {
-        const Scanner = require('react-native-document-scanner-plugin')?.default;
-        if (!Scanner) return null;
-        if (typeof Scanner.scanDocument !== 'function') return null;
-        return Scanner;
-    } catch (e) {
-        return null;
-    }
-};
-
-const DocumentScanner = getScannerInstance();
 import { Button } from '../../components/ui/Button';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { documentService } from '../../services/document.service';
@@ -127,22 +114,92 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
+    const analyzeImageAsset = async (uri: string, mimeType: string, size?: number) => {
+        if (!isAuthenticated) {
+            Alert.alert('Sign in required', 'Sign in before reviewing a document.');
+            return;
+        }
+
+        setIsLoading(true);
+        setLoadingPhase('Uploading Document...');
+        const jobId = startJob({
+            type: 'analysis',
+            title: 'Analyzing Document',
+            progress: 'Uploading Document...',
+            params: { uri },
+        });
+
+        try {
+            setLoadingPhase('Reading Document Image...');
+            updateJob(jobId, { progress: 'Reading Document Image...' });
+
+            const analysis = await documentService.analyzeImage(uri, mimeType, size);
+            finishJob(jobId, analysis);
+            setResult(analysis);
+            setCapturedImage(uri);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (error: any) {
+            logger.error('Image analysis failed:', error);
+            failJob(jobId, error?.message || 'Image analysis failed');
+            Alert.alert('Analysis Failed', error?.message || 'Could not analyze the selected image.');
+        } finally {
+            setIsLoading(false);
+            setLoadingPhase('');
+        }
+    };
+
     const handleScan = () => {
         Alert.alert(
             'Capture Document',
             'Choose capture method:',
             [
-                { text: 'Scan with Camera', onPress: startScan },
-                { text: 'Import PDF', onPress: pickDocument },
-                { text: 'Photo Gallery', onPress: () => pickImage('gallery') },
+                { text: 'Use Camera', onPress: startScan },
+                { text: 'Choose Image', onPress: pickDocument },
                 { text: 'Cancel', style: 'cancel' },
             ]
         );
     };
 
-    const startScan = async () => { /* ... simplified for brevity or logic kept same ... */ };
-    const pickDocument = async () => { /* ... same logic ... */ };
-    const pickImage = async (source: 'camera' | 'gallery') => { /* ... same logic ... */ };
+    const startScan = async () => {
+        try {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permission.granted) {
+                Alert.alert('Permission needed', 'Camera access is required to capture a document.');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                quality: 0.8,
+                allowsEditing: false,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize);
+            }
+        } catch (error: any) {
+            logger.error('Camera capture failed:', error);
+            Alert.alert('Capture Failed', 'Could not capture the document image.');
+        }
+    };
+
+    const pickDocument = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'image/*',
+                copyToCacheDirectory: true,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
+            }
+        } catch (error: any) {
+            logger.error('Image selection failed:', error);
+            Alert.alert('Selection Failed', 'Could not read the selected image.');
+        }
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -170,8 +227,8 @@ export const DocumentReviewScreen: React.FC = () => {
                         <View style={styles.inputSection}>
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Snap or Upload Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, JPG, or PNG</Text>
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Snap or Upload Image</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>JPG, PNG, GIF, or WebP</Text>
                             </TouchableOpacity>
 
                             <View style={styles.editorialInput}>
