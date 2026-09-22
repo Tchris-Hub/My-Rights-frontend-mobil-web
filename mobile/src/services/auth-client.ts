@@ -9,6 +9,11 @@ if (!baseURL) {
 
 export const authClient = createAuthClient({
   baseURL: baseURL.replace(/\/$/, ''),
+  disableDefaultFetchPlugins: true,
+  sessionOptions: {
+    refetchInterval: 0,
+    refetchWhenOffline: false,
+  },
   plugins: [
     expoClient({
       scheme: 'myrights',
