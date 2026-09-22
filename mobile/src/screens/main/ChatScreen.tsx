@@ -46,7 +46,7 @@ const SUGGESTIONS = [
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { isAuthenticated, isGuest, logout } = useAuth();
+    const { isAuthenticated } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const insets = useSafeAreaInsets();
@@ -81,12 +81,12 @@ export const ChatScreen: React.FC = () => {
     useFocusEffect(
         React.useCallback(() => {
             return () => {
-                if (isGuest || !isAuthenticated) {
+                if (!isAuthenticated) {
                     setMessages([]);
     
                 }
             };
-        }, [isGuest, isAuthenticated])
+        }, [isAuthenticated])
     );
 
     useEffect(() => {
