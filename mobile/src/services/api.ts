@@ -97,6 +97,7 @@ export async function binaryApiRequest<T>(
   path: string,
   body: ArrayBuffer | Uint8Array,
   contentType: string,
+  idempotencyKey?: string,
 ): Promise<T> {
   const response = await fetch(`${requireApiBaseUrl()}${path}`, {
     method: 'POST',
@@ -105,6 +106,7 @@ export async function binaryApiRequest<T>(
     headers: await getHeaders({
       Accept: 'application/json',
       'Content-Type': contentType,
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     }),
   });
 
