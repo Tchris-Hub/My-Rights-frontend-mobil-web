@@ -44,6 +44,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url, token }) => {
       if (authTestHooks) authTestHooks.lastResetToken = token;
       await requireEmailDelivery(
