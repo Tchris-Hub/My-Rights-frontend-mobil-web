@@ -17,13 +17,11 @@ import {
     Image,
     Alert,
     Modal,
-    Platform,
     Keyboard,
     TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -48,17 +46,13 @@ export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
     const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
-    const { isAuthenticated, isGuest } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [documentText, setDocumentText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isScanning, setIsScanning] = useState(false);
-    const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [result, setResult] = useState<DocumentAnalysisResponse | null>(null);
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
-    const [stampResult, setStampResult] = useState<AuthenticityMarkers | null>(null);
-    const [isVerifyingStamp, setIsVerifyingStamp] = useState(false);
     const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
 
     useEffect(() => {
@@ -153,7 +147,6 @@ export const DocumentReviewScreen: React.FC = () => {
             finishJob(jobId, analysis);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
-            setCapturedImage(uri);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
             logger.error('Image analysis failed:', error);
