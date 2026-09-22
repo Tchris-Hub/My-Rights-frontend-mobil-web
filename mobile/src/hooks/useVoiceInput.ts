@@ -1,77 +1,79 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
-import { Audio } from 'expo-av';
+import {
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
+} from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { logger } from '../utils/logger';
 
 export const useVoiceInput = (onTranscription: (text: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    // Use ref so callbacks always see the latest recording instance
-    const recordingRef = useRef<Audio.Recording | null>(null);
-    // Keep a stable reference to the latest onTranscription callback
+    const recordingRef = useRef<ReturnType<typeof useAudioRecorder> | null>(null);
+
     const onTranscriptionRef = useRef(onTranscription);
     onTranscriptionRef.current = onTranscription;
 
-    // Clean up recording on unmount
+    const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+    recordingRef.current = audioRecorder;
+
     useEffect(() => {
         return () => {
-            if (recordingRef.current) {
-                recordingRef.current.stopAndUnloadAsync();
+            if (audioRecorder.getStatus().isRecording) {
+                audioRecorder.stop().catch(() => undefined);
             }
         };
-    }, []);
+    }, [audioRecorder]);
 
     const startRecording = useCallback(async () => {
         try {
-            const permission = await Audio.requestPermissionsAsync();
-            if (permission.status !== 'granted') {
+            const permission = await AudioModule.requestRecordingPermissionsAsync();
+            if (!permission.granted) {
                 Alert.alert('Permission Denied', 'Please enable microphone access to use voice-to-text.');
                 return;
             }
 
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
+            await setAudioModeAsync({
+                allowsRecording: true,
+                playsInSilentMode: true,
             });
 
-            const { recording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
-            recordingRef.current = recording;
+            await audioRecorder.prepareToRecordAsync();
+            audioRecorder.record();
+
             setIsRecording(true);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (err) {
             logger.error('Failed to start recording', err);
             Alert.alert('Error', 'Could not start recording. Please try again.');
         }
-    }, []);
+    }, [audioRecorder]);
 
     const stopRecording = useCallback(async () => {
-        const currentRecording = recordingRef.current;
-        if (!currentRecording) return;
+        if (!audioRecorder.getStatus().isRecording) return;
 
         setIsRecording(false);
         setIsTranscribing(true);
 
         try {
-            await currentRecording.stopAndUnloadAsync();
-            const uri = currentRecording.getURI();
-            recordingRef.current = null;
+            await audioRecorder.stop();
+            const uri = audioRecorder.uri;
 
             if (uri) {
                 try {
-                    // Server-side voice transcription is not currently implemented.
-                    // Do not invent a transcription result or call a nonexistent API.
-                    Alert.alert('Voice-to-text unavailable', 'Voice recording is available, but transcription is not currently supported. Please type your question instead.');
+                    Alert.alert(
+                        'Voice-to-text unavailable',
+                        'Voice recording is available, but transcription is not currently supported. Please type your question instead.'
+                    );
                 } finally {
-                    // Always clean up the temp file after use
-                    // NOTE: expo-file-system SDK 54+ moved legacy functions to /legacy path
                     try {
                         const { deleteAsync } = await import('expo-file-system/legacy');
                         await deleteAsync(uri, { idempotent: true });
                     } catch {
-                        // Safe to ignore cleanup failures
+                        // Safe to ignore cleanup failures.
                     }
                 }
             }
@@ -81,7 +83,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
         } finally {
             setIsTranscribing(false);
         }
-    }, []);
+    }, [audioRecorder]);
 
     const toggleRecording = useCallback(() => {
         if (isRecording) {
@@ -94,6 +96,6 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
     return {
         isRecording,
         isTranscribing,
-        toggleRecording
+        toggleRecording,
     };
 };
