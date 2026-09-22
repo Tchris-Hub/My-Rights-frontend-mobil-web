@@ -119,6 +119,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             finishJob(jobId, analysis);
             setResult(analysis);
+            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
             logger.error('Analysis failed:', error);
@@ -150,6 +151,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             const analysis = await documentService.analyzeImage(uri, mimeType, size);
             finishJob(jobId, analysis);
+            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
             setCapturedImage(uri);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
