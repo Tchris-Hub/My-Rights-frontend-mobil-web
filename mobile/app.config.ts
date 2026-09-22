@@ -43,6 +43,7 @@ export default {
         plugins: [
             'react-native-document-scanner-plugin',
             'expo-font',
+            'expo-audio',
             'expo-secure-store',
             'expo-sharing',
             'expo-splash-screen',
