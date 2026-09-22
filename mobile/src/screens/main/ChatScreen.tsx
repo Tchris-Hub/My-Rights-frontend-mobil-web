@@ -201,6 +201,19 @@ export const ChatScreen: React.FC = () => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         }
                     },
+                    onComplete: (meta) => {
+                        setMessages((prev) =>
+                            prev.map((msg) =>
+                                msg.id === loadingMessage.id
+                                    ? {
+                                        ...msg,
+                                        sources: meta.sources,
+                                        isVerified: meta.citation_status === 'verified_context',
+                                    }
+                                    : msg
+                            )
+                        );
+                    },
                 });
 
                 if (persistedConversationId && persistedConversationId !== conversationId) {
