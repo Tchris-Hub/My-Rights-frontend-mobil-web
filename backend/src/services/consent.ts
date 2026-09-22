@@ -1,36 +1,30 @@
 import { prisma } from '../db';
 import { HttpError } from '../authz';
 
-/**
- * Terms/Privacy consent — recorded server-side against the authenticated user.
- * Append-oriented: a new (terms_version, privacy_version) pair adds a new row;
- * re-recording the same pair is idempotent. Historical records are never
- * overwritten or deleted.
- */
+const CURRENT_TERMS_VERSION = process.env.TERMS_VERSION ?? '2026-09-18';
+const CURRENT_PRIVACY_VERSION = process.env.PRIVACY_POLICY_VERSION ?? '2026-09-18';
+
 export async function recordConsent(
   userId: string,
   terms_version: string,
   privacy_version: string,
 ): Promise<void> {
-  if (typeof terms_version !== 'string' || !terms_version.trim()) {
-    throw new HttpError(400, 'Terms version is required.');
-  }
-  if (typeof privacy_version !== 'string' || !privacy_version.trim()) {
-    throw new HttpError(400, 'Privacy version is required.');
+  if (terms_version !== CURRENT_TERMS_VERSION || privacy_version !== CURRENT_PRIVACY_VERSION) {
+    throw new HttpError(409, 'The current Terms of Service and Privacy Policy must be accepted.');
   }
 
   await prisma.privacyConsent.upsert({
     where: {
       user_id_terms_version_privacy_version: {
         user_id: userId,
-        terms_version: terms_version.trim(),
-        privacy_version: privacy_version.trim(),
+        terms_version: CURRENT_TERMS_VERSION,
+        privacy_version: CURRENT_PRIVACY_VERSION,
       },
     },
     create: {
       user_id: userId,
-      terms_version: terms_version.trim(),
-      privacy_version: privacy_version.trim(),
+      terms_version: CURRENT_TERMS_VERSION,
+      privacy_version: CURRENT_PRIVACY_VERSION,
       source: 'mobile_signup',
     },
     update: {},
