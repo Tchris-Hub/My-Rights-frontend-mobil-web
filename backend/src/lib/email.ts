@@ -1,14 +1,5 @@
 import nodemailer from 'nodemailer';
 
-/**
- * Server-side email via SMTP. Credentials come only from server env vars —
- * never the mobile bundle, Expo config, or source control.
- *
- * Fails SOFT: a transient email failure must not block account creation or a
- * password-reset request (the user can resend). Failures are logged loudly for
- * operators, but never surface SMTP details to the client.
- */
-
 export interface SendEmailArgs {
   to: string;
   subject: string;
@@ -37,19 +28,32 @@ function getTransporter(): nodemailer.Transporter {
 }
 
 export function isEmailConfigured(): boolean {
-  return Boolean(host && user && pass);
+  return Boolean(host && user && pass && from);
 }
 
+/**
+ * Returns true only when Nodemailer successfully hands the message to the
+ * configured SMTP transport. Authentication flows treat false as a failed
+ * security-sensitive operation; SMTP details never reach the client.
+ *
+ * This intentionally does not claim that mailbox delivery has occurred.
+ */
 export async function sendEmail({ to, subject, text, html }: SendEmailArgs): Promise<boolean> {
   if (!isEmailConfigured()) {
-    console.error('[email] SMTP not configured — skipped send:', subject);
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('[email] SMTP is not configured; authentication email was not sent.');
+    }
     return false;
   }
+
   try {
     await getTransporter().sendMail({ from, to, subject, text, html });
     return true;
   } catch (err) {
-    console.error('[email] send failed:', subject, err instanceof Error ? err.message : err);
+    console.error(
+      '[email] authentication email handoff failed:',
+      err instanceof Error ? err.message : 'unknown error',
+    );
     return false;
   }
 }
