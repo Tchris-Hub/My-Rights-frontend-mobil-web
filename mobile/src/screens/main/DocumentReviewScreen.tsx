@@ -32,6 +32,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Button } from '../../components/ui/Button';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { documentService } from '../../services/document.service';
+import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,6 +59,20 @@ export const DocumentReviewScreen: React.FC = () => {
     const [loadingPhase, setLoadingPhase] = useState<string>('');
     const [stampResult, setStampResult] = useState<AuthenticityMarkers | null>(null);
     const [isVerifyingStamp, setIsVerifyingStamp] = useState(false);
+    const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setAnalyzeQuotaRemaining(null);
+            return;
+        }
+        usageService.getAiQuota()
+            .then((quotas) => {
+                const quota = quotas.find((item) => item.feature === 'document_analyze');
+                setAnalyzeQuotaRemaining(quota?.remaining ?? null);
+            })
+            .catch((error) => logger.error('Failed to load document-review quota:', error));
+    }, [isAuthenticated]);
 
     // Check if there's a finished job for this screen
     useEffect(() => {
@@ -244,10 +259,10 @@ export const DocumentReviewScreen: React.FC = () => {
                             </View>
 
                             <Button
-                                title="Review Document"
+                                title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
                                 onPress={() => handleAnalyze()}
                                 loading={isLoading}
-                                disabled={!documentText.trim() || isLoading}
+                                disabled={!documentText.trim() || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
                                 // No border on button per guideline
                             />
