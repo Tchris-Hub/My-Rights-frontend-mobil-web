@@ -18,7 +18,7 @@ run('authentication (HTTP end-to-end)', () => {
 
   it('signup → unverified 401 → verify → protected access → logout → 401', async () => {
     // 1. Signup (email verification required; no session yet).
-    const signup = await agent.post('/api/auth/sign-up/email').send({ email, password, name: 'Auth Test' });
+    const signup = await agent.post('/api/auth/sign-up/email').send({ email, password, name: 'Auth Test', accept_terms: true, terms_version: '2026-09-18', privacy_version: '2026-09-18' });
     expect(signup.status).toBe(200);
 
     // 2. Protected endpoint rejects the unauthenticated agent.
@@ -26,7 +26,7 @@ run('authentication (HTTP end-to-end)', () => {
     expect(beforeVerify.status).toBe(401);
 
     // 3. Verify email (token captured by the email callback, no SMTP needed).
-    const token = authTestHooks.lastVerificationToken;
+    const token = authTestHooks?.lastVerificationToken;
     expect(token).toBeTruthy();
     const verify = await agent.get(`/api/auth/verify-email?token=${encodeURIComponent(token as string)}`);
     expect(verify.status).toBeLessThan(400);
