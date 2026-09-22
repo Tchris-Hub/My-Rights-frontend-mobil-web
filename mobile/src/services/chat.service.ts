@@ -5,9 +5,20 @@ import type { ChatMessage } from '../types';
 
 type ChatSession = { id: string; title: string; updated_at: string };
 
+type GroundingSource = {
+    title: string;
+    section?: string;
+    excerpt?: string;
+    citation?: string;
+    source_url?: string;
+    issuing_authority?: string;
+};
+
 type ChatResult = {
     content: string;
     conversation_id: string | null;
+    sources?: GroundingSource[];
+    citation_status?: string;
 };
 
 export const chatService = {
@@ -46,6 +57,7 @@ export const chatService = {
             conversationId?: string;
             persist?: boolean;
             onChunk: (chunk: string) => void;
+            onComplete?: (meta: { sources?: GroundingSource[]; citation_status?: string }) => void;
         },
     ): Promise<string | null> {
         const shouldPersist = options.persist !== false;
@@ -89,11 +101,17 @@ export const chatService = {
                     content?: string;
                     conversation_id?: string | null;
                     error?: string;
+                    sources?: GroundingSource[];
+                    citation_status?: string;
                 };
                 if (payload.type === 'delta' && typeof payload.content === 'string') {
                     options.onChunk(payload.content);
                 } else if (payload.type === 'done') {
                     conversationId = payload.conversation_id ?? null;
+                    options.onComplete?.({
+                        sources: payload.sources,
+                        citation_status: payload.citation_status,
+                    });
                     completed = true;
                 } else if (payload.type === 'error') {
                     throw new Error(payload.error || 'AI provider request failed.');
