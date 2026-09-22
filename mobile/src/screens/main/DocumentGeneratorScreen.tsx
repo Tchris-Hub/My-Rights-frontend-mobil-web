@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
 import { documentService } from '../../services/document.service';
+import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
@@ -70,10 +71,26 @@ export const DocumentGeneratorScreen: React.FC = () => {
     const [draftContent, setDraftContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [userInput, setUserInput] = useState('');
+    const [generationQuotaRemaining, setGenerationQuotaRemaining] = useState<number | null>(null);
 
     useEffect(() => {
         loadTemplates();
     }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setGenerationQuotaRemaining(null);
+            return;
+        }
+        usageService.getAiQuota()
+            .then((quotas) => {
+                const quota = quotas.find((item) => item.feature === 'document_generate');
+                setGenerationQuotaRemaining(quota?.remaining ?? null);
+            })
+            .catch((error) => logger.error('Failed to load document-generation quota:', error));
+    }, [isAuthenticated]);
+
+
 
     const loadTemplates = async () => {
         try {
@@ -143,6 +160,10 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
         if (!isAuthenticated) {
             Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
+            return;
+        }
+        if (generationQuotaRemaining === 0) {
+            Alert.alert('Daily limit reached', 'Your free document-generation limit has been reached. You can generate another draft tomorrow.');
             return;
         }
 
