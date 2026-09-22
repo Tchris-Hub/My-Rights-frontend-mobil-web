@@ -133,9 +133,8 @@ export const SignupScreen: React.FC = () => {
                 name: fullName.trim(),
                 accept_terms: acceptedTerms,
                 terms_version: APP_CONFIG.TERMS_VERSION,
-                privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION
-                // phone parameter omitted here as backend might not yet expect it, 
-                // but the UI has it for form completeness matching Stitch.
+                privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION,
+                phone_number: phone.trim() || undefined,
             });
         } catch (err) {
             // Error managed by AuthContext
