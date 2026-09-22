@@ -11,10 +11,10 @@ export function buildRoutes(): Router {
 
   router.get('/health', (_req, res) => res.json({ ok: true }));
 
-  router.get('/api/users/me', requireUser, requireConsent, asyncHandler(async (req, res) => {
+  router.get('/api/users/me', requireUser, asyncHandler(async (req, res) => {
     res.json(await profile.getProfile((req as AuthedRequest).userId));
   }));
-  router.patch('/api/users/me', requireUser, requireConsent, asyncHandler(async (req, res) => {
+  router.patch('/api/users/me', requireUser, asyncHandler(async (req, res) => {
     res.json(await profile.updateProfile((req as AuthedRequest).userId, req.body ?? {}));
   }));
 
@@ -51,6 +51,16 @@ export function buildRoutes(): Router {
       await chat.addMessage((req as AuthedRequest).userId, req.params.id, role, req.body?.content),
     );
   }));
+
+  // AI generation remains intentionally behind a distinct next objective.
+  // These routes establish the authenticated API boundary without rebuilding
+  // the AI security/provider layer during the auth/data migration.
+  const aiMigrationPending = (_req: any, res: any) => {
+    res.status(503).json({ error: 'AI gateway migration is the next distinct objective.' });
+  };
+  router.post('/api/ai/chat', requireUser, requireConsent, aiMigrationPending);
+  router.post('/api/ai/document/analyze', requireUser, requireConsent, aiMigrationPending);
+  router.post('/api/ai/document/generate', requireUser, requireConsent, aiMigrationPending);
 
   router.post('/api/escalations', requireUser, requireConsent, asyncHandler(async (req, res) => {
     res.status(201).json(await escalation.createEscalation((req as AuthedRequest).userId, req.body ?? {}));
