@@ -17,7 +17,7 @@ import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
-export const ResetPasswordScreen: React.FC = () => {
+export const ResetPasswordScreen: React.FC<{ route: { params?: { token?: string } } }> = ({ route }) => {
     const navigation = useNavigation();
     const { colors } = useTheme();
     const { updateUserPassword, error, clearError } = useAuth();
@@ -53,7 +53,7 @@ export const ResetPasswordScreen: React.FC = () => {
 
         try {
             setIsLoading(true);
-            await updateUserPassword(password);
+            await updateUserPassword(password, route.params?.token);
             Alert.alert(
                 "Success",
                 "Your password has been updated. You can now log in with your new password.",
