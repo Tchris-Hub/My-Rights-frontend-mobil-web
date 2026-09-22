@@ -1,12 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { auth } from './lib/auth';
+import { prisma } from './db';
 
-/** A controlled HTTP error carrying a client-safe message and status. */
 export class HttpError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
+  constructor(public readonly status: number, message: string) {
     super(message);
     this.name = 'HttpError';
   }
@@ -20,22 +17,18 @@ export const asyncHandler =
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 
-/**
- * Authorization seam — derives identity from the Better Auth session.
- *
- * The client never supplies a user id. `userId` is resolved server-side from
- * the session cookie/token attached to the request, and every service query is
- * scoped by it. Unauthenticated or invalid sessions fail closed (401).
- */
-export function requireUser(req: Request, res: Response, next: NextFunction): void {
+function getRequestHeaders(req: Request): Headers {
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
     if (typeof value === 'string') headers.set(key, value);
     else if (Array.isArray(value)) headers.set(key, value.join(', '));
   }
+  return headers;
+}
 
+export function requireUser(req: Request, res: Response, next: NextFunction): void {
   auth.api
-    .getSession({ headers })
+    .getSession({ headers: getRequestHeaders(req) })
     .then((result) => {
       const session = result?.session;
       if (!session) {
@@ -48,4 +41,37 @@ export function requireUser(req: Request, res: Response, next: NextFunction): vo
     .catch(() => {
       res.status(401).json({ error: 'Authentication required.' });
     });
+}
+
+export async function requireConsent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userId = (req as AuthedRequest).userId;
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required.' });
+    return;
+  }
+
+  const termsVersion = process.env.TERMS_VERSION ?? '2026-09-18';
+  const privacyVersion = process.env.PRIVACY_POLICY_VERSION ?? '2026-09-18';
+
+  try {
+    const consent = await prisma.privacyConsent.findUnique({
+      where: {
+        user_id_terms_version_privacy_version: {
+          user_id: userId,
+          terms_version: termsVersion,
+          privacy_version: privacyVersion,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!consent) {
+      res.status(428).json({ error: 'Current Terms of Service and Privacy Policy consent is required.' });
+      return;
+    }
+
+    next();
+  } catch {
+    res.status(503).json({ error: 'Consent status could not be verified safely.' });
+  }
 }
