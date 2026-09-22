@@ -1,19 +1,14 @@
 /**
- * Application configuration.
- *
- * Release architecture is Supabase-only. There is deliberately no mobile
- * backend URL, localhost fallback, Railway fallback, or alternate API host.
+ * Client configuration. Only non-secret values may use EXPO_PUBLIC_* variables.
+ * The backend URL is intentionally supplied at runtime; no credentials are
+ * embedded in the mobile bundle.
  */
-
 export const STORAGE_KEYS = {
-    ACCESS_TOKEN: 'myrights_access_token',
-    REFRESH_TOKEN: 'myrights_refresh_token',
-    USER_DATA: 'myrights_user_data',
     THEME_MODE: 'myrights_theme_mode',
     ONBOARDING_COMPLETED: 'myrights_onboarding_completed',
     CHAT_HISTORY: 'myrights_chat_history',
     IS_GUEST: 'myrights_is_guest',
-    ACTIVE_USER_ID: 'myrights_active_user_id',
+    PENDING_CONSENT: 'myrights_pending_consent',
 };
 
 export const APP_CONFIG = {
