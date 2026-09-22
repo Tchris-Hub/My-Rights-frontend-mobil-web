@@ -1,10 +1,16 @@
 import { authClient } from './auth-client';
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-if (!rawBaseUrl) {
-  throw new Error('[My Rights] EXPO_PUBLIC_API_BASE_URL is required for the mobile API.');
+const API_BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/$/, '') : null;
+
+export const isApiConfigured = Boolean(API_BASE_URL);
+
+function requireApiBaseUrl(): string {
+  if (!API_BASE_URL) {
+    throw new Error('[My Rights] Backend URL is not configured. Set EXPO_PUBLIC_API_BASE_URL and restart Expo.');
+  }
+  return API_BASE_URL;
 }
-const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 
 async function getHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
@@ -38,7 +44,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'omit',
     headers: await getHeaders({
