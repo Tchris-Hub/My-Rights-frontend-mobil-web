@@ -1,4 +1,5 @@
-import { apiRequest } from './api';
+import { apiRequest, binaryApiRequest } from './api';
+import { File } from 'expo-file-system';
 import { wrapUntrustedText } from './documentSecurity.service';
 import { APP_CONFIG } from '../constants/config';
 import type { DocumentAnalysisResponse, DocumentGenerationResponse, AuthenticityMarkers } from '../types';
@@ -29,6 +30,42 @@ export const documentService = {
                 jurisdiction: APP_CONFIG.LEGAL_JURISDICTION,
             }),
         });
+
+        const unsafe = payload as DocumentAnalysisResponse & Record<string, unknown>;
+        const { risk_score: _riskScore, confidence_score: _confidenceScore, ...safePayload } = unsafe;
+        void _riskScore;
+        void _confidenceScore;
+
+        if (
+            !safePayload ||
+            typeof safePayload.summary !== 'string' ||
+            !safePayload.document_type ||
+            !Array.isArray(safePayload.analysis_results)
+        ) {
+            throw new Error('Document analysis returned an invalid response.');
+        }
+
+        return safePayload as DocumentAnalysisResponse;
+    },
+
+    async analyzeImage(uri: string, mimeType: string, size?: number): Promise<DocumentAnalysisResponse> {
+        if (!uri || typeof uri !== 'string') throw new Error('A valid image is required.');
+        const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+        if (!allowedTypes.has(mimeType)) throw new Error('Only JPG, PNG, GIF, and WebP images are supported.');
+        if (typeof size === 'number' && size > 10 * 1024 * 1024) {
+            throw new Error('Image is too large. Please choose an image smaller than 10 MB.');
+        }
+
+        const file = new File(uri);
+        const bytes = await file.bytes();
+        if (bytes.byteLength === 0) throw new Error('The selected image is empty.');
+        if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('Image is too large. Please choose an image smaller than 10 MB.');
+
+        const payload = await binaryApiRequest<DocumentAnalysisResponse>(
+            '/api/ai/document/analyze-image',
+            bytes,
+            mimeType,
+        );
 
         const unsafe = payload as DocumentAnalysisResponse & Record<string, unknown>;
         const { risk_score: _riskScore, confidence_score: _confidenceScore, ...safePayload } = unsafe;
