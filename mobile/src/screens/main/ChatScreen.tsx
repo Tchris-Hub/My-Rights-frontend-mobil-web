@@ -32,12 +32,10 @@ import { chatService } from '../../services/chat.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
-import { APP_CONFIG } from '../../constants/config';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const LEGAL_JURISDICTION = APP_CONFIG.LEGAL_JURISDICTION;
 
 const SUGGESTIONS = [
     { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
@@ -59,7 +57,6 @@ export const ChatScreen: React.FC = () => {
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [showEscalateModal, setShowEscalateModal] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    const [guestMessageCount, setGuestMessageCount] = useState(0);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
     const flatListRef = useRef<FlatList>(null);
@@ -140,24 +137,6 @@ export const ChatScreen: React.FC = () => {
 
         isSubmitting.current = true;
 
-        // Guest limit logic
-        if (isGuest && guestMessageCount >= 5) {
-            Alert.alert(
-                "Experience More",
-                "You've sent several messages as a guest. Sign up now to save your legal conversations and access premium drafting tools.",
-                [
-                    { text: "Later", style: "cancel" },
-                    {
-                        text: "Sign Up", onPress: () => {
-                            // We reset isGuest in context to force the RootNavigator to show AuthStack
-                            logout();
-                        }
-                    }
-                ]
-            );
-            return;
-        }
-
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
         const userMessage: ChatMessage = {
@@ -185,7 +164,6 @@ export const ChatScreen: React.FC = () => {
             if (isAuthenticated) {
                 let firstChunk = true;
                 const persistedConversationId = await chatService.streamMessage(messageText, {
-                    jurisdiction: LEGAL_JURISDICTION,
                     conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
                     persist: !isIncognito,
                     onChunk: (chunk) => {
@@ -247,7 +225,6 @@ export const ChatScreen: React.FC = () => {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                         setMessages([]);
                         setConversationId(null);
-                        setGuestMessageCount(0);
                         // Clear local cache
 
                     }
