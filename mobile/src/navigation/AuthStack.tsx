@@ -16,11 +16,11 @@ import type { AuthStackParamList } from './types';
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthStack: React.FC = () => {
-    const { needsPasswordReset } = useAuth();
+    const { needsPasswordReset, isAuthenticated, consentAccepted } = useAuth();
 
     return (
         <Stack.Navigator
-            initialRouteName={needsPasswordReset ? 'ResetPassword' : 'Login'}
+            initialRouteName={needsPasswordReset ? 'ResetPassword' : (isAuthenticated && !consentAccepted) ? 'Consent' : 'Login'}
             screenOptions={{
                 headerShown: false,
                 animation: 'fade',
