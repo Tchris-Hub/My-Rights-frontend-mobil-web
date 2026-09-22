@@ -7,6 +7,15 @@ import { authTestHooks } from '../src/lib/auth';
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
 run('authentication (HTTP end-to-end)', () => {
+  it('rejects signup without current Terms/Privacy consent', async () => {
+    const response = await request(app).post('/api/auth/sign-up/email').send({
+      email: 'no-consent-' + Date.now() + '@test.local',
+      password: 'correct-horse-battery-staple',
+      name: 'No Consent',
+    });
+    expect(response.status).toBe(400);
+  });
+
   const email = `auth-${Date.now()}@test.local`;
   const password = 'correct-horse-battery-staple';
   const agent = request.agent(app);
@@ -35,6 +44,19 @@ run('authentication (HTTP end-to-end)', () => {
     const me = await agent.get('/api/users/me');
     expect(me.status).toBe(200);
     expect(me.body.email).toBe(email);
+
+    // Private application data remains blocked until consent is recorded.
+    const blocked = await agent.post('/api/chat/sessions').send({ title: 'blocked' });
+    expect(blocked.status).toBe(428);
+
+    const consent = await agent.post('/api/consent').send({
+      terms_version: '2026-09-18',
+      privacy_version: '2026-09-18',
+    });
+    expect(consent.status).toBe(201);
+
+    const chat = await agent.post('/api/chat/sessions').send({ title: 'allowed' });
+    expect(chat.status).toBe(201);
 
     // 5. Logout revokes the session.
     const logout = await agent.post('/api/auth/sign-out');
