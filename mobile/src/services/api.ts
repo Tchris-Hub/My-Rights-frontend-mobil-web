@@ -5,6 +5,11 @@ const API_BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/$/, '') : null;
 
 export const isApiConfigured = Boolean(API_BASE_URL);
 
+export function createIdempotencyKey(): string {
+  const randomPart = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  return `${Date.now().toString(36)}-${randomPart}`;
+}
+
 function requireApiBaseUrl(): string {
   if (!API_BASE_URL) {
     throw new Error('[My Rights] Backend URL is not configured. Set EXPO_PUBLIC_API_BASE_URL and restart Expo.');
