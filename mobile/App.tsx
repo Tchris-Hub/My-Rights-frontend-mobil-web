@@ -3,7 +3,7 @@
  * Premium, investor-grade legal assistant
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -29,7 +29,6 @@ import { JobProvider } from './src/contexts/JobContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { BackgroundJobOverlay } from './src/components/common/BackgroundJobOverlay';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
-import { supabase } from './src/services/supabase';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -39,7 +38,7 @@ const linking = {
   prefixes: [
     Linking.createURL('/'),
     'myrights://',
-    'exp://', // Fallback for Expo Go
+    'exp://',
   ],
   config: {
     screens: {
