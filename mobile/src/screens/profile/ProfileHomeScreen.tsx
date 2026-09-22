@@ -64,7 +64,7 @@ export const ProfileHomeScreen: React.FC = () => {
                             {isGuest ? 'Welcome,' : 'Good Day,'}
                         </Text>
                         <Text style={[styles.name, { color: colors.onSurface }]}>
-                            {user?.full_name?.split(' ')[0] || 'Jurist'}
+                            {user?.name?.split(' ')[0] || 'Jurist'}
                         </Text>
                         <View style={[styles.roleBadge, { backgroundColor: colors.primary + '15' }]}>
                             <Text style={[styles.roleText, { color: colors.primary }]}>
