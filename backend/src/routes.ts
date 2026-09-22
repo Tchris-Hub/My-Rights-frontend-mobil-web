@@ -55,9 +55,9 @@ export function buildRoutes(): Router {
   // AI generation remains intentionally behind a distinct next objective.
   // These routes establish the authenticated API boundary without rebuilding
   // the AI security/provider layer during the auth/data migration.
-  const aiMigrationPending = (_req: any, res: any) => {
+  const aiMigrationPending = asyncHandler(async (_req, res) => {
     res.status(503).json({ error: 'AI gateway migration is the next distinct objective.' });
-  };
+  });
   router.post('/api/ai/chat', requireUser, requireConsent, aiMigrationPending);
   router.post('/api/ai/document/analyze', requireUser, requireConsent, aiMigrationPending);
   router.post('/api/ai/document/generate', requireUser, requireConsent, aiMigrationPending);
