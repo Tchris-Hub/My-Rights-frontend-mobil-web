@@ -193,6 +193,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 throw new Error('No draft was returned.');
             }
             setDraftContent(response.content.trim());
+            if (response.quota) setGenerationQuotaRemaining(response.quota.remaining);
             setStep('PREVIEW');
         } catch (error: any) {
             setStep('CONSULT');
