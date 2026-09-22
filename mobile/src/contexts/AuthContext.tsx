@@ -1,38 +1,40 @@
-/**
- * Authentication Context
- * Supabase Auth is the client identity/session source of truth.
- *
- * Authorization is never granted by this context: protected data/actions must
- * be enforced by Supabase RLS and server-side Edge Function checks.
- */
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { makeRedirectUri } from 'expo-auth-session';
+import { authClient } from '../services/auth-client';
 import { authService } from '../services/auth.service';
-import { supabase } from '../services/supabase';
-import { STORAGE_KEYS } from '../constants/config';
-import { logger } from '../utils/logger';
 import { localDataService } from '../services/localData.service';
+import { STORAGE_KEYS, APP_CONFIG } from '../constants/config';
+import { logger } from '../utils/logger';
 import type { User, LoginCredentials, RegisterData } from '../types';
+
+type AuthState =
+    | 'initializing'
+    | 'unauthenticated'
+    | 'authenticating'
+    | 'authenticated'
+    | 'session-expired'
+    | 'error';
 
 interface AuthContextType {
     user: User | null;
+    authState: AuthState;
     isLoading: boolean;
     isAuthenticated: boolean;
+    consentAccepted: boolean;
     error: string | null;
     login: (credentials: LoginCredentials) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
     logout: () => Promise<void>;
     clearError: () => void;
     refreshUser: () => Promise<void>;
+    acceptCurrentConsent: () => Promise<void>;
     onboardingCompleted: boolean;
     completeOnboarding: () => Promise<void>;
     isGuest: boolean;
-    continueAsGuest: () => void;
-    signInWithGoogle: (redirectPath?: string) => Promise<void>;
+    continueAsGuest: () => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     resetPasswordForEmail: (email: string) => Promise<void>;
-    updateUserPassword: (password: string) => Promise<void>;
+    updateUserPassword: (password: string, token?: string) => Promise<void>;
     needsPasswordReset: boolean;
     setNeedsPasswordReset: (value: boolean) => void;
 }
@@ -40,156 +42,143 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const sessionState = authClient.useSession();
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [authState, setAuthState] = useState<AuthState>('initializing');
     const [error, setError] = useState<string | null>(null);
     const [onboardingCompleted, setOnboardingCompleted] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
+    const [consentAccepted, setConsentAccepted] = useState(false);
     const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
-    const isAuthenticated = user !== null;
+    const isLoading = authState === 'initializing' || authState === 'authenticating' || authState === 'session-expired';
+    const isAuthenticated = authState === 'authenticated' && user !== null;
 
-    const getRedirectUri = (path: string = '') => {
-        return makeRedirectUri({
-            scheme: 'myrights',
-            path,
-            preferLocalhost: false,
-        });
-    };
+    useEffect(() => {
+        void AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED)
+            .then((value) => setOnboardingCompleted(value === 'true'));
+    }, []);
 
     useEffect(() => {
         let mounted = true;
 
-        const syncAuthenticatedUser = async () => {
+        const synchronize = async () => {
+            if (sessionState.isPending) {
+                if (mounted) setAuthState('initializing');
+                return;
+            }
+
+            if (sessionState.error) {
+                if (mounted) {
+                    setUser(null);
+                    setConsentAccepted(false);
+                    setAuthState('error');
+                    setError('Your session could not be verified. Please sign in again.');
+                }
+                return;
+            }
+
+            if (!sessionState.data?.user) {
+                const guest = (await AsyncStorage.getItem(STORAGE_KEYS.IS_GUEST)) === 'true';
+                if (mounted) {
+                    setUser(null);
+                    setConsentAccepted(false);
+                    setIsGuest(guest);
+                    setAuthState(guest ? 'unauthenticated' : 'unauthenticated');
+                }
+                return;
+            }
+
             try {
                 const profile = await authService.getCurrentUser();
                 if (!mounted) return;
 
-                if (profile) {
-                    const previousUserId = await localDataService.getActiveUserId();
-                    if (previousUserId && previousUserId !== profile.id) {
-                        await localDataService.clearUserScopedData();
-                    }
-                    await localDataService.setActiveUserId(profile.id);
-                    await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
-                    setUser(profile);
-                    setIsGuest(false);
-                } else {
+                if (!profile) {
                     setUser(null);
+                    setConsentAccepted(false);
+                    setAuthState('session-expired');
+                    return;
                 }
+
+                const hasConsent = await authService.hasCurrentConsent();
+                const pending = await localDataService.getPendingConsent();
+
+                if (!hasConsent && pending) {
+                    await authService.recordCurrentConsent();
+                    await localDataService.clearPendingConsent();
+                }
+
+                const finalConsent = hasConsent || Boolean(pending);
+                setUser(profile);
+                setIsGuest(false);
+                await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+                setConsentAccepted(finalConsent);
+                setAuthState('authenticated');
             } catch (err) {
-                logger.error('Failed to load authenticated profile:', err);
+                logger.error('Failed to synchronize authenticated state:', err);
                 if (mounted) {
-                    setUser(null);
+                    setError('Your account could not be loaded safely.');
+                    setAuthState('error');
                 }
             }
         };
 
-        const initializeAuth = async () => {
-            try {
-                setIsLoading(true);
-
-                const [onboardingStatus, guestStatus, sessionResult] = await Promise.all([
-                    AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED),
-                    AsyncStorage.getItem(STORAGE_KEYS.IS_GUEST),
-                    supabase.auth.getSession(),
-                ]);
-
-                if (!mounted) return;
-
-                setOnboardingCompleted(onboardingStatus === 'true');
-
-                const session = sessionResult.data.session;
-                if (session?.user) {
-                    setIsGuest(false);
-                    await syncAuthenticatedUser();
-                } else {
-                    setUser(null);
-                    setIsGuest(guestStatus === 'true');
-                }
-            } catch (err) {
-                logger.error('Failed to initialize auth:', err);
-                if (mounted) {
-                    setUser(null);
-                    setIsGuest(false);
-                }
-            } finally {
-                if (mounted) setIsLoading(false);
-            }
-        };
-
-        initializeAuth();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            logger.debug('Auth event:', event);
-
-            // Supabase advises against awaiting additional Supabase calls directly
-            // inside this callback. Defer profile synchronization to the next tick.
-            setTimeout(() => {
-                if (!mounted) return;
-
-                if (session?.user) {
-                    void syncAuthenticatedUser();
-                } else {
-                    setUser(null);
-                    setNeedsPasswordReset(false);
-                    setIsGuest(false);
-                    void AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
-                }
-
-                if (event === 'PASSWORD_RECOVERY') {
-                    setNeedsPasswordReset(true);
-                }
-            }, 0);
-        });
-
+        void synchronize();
         return () => {
             mounted = false;
-            subscription.unsubscribe();
         };
-    }, []);
+    }, [sessionState.isPending, sessionState.error, sessionState.data?.user?.id]);
 
     const login = async (credentials: LoginCredentials) => {
         try {
-            setIsLoading(true);
+            setAuthState('authenticating');
             setError(null);
             await authService.login(credentials);
         } catch (err: any) {
-            setError(err.message || 'Login failed');
+            setAuthState('unauthenticated');
+            setError(err?.message || 'Login failed.');
             throw err;
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const register = async (data: RegisterData) => {
         try {
-            setIsLoading(true);
+            setAuthState('authenticating');
             setError(null);
+
+            if (!data.accept_terms) {
+                throw new Error('You must accept the Terms of Service and Privacy Policy.');
+            }
+
+            await localDataService.setPendingConsent({
+                terms_version: APP_CONFIG.TERMS_VERSION,
+                privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION,
+            });
+
             await authService.register(data);
+            setAuthState('unauthenticated');
         } catch (err: any) {
-            setError(err.message || 'Registration failed');
+            setAuthState('unauthenticated');
+            setError(err?.message || 'Registration failed.');
             throw err;
-        } finally {
-            setIsLoading(false);
         }
     };
 
     const logout = async () => {
         try {
-            setIsLoading(true);
+            setAuthState('session-expired');
             setError(null);
             await authService.logout();
             await localDataService.clearUserScopedData();
             setUser(null);
+            setConsentAccepted(false);
             setIsGuest(false);
             setNeedsPasswordReset(false);
+            setAuthState('unauthenticated');
         } catch (err: any) {
-            setError(err.message || 'Logout failed');
-            logger.error('Logout error:', err);
+            setError(err?.message || 'Logout failed.');
+            setAuthState('error');
             throw err;
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -199,10 +188,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(profile);
             if (profile) {
                 setIsGuest(false);
-                await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+                setAuthState('authenticated');
             }
         } catch (err: any) {
-            setError(err.message || 'Unable to refresh account.');
+            setError(err?.message || 'Unable to refresh account.');
+            throw err;
+        }
+    };
+
+    const acceptCurrentConsent = async () => {
+        try {
+            setError(null);
+            await authService.recordCurrentConsent();
+            await localDataService.clearPendingConsent();
+            setConsentAccepted(true);
+        } catch (err: any) {
+            setError(err?.message || 'Unable to record consent.');
             throw err;
         }
     };
@@ -215,56 +216,66 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const continueAsGuest = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        const session = await authService.getSession();
+        if (session.data?.user) {
             throw new Error('Sign out of the current account before continuing as a guest.');
         }
 
         await AsyncStorage.setItem(STORAGE_KEYS.IS_GUEST, 'true');
         setUser(null);
+        setConsentAccepted(false);
         setIsGuest(true);
+        setAuthState('unauthenticated');
     };
 
-    const signInWithGoogle = async (redirectPath: string = 'home') => {
+    const signInWithGoogle = async () => {
         try {
             setError(null);
-            const redirectTo = getRedirectUri(redirectPath);
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo }
-            });
-            if (error) throw error;
+            await authService.signInWithGoogle();
         } catch (err: any) {
-            setError(err.message || 'Google sign-in failed');
+            setError(err?.message || 'Google sign-in failed.');
             throw err;
         }
     };
 
     const resetPasswordForEmail = async (email: string) => {
         setError(null);
-        const redirectTo = getRedirectUri('reset-password');
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
-        if (error) {
-            setError(error.message);
-            throw error;
+        try {
+            await authService.requestPasswordReset(email);
+        } catch (err: any) {
+            setError(err?.message || 'Password reset could not be requested.');
+            throw err;
         }
     };
 
-    const updateUserPassword = async (password: string) => {
-        await authService.changePassword(password);
-        setNeedsPasswordReset(false);
+    const updateUserPassword = async (password: string, token?: string) => {
+        setError(null);
+        try {
+            if (token) {
+                await authService.resetPassword(token, password);
+            } else {
+                await authService.changePassword(password);
+            }
+            setNeedsPasswordReset(false);
+        } catch (err: any) {
+            setError(err?.message || 'Password update failed.');
+            throw err;
+        }
     };
 
     const value: AuthContextType = {
         user,
+        authState,
         isLoading,
         isAuthenticated,
+        consentAccepted,
         error,
         login,
         register,
         logout,
         clearError,
         refreshUser,
+        acceptCurrentConsent,
         onboardingCompleted,
         completeOnboarding,
         isGuest,
