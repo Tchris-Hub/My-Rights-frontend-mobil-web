@@ -2,10 +2,7 @@ import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
 import * as SecureStore from 'expo-secure-store';
 
-const baseURL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-if (!baseURL) {
-  throw new Error('[My Rights] EXPO_PUBLIC_API_BASE_URL is required.');
-}
+const baseURL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || 'https://api.example.invalid';
 
 export const authClient = createAuthClient({
   baseURL: baseURL.replace(/\/$/, ''),
