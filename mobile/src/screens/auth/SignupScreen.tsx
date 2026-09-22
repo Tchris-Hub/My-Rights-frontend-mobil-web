@@ -26,6 +26,7 @@ import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { TermsModal } from '../../components/modals/TermsModal';
+import { APP_CONFIG } from '../../constants/config';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
@@ -47,6 +48,7 @@ export const SignupScreen: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [phone, setPhone] = useState('');
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [termsType, setTermsType] = useState<'terms' | 'privacy'>('terms');
@@ -112,6 +114,10 @@ export const SignupScreen: React.FC = () => {
             hasError = true;
         }
 
+        if (!acceptedTerms) {
+            hasError = true;
+        }
+
         if (password !== confirmPassword) {
             newErrors.confirmPassword = 'Passwords do not match';
             hasError = true;
@@ -124,8 +130,10 @@ export const SignupScreen: React.FC = () => {
             await register({
                 email: email.trim(),
                 password,
-                full_name: fullName.trim(),
-                accept_terms: true, // Implied in this exact design version if not a checkbox
+                name: fullName.trim(),
+                accept_terms: acceptedTerms,
+                terms_version: APP_CONFIG.TERMS_VERSION,
+                privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION
                 // phone parameter omitted here as backend might not yet expect it, 
                 // but the UI has it for form completeness matching Stitch.
             });
@@ -269,6 +277,20 @@ export const SignupScreen: React.FC = () => {
                                 placeholder="+1 (555) 000-0000"
                                 keyboardType="phone-pad"
                             />
+
+                            <TouchableOpacity
+                                style={styles.consentRow}
+                                onPress={() => setAcceptedTerms((value) => !value)}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: acceptedTerms }}
+                            >
+                                <Ionicons
+                                    name={acceptedTerms ? 'checkbox' : 'square-outline'}
+                                    size={24}
+                                    color={acceptedTerms ? colors.primary : colors.onSurfaceVariant}
+                                />
+                                <Text style={[styles.consentText, { color: colors.onSurfaceVariant }]}>I agree to the current <Text onPress={() => openTerms('terms')} style={{ color: colors.primary }}>Terms of Service</Text> and <Text onPress={() => openTerms('privacy')} style={{ color: colors.primary }}>Privacy Policy</Text>.</Text>
+                            </TouchableOpacity>
 
                             <Button
                                 title="CREATE ACCOUNT"
@@ -451,6 +473,19 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'right',
         marginTop: 4,
+    },
+    consentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 8,
+        marginBottom: 8,
+    },
+    consentText: {
+        flex: 1,
+        fontFamily: theme.typography.bodyMd.fontFamily,
+        fontSize: 13,
+        lineHeight: 19,
     },
     submitButton: {
         marginTop: 16,
