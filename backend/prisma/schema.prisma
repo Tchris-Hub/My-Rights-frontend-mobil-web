@@ -1,0 +1,287 @@
+// My Rights — Neon PostgreSQL schema (Prisma).
+//
+// This is the direct translation of the Supabase security model on
+// `security-hardening-v1`. The RLS policies (`user_id = auth.uid()`) are
+// enforced at the application layer: every service function scopes queries by
+// the authenticated `userId` derived server-side from the request, never from
+// client input. See `src/authz.ts` and `src/services/*`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+enum EscalationUrgency {
+  low
+  medium
+  high
+  critical
+}
+
+enum EscalationStatus {
+  pending
+  accepted
+  declined
+  closed
+}
+
+enum VerificationStatus {
+  unverified
+  verified
+  superseded
+}
+
+enum LegalSourceType {
+  constitution
+  statute
+  regulation
+  case
+  official_guidance
+  other
+}
+
+// Canonical identity — owned by Better Auth. One user = one identity; all app
+// data references users.id. Consent is recorded separately (privacy_consents).
+model User {
+  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  phone_number  String?
+  is_active     Boolean  @default(true)
+  is_superuser  Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  sessions            Session[]
+  accounts            Account[]
+  chat_sessions       ChatSession[]
+  escalation_requests LegalEscalationRequest[]
+  privacy_consents    PrivacyConsent[]
+
+  @@map("users")
+}
+
+// Better Auth — DB-backed sessions. `token` holds the hashed session token.
+model Session {
+  id        String   @id
+  expiresAt DateTime @db.Timestamptz(6)
+  token     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+// Better Auth — linked OAuth/password accounts (one per provider).
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(6)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+// Better Auth — verification tokens (email verify / password reset / email change).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model ChatSession {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id    String
+  title      String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  user                User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  messages            ChatMessage[]
+  escalation_requests LegalEscalationRequest[]
+
+  @@index([user_id, updated_at])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  session_id String
+  role       ChatRole
+  content    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  session ChatSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id, created_at])
+  @@map("chat_messages")
+}
+
+model LegalEscalationRequest {
+  id               String            @id @default(dbgenerated("gen_random_uuid()"))
+  reference_number String            @unique
+  user_id          String
+  conversation_id  String?
+  reason           String
+  urgency          EscalationUrgency @default(medium)
+  status           EscalationStatus  @default(pending)
+  created_at       DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime          @updatedAt @db.Timestamptz(6)
+
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  conversation ChatSession? @relation(fields: [conversation_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, created_at])
+  @@index([status, created_at])
+  @@map("legal_escalation_requests")
+}
+
+model PrivacyConsent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id         String
+  terms_version   String
+  privacy_version String
+  accepted_at     DateTime @default(now()) @db.Timestamptz(6)
+  source          String   @default("mobile_signup")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, terms_version, privacy_version])
+  @@map("privacy_consents")
+}
+
+model LegalSource {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()"))
+  title               String
+  jurisdiction        String
+  source_type         LegalSourceType
+  citation            String?
+  source_url          String?
+  issuing_authority   String?
+  effective_from      DateTime?          @db.Date
+  effective_to        DateTime?          @db.Date
+  verified_at         DateTime?          @db.Timestamptz(6)
+  verification_status VerificationStatus @default(unverified)
+  notes               String?
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime           @updatedAt @db.Timestamptz(6)
+
+  @@map("legal_sources")
+}
+
+model Organization {
+  id   String @id @default(dbgenerated("gen_random_uuid()"))
+  name String
+  type String @default("Government")
+
+  legal_aid_centers LegalAidCenter[]
+
+  @@map("organizations")
+}
+
+model LegalAidCenter {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()"))
+  name                    String
+  address                 String?
+  phone                   String?
+  latitude                Float?
+  longitude               Float?
+  rating                  Float     @default(0)
+  reviews_count           Int       @default(0)
+  verification_status     String    @default("unverified")
+  verification_source_url String?
+  verified_at             DateTime? @db.Timestamptz(6)
+  organization_id         String?
+
+  organization Organization? @relation(fields: [organization_id], references: [id], onDelete: SetNull)
+
+  @@map("legal_aid_centers")
+}
+
+model Lawyer {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()"))
+  name                    String
+  category                String?
+  location                String?
+  experience_years        Int       @default(0)
+  cases_won               Int       @default(0)
+  rating                  Float     @default(0)
+  reviews_count           Int       @default(0)
+  verification_status     String    @default("unverified")
+  verification_source_url String?
+  verified_at             DateTime? @db.Timestamptz(6)
+  bio                     String?
+
+  @@map("lawyers")
+}
+
+model LegalTemplate {
+  id               String  @id @default(dbgenerated("gen_random_uuid()"))
+  title            String
+  category         String?
+  description      String?
+  content_template String
+  fields           Json    @default("[]")
+
+  @@map("legal_templates")
+}
+
+model ConstitutionChapter {
+  id             Int    @id @default(autoincrement())
+  chapter_number Int
+  title          String
+
+  sections ConstitutionSection[]
+
+  @@map("constitution_chapters")
+}
+
+model ConstitutionSection {
+  id             Int     @id @default(autoincrement())
+  chapter_id     Int
+  section_number String
+  title          String
+  content        String
+  key_takeaway   String?
+
+  chapter ConstitutionChapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+  @@index([chapter_id])
+  @@map("constitution_sections")
+}
