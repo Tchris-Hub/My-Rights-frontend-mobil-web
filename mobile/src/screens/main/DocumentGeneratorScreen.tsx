@@ -343,6 +343,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                     </TouchableOpacity>
                                 </View>
                                 <View style={styles.consultActions}>
+                                    {isAuthenticated && generationQuotaRemaining !== null && (
+                                        <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
+                                            Free plan: {generationQuotaRemaining} document generation{generationQuotaRemaining === 1 ? '' : 's'} remaining today.
+                                        </Text>
+                                    )}
                                     <TouchableOpacity 
                                         style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
                                         onPress={handleStartBuild}
@@ -572,6 +577,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         ...theme.shadows.ambientFloat,
+    },
+    quotaHint: {
+        textAlign: 'center',
+        marginBottom: 8,
+        fontSize: 12,
     },
     consultActions: {
         marginTop: 16,
