@@ -48,7 +48,10 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url, token }) => {
-      if (authTestHooks) authTestHooks.lastResetToken = token;
+      if (authTestHooks) {
+        authTestHooks.lastResetToken = token;
+        return;
+      }
       await requireEmailDelivery(
         sendEmail({
           to: user.email,
@@ -66,7 +69,10 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
-      if (authTestHooks) authTestHooks.lastVerificationToken = token;
+      if (authTestHooks) {
+        authTestHooks.lastVerificationToken = token;
+        return;
+      }
       await requireEmailDelivery(
         sendEmail({
           to: user.email,
