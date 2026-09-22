@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest } from './api';
+import { apiRequest, streamApiRequest } from './api';
 import { STORAGE_KEYS } from '../constants/config';
 import type { ChatMessage } from '../types';
 
@@ -48,14 +48,79 @@ export const chatService = {
             onChunk: (chunk: string) => void;
         },
     ): Promise<string | null> {
-        // The method name is retained for UI compatibility, but this request
-        // is deliberately non-streaming until the transport supports SSE.
-        const result = await this.sendMessage(message, {
-            conversationId: options.conversationId,
-            persist: options.persist,
+        const shouldPersist = options.persist !== false;
+        const currentSessionId = shouldPersist
+            ? (options.conversationId ?? (await this.createConversation(message)))
+            : null;
+
+        const response = await streamApiRequest('/api/ai/chat/stream', {
+            method: 'POST',
+            body: JSON.stringify({
+                conversation_id: currentSessionId,
+                message,
+            }),
         });
-        options.onChunk(result.content);
-        return result.conversation_id;
+
+        if (!response.ok) {
+            const text = await response.text();
+            let messageText = 'AI request could not be completed.';
+            try {
+                const payload = JSON.parse(text);
+                if (typeof payload?.error === 'string') messageText = payload.error;
+            } catch {
+                // Keep the sanitized fallback.
+            }
+            throw new Error(messageText);
+        }
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let conversationId: string | null = currentSessionId;
+        let completed = false;
+
+        const processEvent = (event: string) => {
+            for (const line of event.split(/\\r?\\n/)) {
+                if (!line.startsWith('data:')) continue;
+                const raw = line.slice(5).trim();
+                if (!raw) continue;
+                const payload = JSON.parse(raw) as {
+                    type?: 'delta' | 'done' | 'error';
+                    content?: string;
+                    conversation_id?: string | null;
+                    error?: string;
+                };
+                if (payload.type === 'delta' && typeof payload.content === 'string') {
+                    options.onChunk(payload.content);
+                } else if (payload.type === 'done') {
+                    conversationId = payload.conversation_id ?? null;
+                    completed = true;
+                } else if (payload.type === 'error') {
+                    throw new Error(payload.error || 'AI provider request failed.');
+                }
+            }
+        };
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                let separator = buffer.indexOf('\\n\\n');
+                while (separator >= 0) {
+                    processEvent(buffer.slice(0, separator));
+                    buffer = buffer.slice(separator + 2);
+                    separator = buffer.indexOf('\\n\\n');
+                }
+            }
+            buffer += decoder.decode();
+            if (buffer.trim()) processEvent(buffer);
+        } finally {
+            reader.releaseLock();
+        }
+
+        if (!completed) throw new Error('AI stream ended before completion.');
+        return conversationId;
     },
 
     async escalateConversation(
