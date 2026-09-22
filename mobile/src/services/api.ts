@@ -1,4 +1,5 @@
 import { authClient } from './auth-client';
+import * as Crypto from 'expo-crypto';
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 const API_BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/$/, '') : null;
@@ -6,8 +7,7 @@ const API_BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/$/, '') : null;
 export const isApiConfigured = Boolean(API_BASE_URL);
 
 export function createIdempotencyKey(): string {
-  const randomPart = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-  return `${Date.now().toString(36)}-${randomPart}`;
+  return Crypto.randomUUID();
 }
 
 function requireApiBaseUrl(): string {
