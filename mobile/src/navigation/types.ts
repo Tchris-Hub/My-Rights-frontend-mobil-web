@@ -19,7 +19,8 @@ export type AuthStackParamList = {
     Login: undefined;
     Signup: undefined;
     ForgotPassword: undefined;
-    ResetPassword: undefined;
+    ResetPassword: { token?: string } | undefined;
+    Consent: undefined;
 };
 
 // Tools Stack (Document Review, Generate)
