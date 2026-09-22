@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest, streamApiRequest } from './api';
+import { apiRequest, streamApiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
 import type { ChatMessage } from '../types';
 
@@ -41,6 +41,7 @@ export const chatService = {
 
         const result = await apiRequest<ChatResult>('/api/ai/chat', {
             method: 'POST',
+            headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
                 conversation_id: currentSessionId,
                 message,
@@ -67,6 +68,7 @@ export const chatService = {
 
         const response = await streamApiRequest('/api/ai/chat/stream', {
             method: 'POST',
+            headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
                 conversation_id: currentSessionId,
                 message,
