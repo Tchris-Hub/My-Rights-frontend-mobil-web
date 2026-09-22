@@ -113,12 +113,24 @@ export interface DocumentAnalysisResponse {
     details?: string;
     // Visual Stamp Detection
     authenticity_markers?: AuthenticityMarkers;
+    quota?: {
+        feature: 'document_analyze';
+        used: number;
+        limit: number;
+        remaining: number;
+    };
 }
 
 export interface DocumentGenerationResponse {
     content: string;
     doc_type: string;
     warning: string;
+    quota?: {
+        feature: 'document_generate';
+        used: number;
+        limit: number;
+        remaining: number;
+    };
 }
 
 export interface EscalationResponse {
