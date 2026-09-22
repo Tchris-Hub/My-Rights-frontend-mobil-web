@@ -1,67 +1,38 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase';
-import { STORAGE_KEYS } from '../constants/config';
-import type {
-    ChatMessage,
-    ChatResponse,
-} from '../types';
+import { apiRequest } from './api';
+import { STORAGE_KEYS, APP_CONFIG } from '../constants/config';
+import type { ChatMessage, ChatResponse } from '../types';
+
+type ChatSession = { id: string; title: string; updated_at: string };
 
 export const chatService = {
-    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string } ): Promise<ChatResponse> {
-        const { conversationId, jurisdiction } = options;
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-            throw new Error('Sign in to use the legal advisor.');
-        }
-
-        let currentSessionId = conversationId;
-        if (!currentSessionId) {
-            const { data: newSession, error: sessionError } = await supabase
-                .from('chat_sessions')
-                .insert({ title: message.substring(0, 50), user_id: session.user.id })
-                .select('id')
-                .single();
-
-            if (sessionError || !newSession?.id) {
-                throw new Error('Unable to create the conversation.');
-            }
-            currentSessionId = newSession.id;
-        }
-
-        const { error: userMessageError } = await supabase.from('chat_messages').insert({
-            session_id: currentSessionId,
-            role: 'user',
-            content: message
+    async createConversation(title: string): Promise<string> {
+        const session = await apiRequest<{ id: string }>('/api/chat/sessions', {
+            method: 'POST',
+            body: JSON.stringify({ title: title.substring(0, 50) }),
         });
-        if (userMessageError) throw new Error('Unable to save the message.');
+        return session.id;
+    },
 
-        const { data, error } = await supabase.functions.invoke('legal-advisor', {
-            body: {
-                messages: [{ role: 'user', content: message }],
+    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string }): Promise<ChatResponse> {
+        const currentSessionId = options.conversationId ?? (await this.createConversation(message));
+
+        await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
+            method: 'POST',
+            body: JSON.stringify({ role: 'user', content: message }),
+        });
+
+        const result = await apiRequest<ChatResponse>('/api/ai/chat', {
+            method: 'POST',
+            body: JSON.stringify({
                 conversation_id: currentSessionId,
-                jurisdiction
-            }
+                message,
+                jurisdiction: options.jurisdiction || APP_CONFIG.LEGAL_JURISDICTION,
+            }),
         });
-        if (error) throw new Error('AI request failed. Please try again.');
 
-        const aiContent = data?.choices?.[0]?.message?.content;
-        if (typeof aiContent !== 'string' || !aiContent.trim()) {
-            throw new Error('AI returned no usable response.');
-        }
-
-        const { error: assistantMessageError } = await supabase.from('chat_messages').insert({
-            session_id: currentSessionId,
-            role: 'assistant',
-            content: aiContent.trim()
-        });
-        if (assistantMessageError) throw new Error('AI response could not be saved safely.');
-
-        return {
-            content: aiContent,
-            conversation_id: currentSessionId,
-            role: 'assistant',
-            timestamp: Date.now()
-        } as unknown as ChatResponse;
+        if (!result?.content?.trim()) throw new Error('AI returned no usable response.');
+        return { ...result, conversation_id: currentSessionId };
     },
 
     async streamMessage(
@@ -71,117 +42,35 @@ export const chatService = {
             jurisdiction: string;
             persist?: boolean;
             onChunk: (chunk: string) => void;
-        }
+        },
     ): Promise<string | null> {
-        const { conversationId, jurisdiction, persist = true, onChunk } = options;
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-            throw new Error('Sign in to use the legal advisor.');
-        }
+        const currentSessionId =
+            options.conversationId ?? (options.persist === false ? null : await this.createConversation(message));
 
-        let currentSessionId = conversationId ?? null;
-        if (persist && !currentSessionId) {
-            const { data: newSession, error: sessionError } = await supabase
-                .from('chat_sessions')
-                .insert({ title: message.substring(0, 50), user_id: session.user.id })
-                .select('id')
-                .single();
-            if (sessionError || !newSession?.id) {
-                throw new Error('Unable to create the conversation.');
-            }
-            currentSessionId = newSession.id;
-        }
-
-        if (persist && currentSessionId) {
-            const { error: userMessageError } = await supabase.from('chat_messages').insert({
-                session_id: currentSessionId,
-                role: 'user',
-                content: message,
+        if (options.persist !== false && currentSessionId) {
+            await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
+                method: 'POST',
+                body: JSON.stringify({ role: 'user', content: message }),
             });
-            if (userMessageError) throw userMessageError;
         }
 
-        const { data, error } = await supabase.functions.invoke('legal-advisor', {
-            body: {
-                messages: [{ role: 'user', content: message }],
-                stream: true,
-                conversation_id: currentSessionId ?? undefined,
-                jurisdiction,
-            },
+        const result = await apiRequest<{ content: string }>('/api/ai/chat', {
+            method: 'POST',
+            body: JSON.stringify({
+                conversation_id: currentSessionId,
+                message,
+                jurisdiction: options.jurisdiction || APP_CONFIG.LEGAL_JURISDICTION,
+            }),
         });
 
-        if (error) {
-            throw new Error('AI Stream Error');
-        }
+        if (!result.content?.trim()) throw new Error('AI returned no usable response.');
+        options.onChunk(result.content);
 
-        const reader = data.getReader?.() || (data as Response).body?.getReader();
-        if (!reader) throw new Error('Streaming not supported by this device environment');
-
-        const decoder = new TextDecoder();
-        let assistantContent = '';
-        let streamDone = false;
-        let buffer = '';
-
-        while (!streamDone) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const events = buffer.split('\\n\\n');
-            buffer = events.pop() ?? '';
-
-            for (const event of events) {
-                const dataLines = event
-                    .split('\\n')
-                    .filter((line) => line.startsWith('data: '))
-                    .map((line) => line.slice(6).trim());
-
-                for (const dataLine of dataLines) {
-                    if (dataLine === '[DONE]') {
-                        streamDone = true;
-                        break;
-                    }
-
-                    try {
-                        const parsed = JSON.parse(dataLine);
-                        const chunkContent = parsed.choices?.[0]?.delta?.content;
-                        if (typeof chunkContent === 'string' && chunkContent) {
-                            assistantContent += chunkContent;
-                            if (assistantContent.length > 20_000) {
-                                throw new Error('AI response is too large.');
-                            }
-                            onChunk(chunkContent);
-                        }
-                    } catch (parseError) {
-                        if (parseError instanceof Error && parseError.message === 'AI response is too large.') {
-                            throw parseError;
-                        }
-                        throw new Error('AI stream returned an invalid response.');
-                    }
-                }
-            }
-        }
-
-        if (!streamDone) {
-            throw new Error('AI stream ended before a complete response was received.');
-        }
-
-        const finalChunk = decoder.decode();
-        if (finalChunk) {
-            buffer += finalChunk;
-        }
-
-        if (!assistantContent.trim()) {
-            throw new Error('AI stream returned no usable response.');
-        }
-
-        if (persist && currentSessionId) {
-            const { error: assistantMessageError } = await supabase.from('chat_messages').insert({
-                session_id: currentSessionId,
-                role: 'assistant',
-                content: assistantContent,
+        if (options.persist !== false && currentSessionId) {
+            await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
+                method: 'POST',
+                body: JSON.stringify({ role: 'assistant', content: result.content }),
             });
-            if (assistantMessageError) throw new Error('AI response could not be saved safely.');
         }
 
         return currentSessionId;
@@ -192,98 +81,48 @@ export const chatService = {
         reason: string,
         urgency: 'low' | 'medium' | 'high' | 'critical',
     ): Promise<{ reference_number: string; status: string }> {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-            throw new Error('Sign in to request human legal assistance.');
-        }
-
         const trimmedReason = reason.trim();
-        if (!conversationId || !trimmedReason) {
-            throw new Error('A conversation and reason are required.');
-        }
-        if (trimmedReason.length > 4000) {
-            throw new Error('Escalation reason is too long.');
-        }
+        if (!conversationId || !trimmedReason) throw new Error('A conversation and reason are required.');
+        if (trimmedReason.length > 4000) throw new Error('Escalation reason is too long.');
 
-        const referenceNumber = `MR-${Date.now().toString(36).toUpperCase()}-${session.user.id.slice(0, 6).toUpperCase()}`;
-        const { data, error } = await supabase
-            .from('legal_escalation_requests')
-            .insert({
-                reference_number: referenceNumber,
-                user_id: session.user.id,
-                conversation_id: conversationId,
-                reason: trimmedReason,
-                urgency,
-            })
-            .select('reference_number, status')
-            .single();
-
-        if (error || !data?.reference_number) {
-            throw new Error('Human legal assistance is not currently available. No escalation was submitted.');
-        }
-
-        return data;
+        return apiRequest('/api/escalations', {
+            method: 'POST',
+            body: JSON.stringify({ conversation_id: conversationId, reason: trimmedReason, urgency }),
+        });
     },
 
-    async getChatHistory(): Promise<any[]> {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Sign in to view conversations.');
-        const { data, error } = await supabase
-            .from('chat_sessions')
-            .select('*')
-            .order('updated_at', { ascending: false });
-        if (error) throw new Error('Unable to load conversation history.');
-        return (data ?? []).map(s => ({
-            id: s.id,
-            title: s.title,
-            updated_at: s.updated_at
-        }));
+    async getChatHistory(): Promise<ChatSession[]> {
+        return apiRequest<ChatSession[]>('/api/chat/sessions');
     },
 
-    async getConversationDetails(conversationId: string): Promise<{ messages: ChatMessage[], conversationId: string }> {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Sign in to view conversation details.');
-        const { data, error } = await supabase
-            .from('chat_messages')
-            .select('*')
-            .eq('session_id', conversationId)
-            .order('created_at', { ascending: true });
-        if (error) throw error;
+    async getConversationDetails(conversationId: string): Promise<{ messages: ChatMessage[]; conversationId: string }> {
+        const data = await apiRequest<Array<{ id: string; role: 'user' | 'assistant'; content: string; created_at: string }>>(
+            '/api/chat/sessions/' + conversationId + '/messages',
+        );
+
         return {
             conversationId,
-            messages: data.map(m => ({
+            messages: data.map((m) => ({
                 id: m.id,
                 role: m.role,
                 content: m.content,
-                timestamp: new Date(m.created_at).getTime()
-            }))
+                timestamp: new Date(m.created_at).getTime(),
+            })),
         };
     },
 
     async deleteConversation(conversationId: string): Promise<void> {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) throw new Error('Sign in to manage conversations.');
-        const { error } = await supabase.from('chat_sessions').delete().eq('id', conversationId);
-        if (error) throw error;
+        await apiRequest('/api/chat/sessions/' + conversationId, { method: 'DELETE' });
         await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
-    /**
-     * Legal chat content is intentionally not persisted in generic AsyncStorage.
-     * The backend conversation store is the canonical authenticated history;
-     * logout/account switching must not leave legal text in a device cache.
-     * Extra arguments are accepted for compatibility with older callers and
-     * deliberately ignored.
-     */
     async cacheMessages(_messages: ChatMessage[], ..._legacyArgs: unknown[]): Promise<void> {
         await AsyncStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
     },
 
-    async getCachedMessages(): Promise<ChatMessage[]> {
-        return [];
-    },
+    async getCachedMessages(): Promise<ChatMessage[]> { return []; },
 
     async getCachedConversation(): Promise<{ messages: ChatMessage[]; conversationId: string | null }> {
         return { messages: [], conversationId: null };
-    }
+    },
 };
