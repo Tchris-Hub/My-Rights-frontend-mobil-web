@@ -102,10 +102,6 @@ export const auth = betterAuth({
     },
   },
 
-  password: {
-    minLength: 8,
-  },
-
   ...(googleConfigured
     ? {
         socialProviders: {
