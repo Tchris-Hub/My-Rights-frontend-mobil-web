@@ -261,6 +261,11 @@ export const DocumentReviewScreen: React.FC = () => {
                                 fullWidth
                                 // No border on button per guideline
                             />
+                            {isAuthenticated && analyzeQuotaRemaining !== null && (
+                                <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
+                                    Free plan: {analyzeQuotaRemaining} document review{analyzeQuotaRemaining === 1 ? '' : 's'} remaining today.
+                                </Text>
+                            )}
                         </View>
                     ) : (
                         <View style={styles.resultsSection}>
@@ -466,6 +471,11 @@ const styles = StyleSheet.create({
     },
     resultsSection: {
         gap: 32,
+    },
+    quotaHint: {
+        textAlign: 'center',
+        marginTop: 8,
+        fontSize: 12,
     },
     resetBtn: {
         flexDirection: 'row',
