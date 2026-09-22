@@ -2,23 +2,23 @@ import 'react-native-url-polyfill/auto';
 import * as Crypto from 'expo-crypto';
 
 // Polyfill for WebCrypto getRandomValues
-if (typeof global.crypto !== 'object') {
-    global.crypto = {} as any;
+if (typeof globalThis.crypto !== 'object') {
+    globalThis.crypto = {} as any;
 }
 
 // @ts-ignore
-if (typeof global.crypto.getRandomValues !== 'function') {
+if (typeof globalThis.crypto.getRandomValues !== 'function') {
     // @ts-ignore
-    global.crypto.getRandomValues = (array: any) => {
+    globalThis.crypto.getRandomValues = (array: any) => {
         return Crypto.getRandomValues(array);
     };
 }
 
 // Full WebCrypto subtle polyfill for PKCE sha256
 // @ts-ignore
-if (typeof global.crypto.subtle !== 'object') {
+if (typeof globalThis.crypto.subtle !== 'object') {
     // @ts-ignore
-    global.crypto.subtle = {
+    globalThis.crypto.subtle = {
         digest: async (algorithm: string, data: Uint8Array) => {
             if (algorithm === 'SHA-256') {
                 return await Crypto.digest(
@@ -33,7 +33,7 @@ if (typeof global.crypto.subtle !== 'object') {
 
 // Simple TextEncoder polyfill for Supabase
 if (typeof TextEncoder === 'undefined') {
-    global.TextEncoder = class TextEncoder {
+    globalThis.TextEncoder = class TextEncoder {
         encode(str: string) {
             const arr = new Uint8Array(str.length);
             for (let i = 0; i < str.length; i++) {

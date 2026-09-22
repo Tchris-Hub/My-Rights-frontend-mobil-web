@@ -86,7 +86,7 @@ export const LoginScreen: React.FC = () => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
             {/* Background Decoration (Blobs) */}
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image 
                     source={CLASSROOM_BG}
                     style={styles.globalBackground}
@@ -183,7 +183,7 @@ export const LoginScreen: React.FC = () => {
                                 <View style={styles.socialGrid}>
                                     <TouchableOpacity 
                                         style={[styles.socialButton, { backgroundColor: colors.surfaceContainerHigh }]}
-                                        onPress={() => signInWithGoogle('home')}
+                                        onPress={() => signInWithGoogle()}
                                         disabled={isLoading}
                                     >
                                         <Ionicons name="logo-google" size={18} color={colors.onSurface} style={{ opacity: 0.8 }} />

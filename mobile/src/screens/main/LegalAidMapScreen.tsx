@@ -311,13 +311,13 @@ export const LegalAidMapScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image 
                     source={require('../../../assets/images/classroom_bg.png')} 
                     style={styles.globalBackground} 
                     resizeMode="cover"
                 />
-                <BlurView intensity={isDark ? 40 : 20} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFillObject} />
+                <BlurView intensity={isDark ? 40 : 20} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
             </View>
 
             {/* Custom Header */}

@@ -71,7 +71,7 @@ export const ToolsHomeScreen: React.FC = () => {
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
             {/* Background Decoration (Lincoln College Watermark) */}
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image 
                     source={CLASSROOM_BG}
                     style={styles.globalBackground}
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     gradientOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
     },
     header: {
         zIndex: 100,

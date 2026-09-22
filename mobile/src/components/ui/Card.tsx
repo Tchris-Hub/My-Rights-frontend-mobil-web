@@ -53,7 +53,7 @@ export const Card: React.FC<CardProps> = ({
     ];
 
     const content = variant === 'glass' ? (
-        <BlurView intensity={24} tint="dark" style={[StyleSheet.absoluteFillObject, { borderRadius: theme.borderRadius.lg }]}>
+        <BlurView intensity={24} tint="dark" style={[StyleSheet.absoluteFill, { borderRadius: theme.borderRadius.lg }]}>
             <View style={styles.cardContent}>{children}</View>
         </BlurView>
     ) : (

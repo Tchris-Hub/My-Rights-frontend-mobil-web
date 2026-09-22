@@ -90,7 +90,7 @@ export const ConstitutionExplorerScreen: React.FC = () => {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            <View style={StyleSheet.absoluteFillObject}>
+            <View style={StyleSheet.absoluteFill}>
                 <Image 
                     source={require('../../../assets/onboarding/classroom_bg.png')} 
                     style={styles.globalBackground} 
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     overlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
     },
     header: {
         paddingHorizontal: 24,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
         opacity: 0.5,
     },
     globalBackground: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         opacity: 0.05,
     },
 });

@@ -73,12 +73,12 @@ export const Button: React.FC<ButtonProps> = ({
                         colors={[theme.colors.primary, theme.colors.primaryContainer]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFillObject}
+                        style={StyleSheet.absoluteFill}
                         locations={[0, 1]}
                     />
                 )}
                 {variant === 'secondary' && (
-                    <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} />
+                    <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 )}
                 <View style={styles.content}>
                     {loading ? (

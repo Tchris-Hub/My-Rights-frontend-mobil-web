@@ -147,7 +147,7 @@ export const DocumentReviewScreen: React.FC = () => {
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
             {/* Background Decoration (Lincoln College Watermark) */}
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image source={CLASSROOM_BG} style={styles.globalBackground} />
                 <View style={[styles.blob1, { backgroundColor: colors.primary + '05' }]} />
             </View>
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
     loadingOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,

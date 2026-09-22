@@ -24,15 +24,15 @@ const { width } = Dimensions.get('window');
 interface ConversationSummary {
     id: string;
     title: string | null;
-    legal_topic: string | null;
-    risk_level: string | null;
-    is_escalated: boolean;
-    message_count: number;
-    created_at: string;
+    legal_topic?: string | null;
+    risk_level?: string | null;
+    is_escalated?: boolean;
+    message_count?: number;
+    created_at?: string;
     updated_at: string;
 }
 
-const getRiskLabel = (level: string | null) => {
+const getRiskLabel = (level?: string | null) => {
     switch (level) {
         case 'high': return 'CRITICAL';
         case 'medium': return 'NOTICE';

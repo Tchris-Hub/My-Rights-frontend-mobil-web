@@ -34,7 +34,7 @@ export const ProfileHomeScreen: React.FC = () => {
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
             {/* Background Layering */}
-            <View style={StyleSheet.absoluteFillObject}>
+            <View style={StyleSheet.absoluteFill}>
                 <View style={[styles.blob1, { backgroundColor: colors.primary + '10' }]} />
                 <View style={[styles.blob2, { backgroundColor: colors.secondary + '05' }]} />
             </View>

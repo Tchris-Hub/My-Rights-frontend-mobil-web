@@ -251,11 +251,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updateUserPassword = async (password: string, token?: string) => {
         setError(null);
         try {
-            if (token) {
-                await authService.resetPassword(token, password);
-            } else {
-                await authService.changePassword(password);
+            if (!token) {
+                throw new Error('The password reset link is invalid or expired.');
             }
+            await authService.resetPassword(token, password);
             setNeedsPasswordReset(false);
         } catch (err: any) {
             setError(err?.message || 'Password update failed.');

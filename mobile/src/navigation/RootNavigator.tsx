@@ -62,8 +62,6 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
                 ) : (isAuthenticated && !consentAccepted) ? (
                     <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (
-                    <Stack.Screen name="Auth" component={AuthStack} />
-                ) : (
                     <>
                         <Stack.Screen name="Chat" component={ChatScreen} />
                         <Stack.Screen name="Tools" component={ToolsNavigator} />

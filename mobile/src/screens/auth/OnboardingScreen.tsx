@@ -83,7 +83,7 @@ export const OnboardingScreen: React.FC = () => {
                         'rgba(255, 255, 255, 0.5)', // Mid fade
                         colors.surface           // Bottom solid
                     ]}
-                    style={StyleSheet.absoluteFillObject}
+                    style={StyleSheet.absoluteFill}
                 />
             </View>
 

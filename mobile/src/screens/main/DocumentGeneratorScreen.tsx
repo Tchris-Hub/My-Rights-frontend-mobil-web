@@ -209,13 +209,13 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image 
                     source={require('../../../assets/images/classroom_bg.png')} 
                     style={styles.globalBackground} 
                     resizeMode="cover"
                 />
-                <BlurView intensity={isDark ? 30 : 15} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFillObject} />
+                <BlurView intensity={isDark ? 30 : 15} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
             </View>
 
             {renderHeader()}
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     globalBackground: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         opacity: 0.12,
     },
     header: {

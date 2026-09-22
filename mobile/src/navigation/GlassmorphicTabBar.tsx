@@ -141,7 +141,7 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
             <BlurView
                 intensity={Platform.OS === 'ios' ? 80 : 60}
                 tint="dark"
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
             >
                 <View style={styles.glassBackground} />
             </BlurView>

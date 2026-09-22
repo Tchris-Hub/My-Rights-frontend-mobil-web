@@ -101,12 +101,16 @@ export const authService = {
         return mapUser(result);
     },
 
-    async changePassword(newPassword: string): Promise<void> {
+    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+        if (!currentPassword) {
+            throw new Error('Current password is required.');
+        }
         if (!newPassword || newPassword.length < 8) {
             throw new Error('Password must be at least 8 characters.');
         }
 
         const result = await authClient.changePassword({
+            currentPassword,
             newPassword,
             revokeOtherSessions: true,
         });

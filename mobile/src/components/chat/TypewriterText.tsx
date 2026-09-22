@@ -26,7 +26,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
 }) => {
     const [displayedText, setDisplayedText] = useState(animate ? '' : text);
     const [isComplete, setIsComplete] = useState(!animate);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Blinking cursor opacity
     const cursorOpacity = useSharedValue(1);

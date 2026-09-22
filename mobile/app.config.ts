@@ -40,7 +40,15 @@ export default {
             resizeMode: 'contain',
             backgroundColor: '#FFFFFF',
         },
-        plugins: ['react-native-document-scanner-plugin'],
+        plugins: [
+            'react-native-document-scanner-plugin',
+            'expo-font',
+            'expo-secure-store',
+            'expo-sharing',
+            'expo-splash-screen',
+            'expo-status-bar',
+            'expo-web-browser',
+        ],
         extra: {
             eas: {
                 projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4',

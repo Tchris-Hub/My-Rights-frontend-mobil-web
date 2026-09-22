@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest } from './api';
 import { STORAGE_KEYS, APP_CONFIG } from '../constants/config';
-import type { ChatMessage, ChatResponse } from '../types';
+import type { ChatMessage } from '../types';
 
 type ChatSession = { id: string; title: string; updated_at: string };
 
@@ -14,7 +14,7 @@ export const chatService = {
         return session.id;
     },
 
-    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string }): Promise<ChatResponse> {
+    async sendMessage(message: string, options: { conversationId?: string; jurisdiction: string }): Promise<{ content: string; conversation_id: string }> {
         const currentSessionId = options.conversationId ?? (await this.createConversation(message));
 
         await apiRequest('/api/chat/sessions/' + currentSessionId + '/messages', {
@@ -22,7 +22,7 @@ export const chatService = {
             body: JSON.stringify({ role: 'user', content: message }),
         });
 
-        const result = await apiRequest<ChatResponse>('/api/ai/chat', {
+        const result = await apiRequest<{ content: string }>('/api/ai/chat', {
             method: 'POST',
             body: JSON.stringify({
                 conversation_id: currentSessionId,

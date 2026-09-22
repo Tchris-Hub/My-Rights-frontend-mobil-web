@@ -341,7 +341,7 @@ export const ChatScreen: React.FC = () => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
             {/* Background Decoration (Blobs) */}
-            <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
                 <View style={[styles.blob2, { backgroundColor: colors.secondaryContainer + '0A' }]} />
             </View>
