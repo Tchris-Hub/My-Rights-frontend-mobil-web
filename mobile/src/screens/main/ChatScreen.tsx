@@ -202,6 +202,12 @@ export const ChatScreen: React.FC = () => {
                         }
                     },
                     onComplete: (meta) => {
+                        usageService.getAiQuota()
+                            .then((quotas) => {
+                                const quota = quotas.find((item) => item.feature === 'chat');
+                                setChatQuotaRemaining(quota?.remaining ?? null);
+                            })
+                            .catch((error) => logger.error('Failed to refresh AI quota:', error));
                         setMessages((prev) =>
                             prev.map((msg) =>
                                 msg.id === loadingMessage.id
