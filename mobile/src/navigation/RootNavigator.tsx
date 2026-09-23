@@ -26,7 +26,7 @@ interface RootNavigatorProps {
 }
 
 export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
-    const { isAuthenticated, isLoading, onboardingCompleted, isGuest, needsPasswordReset, consentAccepted } = useAuth();
+    const { isAuthenticated, isLoading, onboardingCompleted, isGuest, consentAccepted } = useAuth();
     const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
     const [isInitialBoot, setIsInitialBoot] = useState(true);
 
@@ -55,8 +55,6 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
             >
                 {!onboardingCompleted ? (
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-                ) : needsPasswordReset ? (
-                    <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (!isAuthenticated && !isGuest) ? (
                     <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (isAuthenticated && !consentAccepted) ? (
