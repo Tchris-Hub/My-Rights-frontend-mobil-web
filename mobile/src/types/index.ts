@@ -15,22 +15,7 @@ export interface User {
     createdAt: string;
 }
 
-// Authentication types
-export interface LoginCredentials {
-    email: string;
-    password: string;
-}
-
-export interface RegisterData {
-    email: string;
-    password: string;
-    name: string;
-    phone_number?: string;
-    accept_terms: boolean;
-    terms_version: string;
-    privacy_version: string;
-}
-
+// Authentication uses passwordless email magic links or Google OAuth.
 // Chat types
 export interface SourceCitation {
     title: string;
@@ -221,22 +206,3 @@ export interface Lawyer {
 // Theme types
 export type ThemeMode = 'light' | 'dark' | 'system';
 
-// Navigation types (will be extended in navigation/types.ts)
-export type RootStackParamList = {
-    Onboarding: undefined;
-    Auth: undefined;
-    Main: undefined;
-};
-
-export type AuthStackParamList = {
-    Login: undefined;
-    Signup: undefined;
-    ForgotPassword: undefined;
-};
-
-export type MainTabParamList = {
-    Home: undefined;
-    Chat: undefined;
-    Tools: undefined;
-    Profile: undefined;
-};
