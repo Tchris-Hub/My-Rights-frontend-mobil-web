@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
-const devApiUrl = process.env.DEV_API_URL ?? 'https://injustice-production.up.railway.app/';
+const devApiUrl = process.env.DEV_API_URL ?? 'http://192.168.0.138:8000';
 const stagingApiUrl = process.env.STAGING_API_URL ?? 'https://staging-api.myrights.ng';
-const prodApiUrl = process.env.PROD_API_URL ?? 'https://injustice-production.up.railway.app/';
+const prodApiUrl = process.env.PROD_API_URL ?? 'https://alpha01-pink.vercel.app';
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
