@@ -128,7 +128,7 @@ export const SettingsScreen: React.FC = () => {
                     
                     <View style={styles.versionContainer}>
                         <Text style={[styles.versionText, { color: colors.onSurfaceVariant }]}>Digital Jurist v1.2.4</Text>
-                        <Text style={[styles.builtText, { color: colors.onSurfaceVariant }]}>Emerald Build • Secured with Supabase Auth</Text>
+                        <Text style={[styles.builtText, { color: colors.onSurfaceVariant }]}>Emerald Build • Secured with Better Auth</Text>
                     </View>
                 </View>
             </ScrollView>
