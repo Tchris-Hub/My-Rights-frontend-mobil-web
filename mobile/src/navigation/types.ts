@@ -17,9 +17,7 @@ export type RootStackParamList = {
 // Auth Stack (Login, Signup)
 export type AuthStackParamList = {
     Login: undefined;
-    Signup: undefined;
-    ForgotPassword: undefined;
-    ResetPassword: { token?: string } | undefined;
+    MagicLinkSent: { email: string };
     Consent: undefined;
 };
 
