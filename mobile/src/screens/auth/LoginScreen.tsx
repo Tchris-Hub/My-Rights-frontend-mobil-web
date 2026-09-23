@@ -1,8 +1,3 @@
-/**
- * Login Screen
- * Rebuilt 1:1 to Stitch "Authentication (Login Refresh)" Design
- */
-
 import React, { useState } from 'react';
 import {
     View,
@@ -13,7 +8,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Dimensions
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -30,67 +25,54 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const LoginScreen: React.FC = () => {
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const { colors } = useTheme();
-    const { login, signInWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
+    const { requestMagicLink, signInWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
 
     useFocusEffect(
         React.useCallback(() => {
             clearError();
-        }, [])
+        }, [clearError]),
     );
 
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
 
-    const validateEmail = (email: string) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
+    const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
-    const handleLogin = async () => {
+    const handleMagicLink = async () => {
         setEmailError('');
-        setPasswordError('');
         clearError();
-
-        let hasError = false;
 
         if (!email.trim()) {
             setEmailError('Email is required');
-            hasError = true;
-        } else if (!validateEmail(email)) {
+            return;
+        }
+        if (!validateEmail(email)) {
             setEmailError('Please enter a valid email');
-            hasError = true;
+            return;
         }
-
-        if (!password.trim()) {
-            setPasswordError('Password is required');
-            hasError = true;
-        } else if (password.length < 8) {
-            setPasswordError('Password must be at least 8 characters');
-            hasError = true;
-        }
-
-        if (hasError) return;
 
         try {
-            await login({ email: email.trim(), password });
-        } catch (err) {
-            // Error managed by AuthContext
+            await requestMagicLink(email);
+            navigation.navigate('MagicLinkSent', { email: email.trim().toLowerCase() });
+        } catch {
+            // Error is managed by AuthContext.
+        }
+    };
+
+    const handleGoogle = async () => {
+        try {
+            await signInWithGoogle();
+        } catch {
+            // Error is managed by AuthContext.
         }
     };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-            {/* Background Decoration (Blobs) */}
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Image 
-                    source={CLASSROOM_BG}
-                    style={styles.globalBackground}
-                />
+                <Image source={CLASSROOM_BG} style={styles.globalBackground} />
                 <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
                 <View style={[styles.blob2, { backgroundColor: colors.secondaryContainer + '0A' }]} />
             </View>
@@ -106,20 +88,16 @@ export const LoginScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.contentWrapper}>
-                        {/* Branding Header */}
                         <View style={styles.header}>
                             <View style={[styles.iconContainer, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name="shield-checkmark" size={32} color={colors.primary} />
                             </View>
-                            <Text style={[styles.title, { color: colors.primary }]}>
-                                My Rights
-                            </Text>
+                            <Text style={[styles.title, { color: colors.primary }]}>My Rights</Text>
                             <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                                Secure Access to Your Digital Jurist
+                                Secure access without passwords
                             </Text>
                         </View>
 
-                        {/* Error message */}
                         {error && (
                             <View style={[styles.errorContainer, { backgroundColor: colors.error + '1A', borderColor: colors.error + '40' }]}>
                                 <Ionicons name="alert-circle" size={18} color={colors.error} />
@@ -127,100 +105,63 @@ export const LoginScreen: React.FC = () => {
                             </View>
                         )}
 
-                        {/* Login Card */}
                         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLow, shadowColor: '#000' }]}>
-                            <View style={styles.form}>
-                                <Input
-                                    label="EMAIL OR USERNAME"
-                                    value={email}
-                                    onChangeText={(text) => {
-                                        setEmail(text);
-                                        setEmailError('');
-                                    }}
-                                    placeholder="Enter your credentials"
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                    leftIcon="person"
-                                    error={emailError}
-                                />
+                            <Text style={[styles.cardTitle, { color: colors.onSurface }]}>Continue with email</Text>
+                            <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
+                                We'll email you a one-time sign-in link. No password is created or stored for login.
+                            </Text>
 
-                                <Input
-                                    label="SECRET KEY"
-                                    value={password}
-                                    onChangeText={(text) => {
-                                        setPassword(text);
-                                        setPasswordError('');
-                                    }}
-                                    placeholder="••••••••"
-                                    secureTextEntry={!showPassword}
-                                    autoCapitalize="none"
-                                    autoComplete="password"
-                                    leftIcon="lock-closed"
-                                    rightIcon={showPassword ? 'eye-off' : 'eye'}
-                                    onRightIconPress={() => setShowPassword(!showPassword)}
-                                    error={passwordError}
-                                />
+                            <Input
+                                label="EMAIL ADDRESS"
+                                value={email}
+                                onChangeText={(text) => {
+                                    setEmail(text);
+                                    setEmailError('');
+                                }}
+                                placeholder="you@example.com"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                                leftIcon="mail"
+                                error={emailError}
+                            />
 
-                                <Button
-                                    title={isLoading ? "Authenticating..." : "Secure Login"}
-                                    onPress={handleLogin}
-                                    loading={isLoading}
-                                    disabled={isLoading}
-                                    fullWidth
-                                    style={styles.loginButton}
-                                />
+                            <Button
+                                title="Email me a sign-in link"
+                                onPress={handleMagicLink}
+                                loading={isLoading}
+                                disabled={isLoading}
+                                fullWidth
+                                style={styles.loginButton}
+                            />
+
+                            <View style={styles.dividerRow}>
+                                <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant + '33' }]} />
+                                <Text style={[styles.dividerText, { color: colors.onSurfaceVariant }]}>OR</Text>
+                                <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant + '33' }]} />
                             </View>
 
-                            {/* Social Connect Section */}
-                            <View style={styles.socialSection}>
-                                <View style={styles.dividerRow}>
-                                    <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant + '33' }]} />
-                                    <Text style={[styles.dividerText, { color: colors.onSurfaceVariant }]}>SECURE SOCIAL CONNECT</Text>
-                                    <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant + '33' }]} />
-                                </View>
-
-                                <View style={styles.socialGrid}>
-                                    <TouchableOpacity 
-                                        style={[styles.socialButton, { backgroundColor: colors.surfaceContainerHigh }]}
-                                        onPress={() => signInWithGoogle()}
-                                        disabled={isLoading}
-                                    >
-                                        <Ionicons name="logo-google" size={18} color={colors.onSurface} style={{ opacity: 0.8 }} />
-                                        <Text style={[styles.socialText, { color: colors.onSurface }]}>Google</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Footer Links */}
-                        <View style={styles.footerRow}>
-                            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword' as never)}>
-                                <Text style={[styles.forgotPasswordText, { color: colors.onSurfaceVariant }]}>
-                                    Forgot Password?
-                                </Text>
+                            <TouchableOpacity
+                                style={[styles.googleButton, { backgroundColor: colors.surfaceContainerHigh }]}
+                                onPress={handleGoogle}
+                                disabled={isLoading}
+                            >
+                                <Ionicons name="logo-google" size={18} color={colors.onSurface} />
+                                <Text style={[styles.googleText, { color: colors.onSurface }]}>Continue with Google</Text>
                             </TouchableOpacity>
-
-                            <View style={styles.registerRow}>
-                                <Text style={[styles.footerText, { color: colors.onSurfaceVariant }]}>
-                                    New to Legal Command?{' '}
-                                </Text>
-                                <TouchableOpacity onPress={() => navigation.navigate('Signup' as never)}>
-                                    <Text style={[styles.linkText, { color: colors.primary }]}>
-                                        Begin your defense
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
                         </View>
-                        
-                        <TouchableOpacity style={styles.guestLink} onPress={continueAsGuest}>
+
+                        <Text style={[styles.consentHint, { color: colors.onSurfaceVariant }]}>
+                            After authentication, you'll be asked to accept the current Terms of Service and Privacy Policy before using private features.
+                        </Text>
+
+                        <TouchableOpacity style={styles.guestLink} onPress={continueAsGuest} disabled={isLoading}>
                             <Text style={[styles.guestText, { color: colors.onSurfaceVariant }]}>Continue as Guest</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Bottom Gradient Accent */}
             <LinearGradient
                 colors={['transparent', colors.primary + '33', 'transparent']}
                 start={{ x: 0, y: 0 }}
@@ -234,9 +175,7 @@ export const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: { flex: 1 },
     blob1: {
         position: 'absolute',
         top: '-15%',
@@ -257,30 +196,22 @@ const styles = StyleSheet.create({
         opacity: 0.6,
         transform: [{ scale: 1.2 }],
     },
-    keyboardView: {
-        flex: 1,
-    },
+    keyboardView: { flex: 1 },
     scrollContent: {
         flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
     },
-    contentWrapper: {
-        width: '100%',
-        maxWidth: 480,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 48,
-    },
+    contentWrapper: { width: '100%', maxWidth: 480 },
+    header: { alignItems: 'center', marginBottom: 40 },
     iconContainer: {
         width: 64,
         height: 64,
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 24,
+        marginBottom: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.25,
@@ -321,77 +252,50 @@ const styles = StyleSheet.create({
         shadowRadius: 40,
         elevation: 10,
     },
-    form: {
-        gap: 8, // Using gap from Input components margin internally, plus a bit more
+    cardTitle: {
+        ...theme.typography.titleLg,
+        marginBottom: 8,
     },
-    loginButton: {
-        marginTop: 16,
+    cardSubtitle: {
+        ...theme.typography.bodyMd,
+        lineHeight: 21,
+        marginBottom: 24,
     },
-    socialSection: {
-        marginTop: 48,
-    },
+    loginButton: { marginTop: 12 },
     dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginVertical: 28,
     },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-    },
+    dividerLine: { flex: 1, height: 1 },
     dividerText: {
         fontFamily: theme.typography.labelMd.fontFamily,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '700',
-        letterSpacing: 2,
         marginHorizontal: 16,
     },
-    socialGrid: {
-        flexDirection: 'row',
-        gap: 16,
-        marginTop: 24,
-    },
-    socialButton: {
-        flex: 1,
+    googleButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderRadius: 8,
         gap: 12,
     },
-    socialText: {
+    googleText: {
         fontFamily: theme.typography.labelMd.fontFamily,
         fontSize: 14,
-        fontWeight: '500',
+        fontWeight: '600',
     },
-    footerRow: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginTop: 32,
-        gap: 20,
-    },
-    forgotPasswordText: {
-        fontFamily: theme.typography.labelMd.fontFamily,
-        fontWeight: '500',
-        fontSize: 14,
-    },
-    registerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    footerText: {
+    consentHint: {
         fontFamily: theme.typography.bodyMd.fontFamily,
-        fontSize: 14,
-    },
-    linkText: {
-        fontFamily: theme.typography.labelMd.fontFamily,
-        fontSize: 14,
-        fontWeight: '700',
-    },
-    guestLink: {
+        textAlign: 'center',
+        fontSize: 12,
+        lineHeight: 18,
         marginTop: 24,
-        alignItems: 'center',
+        paddingHorizontal: 12,
     },
+    guestLink: { marginTop: 24, alignItems: 'center' },
     guestText: {
         fontFamily: theme.typography.labelMd.fontFamily,
         fontSize: 12,
@@ -409,6 +313,6 @@ const styles = StyleSheet.create({
         width: SCREEN_WIDTH,
         height: SCREEN_HEIGHT,
         resizeMode: 'cover',
-        opacity: 0.15, // Match onboarding watermark
+        opacity: 0.15,
     },
 });
