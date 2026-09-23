@@ -104,7 +104,7 @@ export const ProfileHomeScreen: React.FC = () => {
                                         "Chat history is only available for registered accounts.",
                                         [
                                             { text: "Later", style: "cancel" },
-                                            { text: "Sign Up", onPress: () => logout() }
+                                            { text: "Sign in", onPress: () => logout() }
                                         ]
                                     );
                                 } else {
