@@ -5,7 +5,7 @@ import { authService } from '../services/auth.service';
 import { localDataService } from '../services/localData.service';
 import { STORAGE_KEYS, APP_CONFIG } from '../constants/config';
 import { logger } from '../utils/logger';
-import type { User, LoginCredentials, RegisterData } from '../types';
+import type { User } from '../types';
 
 type AuthState =
     | 'initializing'
@@ -22,8 +22,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     consentAccepted: boolean;
     error: string | null;
-    login: (credentials: LoginCredentials) => Promise<void>;
-    register: (data: RegisterData) => Promise<void>;
+    requestMagicLink: (email: string) => Promise<void>;
     logout: () => Promise<void>;
     clearError: () => void;
     refreshUser: () => Promise<void>;
@@ -33,10 +32,6 @@ interface AuthContextType {
     isGuest: boolean;
     continueAsGuest: () => Promise<void>;
     signInWithGoogle: () => Promise<void>;
-    resetPasswordForEmail: (email: string) => Promise<void>;
-    updateUserPassword: (password: string, token?: string) => Promise<void>;
-    needsPasswordReset: boolean;
-    setNeedsPasswordReset: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,7 +44,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [onboardingCompleted, setOnboardingCompleted] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
     const [consentAccepted, setConsentAccepted] = useState(false);
-    const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
     const isLoading = authState === 'initializing' || authState === 'authenticating' || authState === 'session-expired';
     const isAuthenticated = authState === 'authenticated' && user !== null;
@@ -129,37 +123,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, [sessionState.isPending, sessionState.error, sessionState.data?.user?.id]);
 
-    const login = async (credentials: LoginCredentials) => {
+    const requestMagicLink = async (email: string) => {
         try {
             setAuthState('authenticating');
             setError(null);
-            await authService.login(credentials);
-        } catch (err: any) {
-            setAuthState('unauthenticated');
-            setError(err?.message || 'Login failed.');
-            throw err;
-        }
-    };
-
-    const register = async (data: RegisterData) => {
-        try {
-            setAuthState('authenticating');
-            setError(null);
-
-            if (!data.accept_terms) {
-                throw new Error('You must accept the Terms of Service and Privacy Policy.');
-            }
-
-            await localDataService.setPendingConsent({
-                terms_version: APP_CONFIG.TERMS_VERSION,
-                privacy_version: APP_CONFIG.PRIVACY_POLICY_VERSION,
-            });
-
-            await authService.register(data);
+            await authService.requestMagicLink(email);
             setAuthState('unauthenticated');
         } catch (err: any) {
             setAuthState('unauthenticated');
-            setError(err?.message || 'Registration failed.');
+            setError(err?.message || 'We could not send the sign-in link.');
             throw err;
         }
     };
@@ -173,7 +145,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(null);
             setConsentAccepted(false);
             setIsGuest(false);
-            setNeedsPasswordReset(false);
             setAuthState('unauthenticated');
         } catch (err: any) {
             setError(err?.message || 'Logout failed.');
@@ -238,30 +209,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const resetPasswordForEmail = async (email: string) => {
-        setError(null);
-        try {
-            await authService.requestPasswordReset(email);
-        } catch (err: any) {
-            setError(err?.message || 'Password reset could not be requested.');
-            throw err;
-        }
-    };
-
-    const updateUserPassword = async (password: string, token?: string) => {
-        setError(null);
-        try {
-            if (!token) {
-                throw new Error('The password reset link is invalid or expired.');
-            }
-            await authService.resetPassword(token, password);
-            setNeedsPasswordReset(false);
-        } catch (err: any) {
-            setError(err?.message || 'Password update failed.');
-            throw err;
-        }
-    };
-
     const value: AuthContextType = {
         user,
         authState,
@@ -269,8 +216,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated,
         consentAccepted,
         error,
-        login,
-        register,
+        requestMagicLink,
         logout,
         clearError,
         refreshUser,
@@ -280,10 +226,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isGuest,
         continueAsGuest,
         signInWithGoogle,
-        resetPasswordForEmail,
-        updateUserPassword,
-        needsPasswordReset,
-        setNeedsPasswordReset,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
