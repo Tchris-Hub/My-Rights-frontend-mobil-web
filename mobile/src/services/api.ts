@@ -1,19 +1,16 @@
 import { authClient } from './auth-client';
 import * as Crypto from 'expo-crypto';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-const API_BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/$/, '') : null;
+const rawBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || 'https://alpha01-pink.vercel.app';
+const API_BASE_URL = rawBaseUrl.replace(/\/$/, '');
 
-export const isApiConfigured = Boolean(API_BASE_URL);
+export const isApiConfigured = true;
 
 export function createIdempotencyKey(): string {
   return Crypto.randomUUID();
 }
 
 function requireApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new Error('[My Rights] Backend URL is not configured. Set EXPO_PUBLIC_API_BASE_URL and restart Expo.');
-  }
   return API_BASE_URL;
 }
 
