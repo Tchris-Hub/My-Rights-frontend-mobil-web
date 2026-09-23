@@ -40,7 +40,7 @@ const resolveEnvironment = (): ApiEnvironment => {
 // --------------------------------------------------
 const LOCAL_IP = '192.168.0.138'; // Your laptop's IP
 const LOCAL_URL = `http://${LOCAL_IP}:8000`;
-const PROD_URL = 'https://injustice-production-be94.up.railway.app';
+const PROD_URL = extra.prodApiUrl || 'https://alpha01-pink.vercel.app';
 
 /**
  * FLAG FOR EASY TOGGLING:
