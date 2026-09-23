@@ -1,18 +1,16 @@
 import { authClient } from './auth-client';
 import { apiRequest } from './api';
 import { APP_CONFIG } from '../constants/config';
-import type { LoginCredentials, RegisterData, User } from '../types';
+import type { User } from '../types';
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
-const validateCredentials = (email: string, password: string): void => {
+const validateEmail = (email: string): string => {
     const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
         throw new Error('Enter a valid email address.');
     }
-    if (!password || password.length < 8) {
-        throw new Error('Password must be at least 8 characters.');
-    }
+    return normalizedEmail;
 };
 
 function mapUser(user: {
@@ -40,41 +38,20 @@ function mapUser(user: {
 }
 
 export const authService = {
-    async register(data: RegisterData): Promise<void> {
-        validateCredentials(data.email, data.password);
+    async requestMagicLink(email: string): Promise<void> {
+        const normalizedEmail = validateEmail(email);
+        const displayName = normalizedEmail.split('@')[0];
 
-        if (!data.accept_terms) {
-            throw new Error('You must accept the Terms of Service and Privacy Policy before creating an account.');
-        }
-
-        const result = await authClient.signUp.email({
-            email: normalizeEmail(data.email),
-            password: data.password,
-            name: data.name.trim(),
-            phone_number: data.phone_number?.trim() || undefined,
-            // These are validated by the server hook and are not persisted as
-            // authentication fields.
-            accept_terms: true,
-            terms_version: data.terms_version,
-            privacy_version: data.privacy_version,
-        } as Parameters<typeof authClient.signUp.email>[0]);
-
-        if (result.error) {
-            throw new Error(result.error.message || 'Registration failed.');
-        }
-    },
-
-    async login(credentials: LoginCredentials): Promise<void> {
-        validateCredentials(credentials.email, credentials.password);
-
-        const result = await authClient.signIn.email({
-            email: normalizeEmail(credentials.email),
-            password: credentials.password,
-            rememberMe: true,
+        const result = await authClient.signIn.magicLink({
+            email: normalizedEmail,
+            name: displayName,
+            callbackURL: '/',
+            newUserCallbackURL: '/',
+            errorCallbackURL: '/auth-error',
         });
 
         if (result.error) {
-            throw new Error(result.error.message || 'Login failed.');
+            throw new Error('We could not send the sign-in link. Please try again.');
         }
     },
 
@@ -99,49 +76,6 @@ export const authService = {
             }),
         });
         return mapUser(result);
-    },
-
-    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-        if (!currentPassword) {
-            throw new Error('Current password is required.');
-        }
-        if (!newPassword || newPassword.length < 8) {
-            throw new Error('Password must be at least 8 characters.');
-        }
-
-        const result = await authClient.changePassword({
-            currentPassword,
-            newPassword,
-            revokeOtherSessions: true,
-        });
-
-        if (result.error) {
-            throw new Error(result.error.message || 'Unable to change password.');
-        }
-    },
-
-    async requestPasswordReset(email: string): Promise<void> {
-        const result = await authClient.requestPasswordReset({
-            email: normalizeEmail(email),
-            redirectTo: 'myrights://reset-password',
-        });
-
-        if (result.error) {
-            // The UI still presents a generic outcome to avoid account enumeration.
-            throw new Error('Password reset could not be requested. Please try again.');
-        }
-    },
-
-    async resetPassword(token: string, newPassword: string): Promise<void> {
-        if (!token) throw new Error('The password reset link is invalid or expired.');
-        if (!newPassword || newPassword.length < 8) {
-            throw new Error('Password must be at least 8 characters.');
-        }
-
-        const result = await authClient.resetPassword({ token, newPassword });
-        if (result.error) {
-            throw new Error(result.error.message || 'Password reset failed.');
-        }
     },
 
     async getSession() {
