@@ -146,26 +146,17 @@ export const LegalAidMapScreen: React.FC = () => {
                                     <Text style={[styles.typeName, { color: colors.primary }]}>{center.type}</Text>
                                     <View style={[styles.badge, { backgroundColor: colors.primary + '10' }]}>
                                         <Ionicons name="checkmark-circle" size={10} color={colors.primary} />
-                                        <Text style={[styles.badgeText, { color: colors.primary }]}>Verified Partner</Text>
+                                        <Text style={[styles.badgeText, { color: colors.primary }]}>Verified</Text>
                                     </View>
                                 </View>
                                 <Text style={[styles.centerName, { color: colors.onSurface }]}>{center.name}</Text>
-                                <View style={styles.ratingRow}>
-                                    <Ionicons name="star" size={14} color="#D4AF37" />
-                                    <Text style={[styles.ratingText, { color: colors.onSurface }]}>{center.rating}</Text>
-                                    <Text style={[styles.reviewsText, { color: colors.onSurfaceVariant }]}>({center.reviews} reviews)</Text>
                                 </View>
-                            </View>
                         </View>
 
                         <View style={styles.cardDetails}>
                             <View style={styles.detailRow}>
                                 <Ionicons name="map-outline" size={16} color={colors.onSurfaceVariant} />
                                 <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{center.address}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Ionicons name="time-outline" size={16} color={colors.onSurfaceVariant} />
-                                <Text style={[styles.detailText, { color: colors.success }]}>Open 9AM - 4PM</Text>
                             </View>
                         </View>
 
@@ -207,27 +198,24 @@ export const LegalAidMapScreen: React.FC = () => {
                             <View style={styles.cardInfo}>
                                 <View style={styles.typeRow}>
                                     <Text style={[styles.typeName, { color: colors.primary }]}>{lawyer.specialization}</Text>
-                                    <View style={[styles.badge, { backgroundColor: '#FFD70020' }]}>
-                                        <Ionicons name="star" size={10} color="#D4AF37" />
-                                        <Text style={[styles.badgeText, { color: '#B8941F' }]}>Highly Recommended</Text>
-                                    </View>
+                                    {lawyer.verification_status === 'verified' && (
+                                        <View style={[styles.badge, { backgroundColor: colors.primary + '10' }]}>
+                                            <Ionicons name="checkmark-circle" size={10} color={colors.primary} />
+                                            <Text style={[styles.badgeText, { color: colors.primary }]}>Verified</Text>
+                                        </View>
+                                    )}
                                 </View>
                                 <Text style={[styles.centerName, { color: colors.onSurface }]}>{lawyer.name}</Text>
 
                                 <View style={styles.metricsRow}>
                                     <View style={styles.metricItem}>
-                                        <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>Exp.</Text>
+                                        <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>Experience</Text>
                                         <Text style={[styles.metricValue, { color: colors.onSurface }]}>{lawyer.experience_years}y</Text>
                                     </View>
                                     <View style={styles.divider} />
                                     <View style={styles.metricItem}>
-                                        <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>Wins</Text>
-                                        <Text style={[styles.metricValue, { color: colors.onSurface }]}>{lawyer.cases_won}+</Text>
-                                    </View>
-                                    <View style={styles.divider} />
-                                    <View style={styles.ratingRowSmall}>
-                                        <Ionicons name="star" size={12} color="#D4AF37" />
-                                        <Text style={[styles.ratingTextSmall, { color: colors.onSurface }]}>{lawyer.rating}</Text>
+                                        <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>Location</Text>
+                                        <Text style={[styles.metricValue, { color: colors.onSurface }]} numberOfLines={1}>{lawyer.location || 'Not disclosed'}</Text>
                                     </View>
                                 </View>
                             </View>
