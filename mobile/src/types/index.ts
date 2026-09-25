@@ -18,11 +18,18 @@ export interface User {
 // Authentication uses passwordless email magic links or Google OAuth.
 // Chat types
 export interface SourceCitation {
+    id: string;
     title: string;
     section?: string;
     excerpt: string;
-    document_type: string;
-    relevance_score?: number;
+    citation?: string;
+    source_url?: string;
+    issuing_authority?: string;
+    source_type?: string;
+    verified_at?: string;
+    effective_from?: string;
+    effective_to?: string;
+    retrieval_score?: number;
 }
 
 export interface MessageResponse {
@@ -40,7 +47,7 @@ export interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     timestamp?: number;
-    sources?: Array<string | { title: string; section?: string }>;
+    sources?: Array<SourceCitation>;
     confidence_score?: number;
     legal_disclaimer?: string;
     isVerified?: boolean;
