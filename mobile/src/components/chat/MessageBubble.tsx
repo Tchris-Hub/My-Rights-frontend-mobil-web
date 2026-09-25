@@ -32,12 +32,12 @@ const SourceBadge = ({ type, colors }: { type: string; colors: any }) => {
     let bgColor = colors.surfaceContainerHighest;
     let textColor = colors.onSurfaceVariant;
 
-    if (type === 'web_search') {
+    if (type === 'web_search' || type === 'live_research') {
         icon = 'globe-outline';
         label = 'Live Search';
         bgColor = '#E3F2FD';
         textColor = '#1976D2';
-    } else if (type === 'legal_news') {
+    } else if (type === 'legal_news' || type === 'official_guidance' || type === 'statute') {
         icon = 'newspaper-outline';
         label = 'Legal Pulse';
         bgColor = '#FFF3E0';
@@ -85,7 +85,7 @@ const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
                         {expanded ? 'Hide Details' : `View Citations & Sources (${sources?.length || 0})`}
                     </Text>
                 </View>
-                {!expanded && sources?.some((s: any) => s.document_type === 'web_search') && (
+                {!expanded && sources?.some((s: any) => s.source_type === 'web_search' || s.source_type === 'live_research') && (
                     <View style={styles.liveIndicator}>
                         <View style={styles.liveDot} />
                         <Text style={styles.liveText}>LIVE</Text>
@@ -102,8 +102,8 @@ const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
                             {sources.map((source: any, idx: number) => (
                                 <View key={idx} style={styles.sourceItem}>
                                     <View style={styles.sourceHeader}>
-                                        <SourceBadge type={source.document_type} colors={colors} />
-                                        {source.url && (
+                                        <SourceBadge type={source.source_type || 'source'} colors={colors} />
+                                        {source.source_url && (
                                             <TouchableOpacity onPress={() => {/* Handle URL open */}}>
                                                 <Ionicons name="open-outline" size={12} color={colors.primary} />
                                             </TouchableOpacity>
