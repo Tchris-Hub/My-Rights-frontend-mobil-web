@@ -47,11 +47,20 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
         );
     }
 
+    const routeMode = !onboardingCompleted
+        ? 'onboarding'
+        : (!isAuthenticated && !isGuest)
+            ? 'auth'
+            : (isAuthenticated && !consentAccepted)
+                ? 'consent'
+                : 'main';
+
     return (
         <NavigationContainer linking={linking}>
             <Stack.Navigator
+                key={routeMode}
                 screenOptions={{ headerShown: false }}
-                initialRouteName={(!onboardingCompleted) ? "Onboarding" : (!isAuthenticated && !isGuest) ? "Auth" : (isAuthenticated && !consentAccepted) ? "Auth" : "Chat"}
+                initialRouteName={routeMode === 'onboarding' ? 'Onboarding' : routeMode === 'main' ? 'Chat' : 'Auth'}
             >
                 {!onboardingCompleted ? (
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
