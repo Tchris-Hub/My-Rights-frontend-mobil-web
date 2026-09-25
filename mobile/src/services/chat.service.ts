@@ -1,18 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest, streamApiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
+import { assertGroundedChat, type GroundingSource } from './ragPolicy';
 import type { ChatMessage } from '../types';
 
 type ChatSession = { id: string; title: string; updated_at: string };
-
-type GroundingSource = {
-    title: string;
-    section?: string;
-    excerpt?: string;
-    citation?: string;
-    source_url?: string;
-    issuing_authority?: string;
-};
 
 type ChatResult = {
     content: string;
@@ -49,6 +41,7 @@ export const chatService = {
         });
 
         if (!result?.content?.trim()) throw new Error('AI returned no usable response.');
+        assertGroundedChat(result.content, result.sources, result.citation_status);
         return result;
     },
 
@@ -92,6 +85,7 @@ export const chatService = {
         let buffer = '';
         let conversationId: string | null = currentSessionId;
         let completed = false;
+        let bufferedContent = '';
 
         const processEvent = (event: string) => {
             for (const line of event.split(/\\r?\\n/)) {
@@ -107,9 +101,11 @@ export const chatService = {
                     citation_status?: string;
                 };
                 if (payload.type === 'delta' && typeof payload.content === 'string') {
-                    options.onChunk(payload.content);
+                    bufferedContent += payload.content;
                 } else if (payload.type === 'done') {
                     conversationId = payload.conversation_id ?? null;
+                    assertGroundedChat(bufferedContent, payload.sources, payload.citation_status);
+                    options.onChunk(bufferedContent);
                     options.onComplete?.({
                         sources: payload.sources,
                         citation_status: payload.citation_status,
@@ -163,18 +159,35 @@ export const chatService = {
     },
 
     async getConversationDetails(conversationId: string): Promise<{ messages: ChatMessage[]; conversationId: string }> {
-        const data = await apiRequest<Array<{ id: string; role: 'user' | 'assistant'; content: string; created_at: string }>>(
+        const data = await apiRequest<Array<{
+            id: string;
+            role: 'user' | 'assistant';
+            content: string;
+            created_at: string;
+            grounding_sources?: GroundingSource[] | null;
+            citation_status?: string | null;
+        }>>(
             '/api/chat/sessions/' + conversationId + '/messages',
         );
 
         return {
             conversationId,
-            messages: data.map((m) => ({
-                id: m.id,
-                role: m.role,
-                content: m.content,
-                timestamp: new Date(m.created_at).getTime(),
-            })),
+            messages: data.map((m) => {
+                const sources = Array.isArray(m.grounding_sources) ? m.grounding_sources : undefined;
+                const verified = m.role === 'assistant'
+                    && m.citation_status === 'verified_context'
+                    && Boolean(sources?.length);
+                return {
+                    id: m.id,
+                    role: m.role,
+                    content: m.role === 'assistant' && !verified
+                        ? 'This earlier AI answer is not displayed because it was not stored with verifiable legal-source evidence.'
+                        : m.content,
+                    timestamp: new Date(m.created_at).getTime(),
+                    sources: verified ? sources : undefined,
+                    isVerified: verified,
+                };
+            }),
         };
     },
 
