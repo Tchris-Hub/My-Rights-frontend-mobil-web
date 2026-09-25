@@ -96,10 +96,15 @@ export async function binaryApiRequest<T>(
   contentType: string,
   idempotencyKey?: string,
 ): Promise<T> {
+  const requestBody: ArrayBuffer =
+    body instanceof Uint8Array
+      ? Uint8Array.from(body).buffer
+      : body;
+
   const response = await fetch(`${requireApiBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'omit',
-    body,
+    body: requestBody,
     headers: await getHeaders({
       Accept: 'application/json',
       'Content-Type': contentType,
