@@ -21,5 +21,6 @@ export const authClient = createAuthClient({
       storage: SecureStore,
       cookiePrefix: 'better-auth',
     }),
+    magicLinkClient(),
   ],
 });
