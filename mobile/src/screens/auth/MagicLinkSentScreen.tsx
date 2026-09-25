@@ -33,7 +33,7 @@ export const MagicLinkSentScreen: React.FC<Props> = ({ route }) => {
 
                 <TouchableOpacity
                     style={[styles.backButton, { borderColor: colors.outlineVariant }]}
-                    onPress={() => navigation.navigate('Login')}
+                    onPress={() => navigation.goBack()}
                     accessibilityRole="button"
                 >
                     <Text style={[styles.backText, { color: colors.primary }]}>Use a different email</Text>
