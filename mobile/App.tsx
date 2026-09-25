@@ -38,17 +38,7 @@ const linking = {
   prefixes: [
     Linking.createURL('/'),
     'myrights://',
-    'exp://',
   ],
-  config: {
-    screens: {
-      Auth: {
-        screens: {
-          ResetPassword: 'reset-password',
-        }
-      },
-    },
-  },
 };
 
 export default function App() {
