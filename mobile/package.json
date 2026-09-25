@@ -13,7 +13,7 @@
     "test:security": "node scripts/security-regression.mjs"
   },
   "dependencies": {
-    "@better-auth/expo": "^1.7.5",
+    "@better-auth/expo": "^1.7.6",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
@@ -21,7 +21,7 @@
     "@react-navigation/bottom-tabs": "^7.9.0",
     "@react-navigation/native": "^7.1.26",
     "@react-navigation/native-stack": "^7.9.0",
-    "better-auth": "^1.7.5",
+    "better-auth": "^1.7.6",
     "expo": "^57.0.0",
     "expo-auth-session": "~57.0.12",
     "expo-blur": "~57.0.3",
@@ -55,7 +55,8 @@
     "react-native-svg": "15.15.4",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-worklets": "0.10.1",
-    "expo-audio": "~57.0.5"
+    "expo-audio": "~57.0.5",
+    "expo-dev-client": "~57.0.19"
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
