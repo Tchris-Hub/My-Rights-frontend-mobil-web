@@ -97,6 +97,27 @@ export const legalService = {
     });
   },
 
+  async getOwnProfessionalProfile() {
+    return apiRequest<any>('/api/professionals/me');
+  },
+
+  async updateOwnProfessionalProfile(input: {
+    role: string;
+    display_name: string;
+    bio?: string;
+    location?: string;
+    practice_areas?: string[];
+    service_areas?: string[];
+    languages?: string[];
+    availability?: string;
+    fee_band?: string;
+  }) {
+    return apiRequest<any>('/api/professionals/me', {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+
   async getTemplates() {
     return apiRequest<Template[]>('/api/legal/templates');
   },
