@@ -455,7 +455,7 @@ export const LegalAidMapScreen: React.FC = () => {
             ) : (
                 <SectionList<Center | Lawyer | Firm, SectionData>
                     sections={sections}
-                    keyExtractor={(item: Center | Lawyer, index: number) => `${item.id}-${index}`}
+                    keyExtractor={(item: Center | Lawyer | Firm, index: number) => `${item.id}-${index}`}
                     renderItem={renderItem}
                     renderSectionHeader={({ section }: { section: SectionData }) => (
                         <View style={{ backgroundColor: 'transparent', paddingBottom: 10, paddingTop: 10 }}>
