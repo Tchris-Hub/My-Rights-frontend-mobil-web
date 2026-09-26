@@ -238,7 +238,7 @@ export interface Lawyer {
     cases_won?: number;
     rating?: number;
     reviews?: number;
-    credibility: 'Verified by source registry' | 'Unverified';
+    credibility: 'Verified by source registry' | 'Verified professional profile' | 'Unverified';
     verification_status?: 'verified' | 'unverified';
     verification_source_url?: string;
     verified_at?: string;
