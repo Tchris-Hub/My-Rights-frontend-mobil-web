@@ -201,9 +201,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const signInWithGoogle = async () => {
         try {
+            setAuthState('authenticating');
             setError(null);
+
             await authService.signInWithGoogle();
+
+            // Native Better Auth social sign-in completes the browser/deep-link
+            // flow but does not drive React Navigation. Rehydrate the app state
+            // explicitly so RootNavigator can switch route modes immediately.
+            const profile = await authService.getCurrentUser();
+            if (!profile) {
+                throw new Error('Google sign-in completed, but your session could not be loaded.');
+            }
+
+            const hasConsent = await authService.hasCurrentConsent();
+            const pending = await localDataService.getPendingConsent();
+
+            if (!hasConsent && pending) {
+                await authService.recordCurrentConsent();
+                await localDataService.clearPendingConsent();
+            }
+
+            setUser(profile);
+            setIsGuest(false);
+            await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+            setConsentAccepted(hasConsent || Boolean(pending));
+            setAuthState('authenticated');
         } catch (err: any) {
+            setAuthState('unauthenticated');
             setError(err?.message || 'Google sign-in failed.');
             throw err;
         }
