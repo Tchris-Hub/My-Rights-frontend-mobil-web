@@ -92,7 +92,11 @@ export const authService = {
         });
     },
 
-    async getConsents(): Promise<Array<{ terms_version: string; privacy_version: string; accepted_at: string }>> {\n        return apiRequest<Array<{ terms_version: string; privacy_version: string; accepted_at: string }>>('/api/consent');\n    },\n\n    async hasCurrentConsent(): Promise<boolean> {
+    async getConsents(): Promise<Array<{ terms_version: string; privacy_version: string; accepted_at: string }>> {
+        return apiRequest<Array<{ terms_version: string; privacy_version: string; accepted_at: string }>>('/api/consent');
+    },
+
+    async hasCurrentConsent(): Promise<boolean> {
         try {
             const consents = await apiRequest<Array<{
                 terms_version: string;
