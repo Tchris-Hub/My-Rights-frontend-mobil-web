@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Alert,
     Dimensions,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,6 @@ import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { Linking } from 'react-native';
 import { APP_CONFIG } from '../../constants/config';
 
 const { width } = Dimensions.get('window');
