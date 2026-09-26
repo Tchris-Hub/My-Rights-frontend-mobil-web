@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
 import { legalService, Chapter } from '../../services/legalService';
+import { accountService } from '../../services/account.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -214,7 +215,21 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                                             <View style={styles.cardFooter}>
                                                 <TouchableOpacity 
                                                     style={styles.citeButton}
-                                                    onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}
+                                                    onPress={async () => {
+                                                        try {
+                                                            await accountService.saveRight({
+                                                                source_type: 'constitution_section',
+                                                                source_id: String(section.id),
+                                                                title: section.title,
+                                                                citation: `Article ${section.section_number}`,
+                                                                summary: section.key_takeaway || section.content.slice(0, 500),
+                                                            });
+                                                            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                                            Alert.alert('Citation saved', 'You can find it in Saved Rights from your profile.');
+                                                        } catch (error) {
+                                                            Alert.alert('Unable to save citation', error instanceof Error ? error.message : 'Sign in and try again.');
+                                                        }
+                                                    }}
                                                 >
                                                     <Ionicons name="bookmark" size={16} color={colors.primary} />
                                                     <Text style={[theme.typography.labelSm, { color: colors.primary, marginLeft: 8 }]}>SAVE CITATION</Text>
