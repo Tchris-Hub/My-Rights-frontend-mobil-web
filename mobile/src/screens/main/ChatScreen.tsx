@@ -638,14 +638,14 @@ export const ChatScreen: React.FC = () => {
                             activeOpacity={0.7}
                         >
                             <LinearGradient
-                                colors={(inputText.trim() && !isLoading) 
-                                    ? [colors.primary, theme.colors.primaryContainer] 
+                                colors={(inputText.trim() || attachment) && !isLoading && !isExtractingAttachment
+                                    ? [colors.primary, theme.colors.primaryContainer]
                                     : [colors.surfaceContainerHigh, colors.surfaceContainerHigh]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={[
                                     styles.sendButton,
-                                    (inputText.trim() && !isLoading) && {
+                                    ((inputText.trim() || attachment) && !isLoading && !isExtractingAttachment) && {
                                         shadowColor: colors.primary,
                                         shadowOffset: { width: 0, height: 4 },
                                         shadowOpacity: 0.3,
@@ -657,7 +657,7 @@ export const ChatScreen: React.FC = () => {
                                 <Ionicons
                                     name={isLoading ? "ellipsis-horizontal" : "arrow-up"}
                                     size={22}
-                                    color={inputText.trim() && !isLoading ? colors.onPrimary : colors.onSurfaceVariant}
+                                    color={(inputText.trim() || attachment) && !isLoading && !isExtractingAttachment ? colors.onPrimary : colors.onSurfaceVariant}
                                 />
                             </LinearGradient>
                         </TouchableOpacity>
