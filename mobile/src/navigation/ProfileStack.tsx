@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileHomeScreen } from '../screens/profile/ProfileHomeScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { ChatHistoryScreen } from '../screens/profile/ChatHistoryScreen';
+import { LegalEnquiriesScreen } from '../screens/profile/LegalEnquiriesScreen';
 import type { ProfileStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -25,6 +26,11 @@ export const ProfileNavigator: React.FC = () => {
                 name="ChatHistory"
                 component={ChatHistoryScreen}
                 options={{ title: 'Chat History' }}
+            />
+            <Stack.Screen
+                name="LegalEnquiries"
+                component={LegalEnquiriesScreen}
+                options={{ title: 'Legal Enquiries' }}
             />
         </Stack.Navigator>
     );
