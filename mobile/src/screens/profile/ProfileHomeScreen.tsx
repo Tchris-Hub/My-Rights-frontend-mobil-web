@@ -124,6 +124,24 @@ export const ProfileHomeScreen: React.FC = () => {
 
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                if (!isGuest) navigation.navigate('LegalEnquiries');
+                            }}
+                        >
+                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
+                            </View>
+                            <View style={styles.menuTextContent}>
+                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Legal Enquiries</Text>
+                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Track requests and manage your professional inbox</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
+
                         <TouchableOpacity style={styles.menuItem}>
                             <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="document-text" size={20} color={colors.secondary} />
