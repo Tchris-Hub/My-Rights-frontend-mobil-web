@@ -10,6 +10,7 @@ import { DocumentGeneratorScreen } from '../screens/main/DocumentGeneratorScreen
 import { ConstitutionExplorerScreen } from '../screens/main/ConstitutionExplorerScreen';
 import { LegalAidMapScreen } from '../screens/main/LegalAidMapScreen';
 import { ToolsHomeScreen } from '../screens/main/ToolsHomeScreen';
+import { ProfessionalEnquiryScreen } from '../screens/main/ProfessionalEnquiryScreen';
 import type { ToolsStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ToolsStackParamList>();
@@ -41,6 +42,11 @@ export const ToolsNavigator: React.FC = () => {
                 name="LegalAidMap"
                 component={LegalAidMapScreen}
                 options={{ title: 'Legal Aid Near Me' }}
+            />
+            <Stack.Screen
+                name="ProfessionalEnquiry"
+                component={ProfessionalEnquiryScreen}
+                options={{ title: 'Contact professional' }}
             />
         </Stack.Navigator>
     );
