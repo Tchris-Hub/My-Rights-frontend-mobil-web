@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from '../constants/config';
 import { assertGroundedChat, type GroundingSource } from './ragPolicy';
 import type { ChatMessage, SourceCitation } from '../types';
 
-type ChatSession = { id: string; title: string; updated_at: string };
+type ChatSession = { id: string; title: string | null; created_at?: string; updated_at: string };
 
 function toSourceCitations(sources: GroundingSource[] | undefined): SourceCitation[] | undefined {
     if (!Array.isArray(sources)) return undefined;
