@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     Clipboard,
     Alert,
+    Linking,
     Platform,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
@@ -32,7 +33,7 @@ const SourceBadge = ({ type, colors }: { type: string; colors: any }) => {
     let bgColor = colors.surfaceContainerHighest;
     let textColor = colors.onSurfaceVariant;
 
-    if (type === 'web_search' || type === 'live_research') {
+    if (type === 'web_search' || type === 'live_research' || type === 'live_official' || type === 'live_authoritative') {
         icon = 'globe-outline';
         label = 'Live Search';
         bgColor = '#E3F2FD';
@@ -85,7 +86,7 @@ const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
                         {expanded ? 'Hide Details' : `View Citations & Sources (${sources?.length || 0})`}
                     </Text>
                 </View>
-                {!expanded && sources?.some((s: any) => s.source_type === 'web_search' || s.source_type === 'live_research') && (
+                {!expanded && sources?.some((s: any) => ['web_search', 'live_research', 'live_official', 'live_authoritative'].includes(s.source_type)) && (
                     <View style={styles.liveIndicator}>
                         <View style={styles.liveDot} />
                         <Text style={styles.liveText}>LIVE</Text>
@@ -104,7 +105,11 @@ const CollapsibleInfo = ({ sources, disclaimer, isUser, colors }: any) => {
                                     <View style={styles.sourceHeader}>
                                         <SourceBadge type={source.source_type || 'source'} colors={colors} />
                                         {source.source_url && (
-                                            <TouchableOpacity onPress={() => {/* Handle URL open */}}>
+                                            <TouchableOpacity onPress={() => {
+                                                if (typeof source.source_url === 'string') {
+                                                    Linking.openURL(source.source_url).catch(() => Alert.alert('Unable to open source', 'The source link could not be opened.'));
+                                                }
+                                            }}>
                                                 <Ionicons name="open-outline" size={12} color={colors.primary} />
                                             </TouchableOpacity>
                                         )}
