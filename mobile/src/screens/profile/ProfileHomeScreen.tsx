@@ -142,6 +142,24 @@ export const ProfileHomeScreen: React.FC = () => {
 
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                if (!isGuest) navigation.navigate('ProfessionalProfile');
+                            }}
+                        >
+                            <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
+                                <Ionicons name="briefcase-outline" size={20} color={colors.secondary} />
+                            </View>
+                            <View style={styles.menuTextContent}>
+                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Professional Profile</Text>
+                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Manage your legal marketplace profile</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
+
                         <TouchableOpacity style={styles.menuItem}>
                             <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="document-text" size={20} color={colors.secondary} />
