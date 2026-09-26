@@ -11,6 +11,7 @@ import { ConstitutionExplorerScreen } from '../screens/main/ConstitutionExplorer
 import { LegalAidMapScreen } from '../screens/main/LegalAidMapScreen';
 import { ToolsHomeScreen } from '../screens/main/ToolsHomeScreen';
 import { ProfessionalEnquiryScreen } from '../screens/main/ProfessionalEnquiryScreen';
+import { FirmDetailsScreen } from '../screens/main/FirmDetailsScreen';
 import type { ToolsStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ToolsStackParamList>();
@@ -47,6 +48,11 @@ export const ToolsNavigator: React.FC = () => {
                 name="ProfessionalEnquiry"
                 component={ProfessionalEnquiryScreen}
                 options={{ title: 'Contact professional' }}
+            />
+            <Stack.Screen
+                name="FirmDetails"
+                component={FirmDetailsScreen}
+                options={{ title: 'Firm details' }}
             />
         </Stack.Navigator>
     );
