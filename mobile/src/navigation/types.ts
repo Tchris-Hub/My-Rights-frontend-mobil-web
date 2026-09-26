@@ -39,6 +39,7 @@ export type ProfileStackParamList = {
     EditProfile: undefined;
     ChatHistory: undefined;
     LegalEnquiries: undefined;
+    ProfessionalProfile: undefined;
 };
 
 declare global {
