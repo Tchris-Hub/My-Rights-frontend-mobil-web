@@ -36,6 +36,7 @@ export const LegalEnquiriesScreen: React.FC = () => {
   const [received, setReceived] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [responseDrafts, setResponseDrafts] = useState<Record<string, string>>({});
 
   const load = useCallback(async (refresh = false) => {
     try {
@@ -56,9 +57,9 @@ export const LegalEnquiriesScreen: React.FC = () => {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const update = async (id: string, status: 'accepted' | 'declined' | 'closed') => {
+  const update = async (id: string, status: 'accepted' | 'declined' | 'closed', response_message?: string) => {
     try {
-      await legalService.updateEnquiry(id, { status });
+      await legalService.updateEnquiry(id, { status, ...(response_message?.trim() ? { response_message: response_message.trim() } : {}) });
       await load(true);
     } catch (error) {
       Alert.alert('Unable to update enquiry', error instanceof Error ? error.message : 'Please try again.');
@@ -131,6 +132,26 @@ export const LegalEnquiriesScreen: React.FC = () => {
                 </View>
               ) : null}
 
+              {tab === 'received' && (item.status === 'accepted' || item.status === 'declined') ? (
+                <View style={styles.responseComposer}>
+                  <TextInput
+                    value={responseDrafts[item.id] || ''}
+                    onChangeText={(value) => setResponseDrafts((current) => ({ ...current, [item.id]: value }))}
+                    placeholder="Optional response to the client"
+                    placeholderTextColor={colors.onSurfaceVariant}
+                    multiline
+                    maxLength={3000}
+                    style={[styles.responseInput, { color: colors.onSurface, backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outlineVariant }]}
+                  />
+                  <TouchableOpacity
+                    style={[styles.action, { backgroundColor: colors.primary }]}
+                    onPress={() => update(item.id, item.status as 'accepted' | 'declined', responseDrafts[item.id])}
+                  >
+                    <Text style={[styles.actionText, { color: colors.onPrimary }]}>Send response</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
               {tab === 'received' && item.status === 'pending' ? (
                 <View style={styles.actions}>
                   <TouchableOpacity style={[styles.action, { backgroundColor: colors.primary }]} onPress={() => update(item.id, 'accepted')}>
@@ -178,6 +199,8 @@ const styles = StyleSheet.create({
   response: { borderLeftWidth: 3, padding: 12, borderRadius: 8 },
   responseLabel: { ...theme.typography.labelSm, fontWeight: '800', marginBottom: 4 },
   responseText: { ...theme.typography.bodySm, lineHeight: 19 },
+  responseComposer: { gap: 8 },
+  responseInput: { minHeight: 90, borderWidth: 1, borderRadius: 14, padding: 12, ...theme.typography.bodySm, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', gap: 10 },
   action: { flex: 1, minHeight: 44, paddingHorizontal: 16, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   actionText: { ...theme.typography.labelLg, fontWeight: '800' },
