@@ -29,6 +29,7 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
+import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
@@ -60,6 +61,8 @@ export const ChatScreen: React.FC = () => {
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
+    const [attachment, setAttachment] = useState<{ name: string; mimeType: string; text: string; characterCount: number; truncated: boolean } | null>(null);
+    const [isExtractingAttachment, setIsExtractingAttachment] = useState(false);
     const [chatQuotaRemaining, setChatQuotaRemaining] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
 
@@ -185,6 +188,7 @@ export const ChatScreen: React.FC = () => {
                 const persistedConversationId = await chatService.streamMessage(messageText, {
                     conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
                     persist: !isIncognito,
+                    attachmentText: attachment?.text,
                     onChunk: (chunk) => {
                         setMessages((prev) =>
                             prev.map((msg) => {
@@ -321,7 +325,7 @@ export const ChatScreen: React.FC = () => {
     const pickFile = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/pdf', 'image/*', 'text/plain'],
+                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
                 copyToCacheDirectory: false,
             });
 
@@ -337,10 +341,16 @@ export const ChatScreen: React.FC = () => {
                     Alert.alert('Unsupported document', validationError instanceof Error ? validationError.message : 'This document cannot be attached.');
                     return;
                 }
-                // Do not read, execute, preview, or upload the selected bytes here.
-                // The current chat flow sends only a sanitized display label.
-                setInputText(prev => prev + `\n[Document: ${sanitizeDocumentName(asset.name)}]`);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setIsExtractingAttachment(true);
+                try {
+                    const extracted = await documentService.extractText(asset.uri, asset.name, asset.mimeType || 'application/octet-stream', asset.size);
+                    setAttachment({ name: sanitizeDocumentName(asset.name), mimeType: extracted.mime_type, text: extracted.text, characterCount: extracted.character_count, truncated: extracted.truncated });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (extractionError) {
+                    Alert.alert('Could not read document', extractionError instanceof Error ? extractionError.message : 'The document could not be extracted.');
+                } finally {
+                    setIsExtractingAttachment(false);
+                }
             }
         } catch (error) {
             logger.error('Error picking file:', error);
@@ -555,6 +565,23 @@ export const ChatScreen: React.FC = () => {
                         }
                     ]}
                 >
+                    {(attachment || isExtractingAttachment) && (
+                        <View style={[styles.attachmentCard, { backgroundColor: colors.surfaceContainerHigh }]}> 
+                            <View style={[styles.attachmentIcon, { backgroundColor: colors.primary + '12' }]}>
+                                <Ionicons name={isExtractingAttachment ? 'sync-outline' : 'document-text-outline'} size={20} color={colors.primary} />
+                            </View>
+                            <View style={styles.attachmentInfo}>
+                                <Text style={[styles.attachmentName, { color: colors.onSurface }]} numberOfLines={1}>
+                                    {isExtractingAttachment ? 'Reading document…' : attachment?.name}
+                                </Text>
+                                <Text style={[styles.attachmentMeta, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+                                    {isExtractingAttachment ? 'Extracting readable text' : `${attachment?.characterCount.toLocaleString()} characters extracted${attachment?.truncated ? ' • shortened for chat' : ''}`}
+                                </Text>
+                            </View>
+                            {attachment && !isExtractingAttachment && <TouchableOpacity onPress={() => setAttachment(null)} style={styles.attachmentRemove}><Ionicons name="close-circle" size={20} color={colors.onSurfaceVariant} /></TouchableOpacity>}
+                            {isExtractingAttachment && <ActivityIndicator size="small" color={colors.primary} />}
+                        </View>
+                    )}
                     <View style={styles.inputContainer}>
                         <View
                             style={[
@@ -607,7 +634,7 @@ export const ChatScreen: React.FC = () => {
 
                         <TouchableOpacity
                             onPress={() => handleSend()}
-                            disabled={!inputText.trim() || isLoading || inputText.length > 10000}
+                            disabled={(!inputText.trim() && !attachment) || isLoading || isExtractingAttachment || inputText.length > 10000}
                             activeOpacity={0.7}
                         >
                             <LinearGradient
@@ -797,6 +824,17 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         paddingHorizontal: theme.spacing.lg,
     },
+    attachmentCard: {
+        flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8,
+        paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14,
+    },
+    attachmentIcon: {
+        width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    },
+    attachmentInfo: { flex: 1, minWidth: 0 },
+    attachmentName: { fontFamily: theme.typography.fontFamily.bodyMedium, fontSize: 13 },
+    attachmentMeta: { fontFamily: theme.typography.fontFamily.body, fontSize: 11, marginTop: 2 },
+    attachmentRemove: { padding: 2 },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
