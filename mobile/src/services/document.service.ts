@@ -5,6 +5,7 @@ import type { DocumentAnalysisResponse, DocumentGenerationResponse, Authenticity
 
 const MAX_DOCUMENT_TEXT_CHARS = 40_000;
 const MAX_GENERATION_INPUT_CHARS = 12_000;
+const MAX_EXTRACTED_TEXT_CHARS = 40_000;
 
 const normalizeUntrustedDocument = (documentText: string): string => {
     if (typeof documentText !== 'string') throw new Error('Document content must be text.');
@@ -104,9 +105,31 @@ export const documentService = {
         return result;
     },
 
-    async extractText(uri: string): Promise<string> {
+    async extractText(uri: string, fileName: string, mimeType: string, size?: number): Promise<{ text: string; file_name: string; mime_type: string; character_count: number; truncated: boolean }> {
         if (!uri || typeof uri !== 'string') throw new Error('A valid document URI is required.');
-        throw new Error('Document text extraction is not available yet. No document was analyzed.');
+        const allowedTypes = new Set([
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+        ]);
+        if (!allowedTypes.has(mimeType) && !/\\.(pdf|docx|txt)$/i.test(fileName)) {
+            throw new Error('Supported document formats are PDF, DOCX, and TXT.');
+        }
+        if (typeof size === 'number' && size > 10 * 1024 * 1024) throw new Error('Document is too large. Maximum size is 10 MB.');
+        const file = new File(uri);
+        const bytes = await file.bytes();
+        if (!bytes.byteLength) throw new Error('The selected document is empty.');
+        if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('Document is too large. Maximum size is 10 MB.');
+        const payload = await binaryApiRequest<{ text: string; file_name: string; mime_type: string; character_count: number; truncated: boolean }>(
+            '/api/ai/document/extract',
+            bytes,
+            mimeType || 'application/octet-stream',
+            createIdempotencyKey(),
+            { 'X-File-Name': encodeURIComponent(fileName) },
+        );
+        if (!payload?.text?.trim()) throw new Error('No readable text was found in this document.');
+        if (payload.text.length > MAX_EXTRACTED_TEXT_CHARS) throw new Error('Extracted document text is too large.');
+        return payload;
     },
 
     async verifyStamp(uri: string): Promise<AuthenticityMarkers> {
