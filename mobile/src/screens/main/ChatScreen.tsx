@@ -149,7 +149,7 @@ export const ChatScreen: React.FC = () => {
 
     const isSubmitting = useRef(false);
     const handleSend = async (text?: string) => {
-        const messageText = text || inputText.trim();
+        const messageText = text || inputText.trim() || (attachment ? 'Please review the attached document.' : '');
         if (!messageText || isLoading || isSubmitting.current) return;
 
         if (!isAuthenticated) {
