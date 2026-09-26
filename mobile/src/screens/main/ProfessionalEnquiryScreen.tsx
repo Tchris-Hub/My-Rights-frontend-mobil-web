@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   subtitle: {
-    ...theme.typography.bodySm,
+    ...theme.typography.bodyMd,
     marginTop: 3,
   },
   content: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     flex: 1,
-    ...theme.typography.bodySm,
+    ...theme.typography.bodyMd,
     lineHeight: 20,
   },
   practiceArea: {
