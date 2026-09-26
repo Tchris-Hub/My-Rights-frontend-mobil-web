@@ -234,7 +234,7 @@ export const LegalAidMapScreen: React.FC = () => {
                         </View>
                         <View style={styles.cardActions}>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('FirmDetails', { firm })}
+                                onPress={() => handleDirections(center.latitude, center.longitude, center.name)}
                                 style={styles.actionBtnContainer}
                             >
                                 <LinearGradient
@@ -244,14 +244,14 @@ export const LegalAidMapScreen: React.FC = () => {
                                     style={styles.actionBtn}
                                 >
                                     <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onPrimary} />
-                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>View firm</Text>
+                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Directions</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
             );
-        } else {
+        } else if (viewMode === 'experts') {
             const lawyer = item as Lawyer;
             return (
                 <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
@@ -325,6 +325,51 @@ export const LegalAidMapScreen: React.FC = () => {
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
+                </Animated.View>
+            );
+        }
+    };
+
+        } else {
+            const firm = item as Firm;
+            return (
+                <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+                    <View style={[styles.centerCard, { backgroundColor: colors.surfaceContainer }]}>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.cardInfo}>
+                                <View style={styles.typeRow}>
+                                    <Text style={[styles.typeName, { color: colors.primary }]}>Verified firm</Text>
+                                    <View style={[styles.badge, { backgroundColor: colors.primary + '10' }]}>
+                                        <Ionicons name="checkmark-circle" size={10} color={colors.primary} />
+                                        <Text style={[styles.badgeText, { color: colors.primary }]}>Verified</Text>
+                                    </View>
+                                </View>
+                                <Text style={[styles.centerName, { color: colors.onSurface }]}>{firm.name}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.cardDetails}>
+                            {firm.location ? <View style={styles.detailRow}>
+                                <Ionicons name="location-outline" size={16} color={colors.onSurfaceVariant} />
+                                <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]}>{firm.location}</Text>
+                            </View> : null}
+                            {firm.practice_areas?.length ? <View style={styles.detailRow}>
+                                <Ionicons name="briefcase-outline" size={16} color={colors.onSurfaceVariant} />
+                                <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{firm.practice_areas.join(' • ')}</Text>
+                            </View> : null}
+                            {firm.match_reasons?.length ? <View style={[styles.matchBox, { backgroundColor: colors.primary + '08' }]}>
+                                <Text style={[styles.matchTitle, { color: colors.primary }]}>Why this match</Text>
+                                {firm.match_reasons.map((reason) => <Text key={reason} style={[styles.matchReason, { color: colors.onSurfaceVariant }]}>• {reason}</Text>)}
+                            </View> : null}
+                        </View>
+                        <View style={styles.cardActions}>
+                            <TouchableOpacity style={styles.actionBtnContainer} onPress={() => navigation.navigate('FirmDetails', { firm })}>
+                                <LinearGradient colors={[colors.primary, theme.colors.primaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.actionBtn}>
+                                    <Ionicons name="business-outline" size={18} color={colors.onPrimary} />
+                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>View firm</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </Animated.View>
             );
         }
@@ -466,7 +511,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, marginTop: 12 }]}>Syncing with High Court Archives...</Text>
                 </View>
             ) : (
-                <SectionList
+                <SectionList<Center | Lawyer | Firm, SectionData>
                     sections={sections}
                     keyExtractor={(item: Center | Lawyer, index: number) => `${item.id}-${index}`}
                     renderItem={renderItem}
