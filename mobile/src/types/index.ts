@@ -194,6 +194,41 @@ export interface LegalAidCenter {
     verified_at?: string;
 }
 
+export interface MarketplaceMatchReason {
+    matched_attributes: string[];
+    match_reasons: string[];
+}
+
+export interface ProfessionalMatch extends MarketplaceMatchReason {
+    id: string;
+    display_name: string;
+    role: string;
+    bio?: string | null;
+    location?: string | null;
+    practice_areas: string[];
+    service_areas: string[];
+    languages: string[];
+    availability?: string | null;
+    fee_band?: string | null;
+    verification_status: 'verified';
+    verified_at?: string | null;
+    firms: Array<{ id: string; name: string; location?: string | null; member_role?: string | null }>;
+}
+
+export interface FirmMatch extends MarketplaceMatchReason {
+    id: string;
+    name: string;
+    description?: string | null;
+    location?: string | null;
+    practice_areas: string[];
+    service_areas: string[];
+    languages: string[];
+    fee_band?: string | null;
+    verification_status: 'verified';
+    verified_at?: string | null;
+    professionals: Array<{ id: string; display_name: string; role: string; practice_areas: string[] }>;
+}
+
 export interface Lawyer {
     id: string;
     name: string;
