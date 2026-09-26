@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
   back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1 },
   title: { ...theme.typography.titleLg, fontWeight: '900' },
-  subtitle: { ...theme.typography.bodySm, marginTop: 3 },
+  subtitle: { ...theme.typography.bodyMd, marginTop: 3 },
   tabs: { flexDirection: 'row', marginHorizontal: 24, padding: 4, borderRadius: 16 },
   tab: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 13 },
   tabText: { ...theme.typography.labelLg, fontWeight: '800' },
