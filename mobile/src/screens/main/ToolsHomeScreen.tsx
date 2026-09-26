@@ -28,7 +28,7 @@ const TOOLS = [
     {
         id: 'generate',
         title: 'Document Architect',
-        subtitle: 'Bespoke legal document engine for precision shielding.',
+        subtitle: 'Create structured legal-document drafts from the details you provide.',
         icon: 'document-attach',
         color: theme.colors.primary,
         route: 'DocumentGenerate',
@@ -36,7 +36,7 @@ const TOOLS = [
     {
         id: 'review',
         title: 'Document Review',
-        subtitle: 'Precision AI verification hub for risk detection.',
+        subtitle: 'AI-assisted review of document text for potential issues and explanations.',
         icon: 'scan',
         color: theme.colors.secondary,
         route: 'DocumentReview',
@@ -44,7 +44,7 @@ const TOOLS = [
     {
         id: 'constitution',
         title: '1999 Constitution',
-        subtitle: 'Digital Law Enforcement Index & Discovery.',
+        subtitle: 'Browse available Constitution content and related legal-source information.',
         icon: 'book',
         color: theme.colors.onSurfaceVariant,
         route: 'ConstitutionExplorer',
@@ -52,7 +52,7 @@ const TOOLS = [
     {
         id: 'map',
         title: 'Legal Aid Map',
-        subtitle: 'Network of pro-bono authority and aid.',
+        subtitle: 'Find available legal-aid centres and legal professionals.',
         icon: 'location',
         color: theme.colors.primary,
         route: 'LegalAidMap',
@@ -103,7 +103,7 @@ export const ToolsHomeScreen: React.FC = () => {
                     <Text style={[styles.heroPreTitle, { color: colors.primary }]}>Institutional Access</Text>
                     <Text style={[styles.heroTitle, { color: colors.onSurface }]}>THE HUB</Text>
                     <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant }]}>
-                        Architecting justice through advanced editorial precision.
+                        Legal information, document tools, and pathways to human legal help.
                     </Text>
                 </View>
 
@@ -145,7 +145,7 @@ export const ToolsHomeScreen: React.FC = () => {
                             <Text style={[styles.promoTitle, { color: colors.onSurface }]}>THE PLAIN TRUTH</Text>
                         </View>
                         <Text style={[styles.promoText, { color: colors.onSurfaceVariant }]}>
-                            Our architecting tools cross-reference the <Text style={{ fontWeight: '800', color: colors.onSurface }}>1999 Constitution</Text> to ensure your documents command respect and legal standing.
+                            Use these tools to review information and prepare drafts. Legal documents and AI-generated explanations should be checked against authoritative sources or by a qualified legal professional when the matter is important.
                         </Text>
                     </View>
                 </View>
