@@ -115,7 +115,7 @@ export const documentService = {
             'text/plain',
         ]);
         if (!allowedTypes.has(mimeType) && !/\.(pdf|docx|rtf|txt)$/i.test(fileName)) {
-            throw new Error('Supported document formats are PDF, DOCX, and TXT.');
+            throw new Error('Supported document formats are PDF, DOCX, RTF, and TXT.');
         }
         if (typeof size === 'number' && size > 10 * 1024 * 1024) throw new Error('Document is too large. Maximum size is 10 MB.');
         const file = new File(uri);
