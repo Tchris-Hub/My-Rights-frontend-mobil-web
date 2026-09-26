@@ -28,12 +28,25 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { legalService, Center, Lawyer } from '../../services/legalService';
 
+type Firm = {
+    id: string;
+    name: string;
+    description?: string | null;
+    location?: string | null;
+    practice_areas?: string[];
+    service_areas?: string[];
+    languages?: string[];
+    fee_band?: string | null;
+    verification_status?: string;
+    professionals?: Array<{ id: string; display_name: string; role: string; practice_areas: string[] }>;
+};
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/images/classroom_bg.png');
 
 type SectionData = {
     title: string;
-    data: (Center | Lawyer)[];
+    data: (Center | Lawyer | Firm)[];
 };
 
 export const LegalAidMapScreen: React.FC = () => {
@@ -42,13 +55,14 @@ export const LegalAidMapScreen: React.FC = () => {
     
     // UI State
     const [selectedType, setSelectedType] = useState('All');
-    const [viewMode, setViewMode] = useState<'centers' | 'experts'>('centers');
+    const [viewMode, setViewMode] = useState<'centers' | 'experts' | 'firms'>('centers');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
     const [mapError, setMapError] = useState(false);
     
     // Data State
     const [centers, setCenters] = useState<Center[]>([]);
     const [lawyers, setLawyers] = useState<Lawyer[]>([]);
+    const [firms, setFirms] = useState<Firm[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -60,18 +74,20 @@ export const LegalAidMapScreen: React.FC = () => {
             setIsLoading(true);
             
             // Parallel execution: Location + Data
-            const [locationResult, centersData, lawyersData] = await Promise.allSettled([
+            const [locationResult, centersData, lawyersData, firmsData] = await Promise.allSettled([
                 Location.requestForegroundPermissionsAsync().then(async ({ status }) => {
                     if (status === 'granted') return await Location.getCurrentPositionAsync({});
                     return null;
                 }),
                 legalService.getLegalAidCenters(),
-                legalService.getLawyers()
+                legalService.getLawyers(),
+                legalService.getFirms()
             ]);
 
             if (locationResult.status === 'fulfilled') setUserLocation(locationResult.value);
             if (centersData.status === 'fulfilled') setCenters(centersData.value);
             if (lawyersData.status === 'fulfilled') setLawyers(lawyersData.value);
+            if (firmsData.status === 'fulfilled') setFirms(firmsData.value as Firm[]);
 
         } catch (error) {
             console.error('Error initializing Legal Aid Map:', error);
@@ -128,6 +144,11 @@ export const LegalAidMapScreen: React.FC = () => {
         return lawyers.filter(l => l.specialization === selectedType);
     }, [selectedType, lawyers]);
 
+    const filteredFirms = useMemo(() => {
+        if (selectedType === 'All') return firms;
+        return firms.filter(f => f.practice_areas?.some(area => area.toLowerCase() === selectedType.toLowerCase()));
+    }, [selectedType, firms]);
+
     const initialRegion = {
         latitude: userLocation?.coords.latitude || 9.0435,
         longitude: userLocation?.coords.longitude || 7.4931,
@@ -137,9 +158,11 @@ export const LegalAidMapScreen: React.FC = () => {
 
     const sections: SectionData[] = viewMode === 'centers'
         ? [{ title: `Verified Centers (${filteredCenters.length})`, data: filteredCenters }]
-        : [{ title: `Legal Experts (${filteredLawyers.length})`, data: filteredLawyers }];
+        : viewMode === 'experts'
+            ? [{ title: `Legal Experts (${filteredLawyers.length})`, data: filteredLawyers }]
+            : [{ title: `Verified Firms (${filteredFirms.length})`, data: filteredFirms }];
 
-    const renderItem = ({ item, index }: { item: Center | Lawyer; index: number }) => {
+    const renderItem = ({ item, index }: { item: Center | Lawyer | Firm; index: number }) => {
         if (viewMode === 'centers') {
             const center = item as Center;
             return (
@@ -189,6 +212,70 @@ export const LegalAidMapScreen: React.FC = () => {
                             >
                                 <Ionicons name="navigate-outline" size={18} color={colors.primary} />
                                 <Text style={[styles.actionBtnText, { color: colors.primary }]}>Directions</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
+            );
+        } else if (viewMode === 'firms') {
+            const firm = item as Firm;
+            return (
+                <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
+                    <TouchableOpacity
+                        style={[styles.centerCard, { backgroundColor: colors.surfaceContainer }]}
+                        onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={styles.cardInfo}>
+                                <View style={styles.typeRow}>
+                                    <Text style={[styles.typeName, { color: colors.primary }]}>Law firm</Text>
+                                    <View style={[styles.badge, { backgroundColor: colors.primary + '10' }]}>
+                                        <Ionicons name="checkmark-circle" size={10} color={colors.primary} />
+                                        <Text style={[styles.badgeText, { color: colors.primary }]}>Verified</Text>
+                                    </View>
+                                </View>
+                                <Text style={[styles.centerName, { color: colors.onSurface }]}>{firm.name}</Text>
+                                {firm.description ? (
+                                    <Text style={[styles.detailText, { color: colors.onSurfaceVariant, marginTop: 8 }]} numberOfLines={3}>
+                                        {firm.description}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        </View>
+                        <View style={styles.cardDetails}>
+                            {firm.location ? (
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="location-outline" size={16} color={colors.onSurfaceVariant} />
+                                    <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{firm.location}</Text>
+                                </View>
+                            ) : null}
+                            {firm.practice_areas?.length ? (
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="briefcase-outline" size={16} color={colors.onSurfaceVariant} />
+                                    <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                                        {firm.practice_areas.join(' • ')}
+                                    </Text>
+                                </View>
+                            ) : null}
+                        </View>
+                        <View style={styles.cardActions}>
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('ProfessionalEnquiry', {
+                                    firmId: firm.id,
+                                    professionalName: firm.name,
+                                    practiceArea: firm.practice_areas?.[0],
+                                })}
+                                style={styles.actionBtnContainer}
+                            >
+                                <LinearGradient
+                                    colors={[colors.primary, theme.colors.primaryContainer]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.actionBtn}
+                                >
+                                    <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onPrimary} />
+                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Send enquiry</Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -355,14 +442,25 @@ export const LegalAidMapScreen: React.FC = () => {
                         <Ionicons name="people" size={16} color={viewMode === 'experts' ? '#FFF' : colors.onSurfaceVariant} />
                         <Text style={[styles.toggleText, { color: viewMode === 'experts' ? '#FFF' : colors.onSurfaceVariant }]}>Experts</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }]}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setViewMode('firms');
+                            setSelectedType('All');
+                        }}
+                    >
+                        <Ionicons name="business" size={16} color={viewMode === 'firms' ? '#FFF' : colors.onSurfaceVariant} />
+                        <Text style={[styles.toggleText, { color: viewMode === 'firms' ? '#FFF' : colors.onSurfaceVariant }]}>Firms</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
             {/* Filters Wrapper */}
             <View style={styles.filtersWrapper}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll}>
-                    {(viewMode === 'centers' 
-                        ? ['All', 'Government', 'NGO', 'Legal Center'] 
+                    {(viewMode === 'centers'
+                        ? ['All', 'Government', 'NGO', 'Legal Center']
                         : ['All', 'Criminal Law', 'Family Law', 'Property Law', 'Human Rights', 'Corporate']
                     ).map(filter => (
                         <TouchableOpacity
@@ -405,9 +503,9 @@ export const LegalAidMapScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={() => (
                         <View style={styles.emptyState}>
-                            <Ionicons name={viewMode === 'centers' ? "map-outline" : "people-outline"} size={48} color={colors.onSurfaceVariant} />
+                            <Ionicons name={viewMode === 'centers' ? "map-outline" : viewMode === 'firms' ? "business-outline" : "people-outline"} size={48} color={colors.onSurfaceVariant} />
                             <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
-                                {viewMode === 'centers' ? 'No centers found in this region.' : 'Profile pending verification.'}
+                                {viewMode === 'centers' ? 'No centers found in this region.' : viewMode === 'firms' ? 'No verified firms found for this filter.' : 'No verified professionals found for this filter.'}
                             </Text>
                         </View>
                     )}
