@@ -2,9 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest, streamApiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
 import { assertGroundedChat, type GroundingSource } from './ragPolicy';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, SourceCitation } from '../types';
 
 type ChatSession = { id: string; title: string; updated_at: string };
+
+function toSourceCitations(sources: GroundingSource[] | undefined): SourceCitation[] | undefined {
+    if (!Array.isArray(sources)) return undefined;
+    return sources.map((source) => ({ ...source, excerpt: source.excerpt ?? '' }));
+}
 
 type ChatResult = {
     content: string;
@@ -187,7 +192,7 @@ export const chatService = {
                         ? 'This earlier AI answer is not displayed because it was not stored with verifiable legal-source evidence.'
                         : m.content,
                     timestamp: new Date(m.created_at).getTime(),
-                    sources: verified ? sources : undefined,
+                    sources: verified ? toSourceCitations(sources) : undefined,
                     isVerified: verified,
                 };
             }),
