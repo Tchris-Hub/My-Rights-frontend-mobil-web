@@ -39,6 +39,7 @@ type Firm = {
     fee_band?: string | null;
     verification_status?: string;
     professionals?: Array<{ id: string; display_name: string; role: string; practice_areas: string[] }>;
+    match_reasons?: string[];
 };
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
