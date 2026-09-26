@@ -196,7 +196,7 @@ export const DocumentReviewScreen: React.FC = () => {
     const pickDocument = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'image/*'],
+                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/rtf', 'text/rtf', 'text/plain', 'image/*'],
                 copyToCacheDirectory: true,
             });
 
@@ -260,7 +260,7 @@ export const DocumentReviewScreen: React.FC = () => {
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
                                 <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, TXT, or image</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
                             </TouchableOpacity>
 
                             <View style={styles.editorialInput}>
