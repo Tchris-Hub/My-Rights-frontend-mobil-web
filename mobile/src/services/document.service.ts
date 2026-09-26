@@ -110,9 +110,11 @@ export const documentService = {
         const allowedTypes = new Set([
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/rtf',
+            'text/rtf',
             'text/plain',
         ]);
-        if (!allowedTypes.has(mimeType) && !/\\.(pdf|docx|txt)$/i.test(fileName)) {
+        if (!allowedTypes.has(mimeType) && !/\.(pdf|docx|rtf|txt)$/i.test(fileName)) {
             throw new Error('Supported document formats are PDF, DOCX, and TXT.');
         }
         if (typeof size === 'number' && size > 10 * 1024 * 1024) throw new Error('Document is too large. Maximum size is 10 MB.');
@@ -129,6 +131,28 @@ export const documentService = {
         );
         if (!payload?.text?.trim()) throw new Error('No readable text was found in this document.');
         if (payload.text.length > MAX_EXTRACTED_TEXT_CHARS) throw new Error('Extracted document text is too large.');
+        return payload;
+    },
+
+
+    async extractImageText(uri: string, fileName: string, mimeType: string, size?: number): Promise<{ text: string; character_count: number; truncated: boolean }> {
+        if (!uri || typeof uri !== 'string') throw new Error('A valid image URI is required.');
+        const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+        if (!allowedTypes.has(mimeType)) throw new Error('Only JPG, PNG, GIF, and WebP images are supported.');
+        if (typeof size === 'number' && size > 4 * 1024 * 1024) throw new Error('Image is too large. Maximum size is 4 MB.');
+
+        const file = new File(uri);
+        const bytes = await file.bytes();
+        if (!bytes.byteLength) throw new Error('The selected image is empty.');
+        if (bytes.byteLength > 4 * 1024 * 1024) throw new Error('Image is too large. Maximum size is 4 MB.');
+
+        const payload = await binaryApiRequest<{ text: string; character_count: number; truncated: boolean }>(
+            '/api/ai/document/extract-image',
+            bytes,
+            mimeType,
+            createIdempotencyKey(),
+        );
+        if (!payload?.text?.trim()) throw new Error('No readable text was found in this image.');
         return payload;
     },
 
