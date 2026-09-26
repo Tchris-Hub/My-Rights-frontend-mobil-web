@@ -259,8 +259,8 @@ export const DocumentReviewScreen: React.FC = () => {
                         <View style={styles.inputSection}>
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Snap or Upload Image</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>JPG, PNG, GIF, or WebP</Text>
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, TXT, or image</Text>
                             </TouchableOpacity>
 
                             <View style={styles.editorialInput}>
