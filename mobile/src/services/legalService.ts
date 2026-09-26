@@ -59,6 +59,44 @@ export const legalService = {
     })) as Lawyer[];
   },
 
+  async createEnquiry(input: {
+    professional_id?: string;
+    firm_id?: string;
+    message: string;
+    practice_area?: string;
+  }) {
+    return apiRequest<{
+      id: string;
+      reference_number: string;
+      message: string;
+      practice_area?: string | null;
+      status: string;
+      response_message?: string | null;
+      created_at: string;
+      updated_at: string;
+      professional?: { id: string; display_name: string; role: string } | null;
+      firm?: { id: string; name: string } | null;
+    }>('/api/legal/enquiries', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  async getMyEnquiries() {
+    return apiRequest<any[]>('/api/legal/enquiries');
+  },
+
+  async getReceivedEnquiries() {
+    return apiRequest<any[]>('/api/legal/enquiries?view=received');
+  },
+
+  async updateEnquiry(id: string, input: { status: 'accepted' | 'declined' | 'closed'; response_message?: string }) {
+    return apiRequest<any>(`/api/legal/enquiries/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+
   async getTemplates() {
     return apiRequest<Template[]>('/api/legal/templates');
   },
