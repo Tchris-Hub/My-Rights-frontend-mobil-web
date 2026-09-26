@@ -17,10 +17,11 @@ const ALLOWED_MIME_TYPES = new Set([
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'image/jpeg',
     'image/png',
+    'image/gif',
     'image/webp',
 ]);
 
-const ALLOWED_EXTENSIONS = new Set(['pdf', 'txt', 'rtf', 'docx', 'jpg', 'jpeg', 'png', 'webp']);
+const ALLOWED_EXTENSIONS = new Set(['pdf', 'txt', 'rtf', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp']);
 
 export type UntrustedDocumentMetadata = {
     name: string;
@@ -68,7 +69,7 @@ export const validateDocumentMetadata = (input: UntrustedDocumentMetadata): void
     if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && extension !== 'docx') {
         throw new Error('Document type does not match its extension.');
     }
-    if (mime?.startsWith('image/') && !['jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+    if (mime?.startsWith('image/') && !['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
         throw new Error('Document type does not match its extension.');
     }
 };
