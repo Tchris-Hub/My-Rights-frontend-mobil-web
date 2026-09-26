@@ -243,6 +243,8 @@ export interface Lawyer {
     verification_source_url?: string;
     verified_at?: string;
     bio?: string;
+    matched_attributes?: string[];
+    match_reasons?: string[];
 }
 
 // Theme types
