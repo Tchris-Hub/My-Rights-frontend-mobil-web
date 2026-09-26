@@ -226,28 +226,10 @@ export const LegalAidMapScreen: React.FC = () => {
                         </View>
 
                         <View style={styles.cardDetails}>
-                            {firm.location ? (
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="location-outline" size={16} color={colors.onSurfaceVariant} />
-                                    <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{firm.location}</Text>
-                                </View>
-                            ) : null}
-                            {firm.practice_areas?.length ? (
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="briefcase-outline" size={16} color={colors.onSurfaceVariant} />
-                                    <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
-                                        {firm.practice_areas.join(' • ')}
-                                    </Text>
-                                </View>
-                            ) : null}
-                            {selectedType !== 'All' && (firm as any).match_reasons?.length ? (
-                                <View style={[styles.matchBox, { backgroundColor: colors.primary + '08' }]}>
-                                    <Text style={[styles.matchTitle, { color: colors.primary }]}>Why this match</Text>
-                                    {(firm as any).match_reasons.map((reason: string) => (
-                                        <Text key={reason} style={[styles.matchReason, { color: colors.onSurfaceVariant }]}>• {reason}</Text>
-                                    ))}
-                                </View>
-                            ) : null}
+                            <View style={styles.detailRow}>
+                                <Ionicons name="map-outline" size={16} color={colors.onSurfaceVariant} />
+                                <Text style={[styles.detailText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{center.address}</Text>
+                            </View>
                         </View>
                         <View style={styles.cardActions}>
                             <TouchableOpacity
