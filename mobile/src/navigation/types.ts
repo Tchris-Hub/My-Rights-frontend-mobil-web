@@ -29,7 +29,7 @@ export type ToolsStackParamList = {
     LawyerDirectory: undefined;
     ConstitutionExplorer: undefined;
     LegalAidMap: undefined;
-    ProfessionalEnquiry: { professionalId?: string; firmId?: string; professionalName: string; practiceArea?: string };
+    ProfessionalEnquiry: { professionalId?: string; firmId?: string; professionalName: string; practiceArea?: string };\n    FirmDetails: { firm: any };
 };
 
 // Profile Stack (Profile, Settings)
