@@ -217,7 +217,7 @@ export const ChatScreen: React.FC = () => {
                                 msg.id === loadingMessage.id
                                     ? {
                                         ...msg,
-                                        sources: meta.sources,
+                                        sources: meta.sources?.map((source) => ({ ...source, excerpt: source.excerpt ?? '' })),
                                         isVerified: meta.citation_status === 'verified_context',
                                     }
                                     : msg
