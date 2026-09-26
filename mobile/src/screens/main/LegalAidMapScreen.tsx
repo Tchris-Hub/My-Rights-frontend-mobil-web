@@ -260,11 +260,7 @@ export const LegalAidMapScreen: React.FC = () => {
                         </View>
                         <View style={styles.cardActions}>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('ProfessionalEnquiry', {
-                                    firmId: firm.id,
-                                    professionalName: firm.name,
-                                    practiceArea: firm.practice_areas?.[0],
-                                })}
+                                onPress={() => navigation.navigate('FirmDetails', { firm })}
                                 style={styles.actionBtnContainer}
                             >
                                 <LinearGradient
@@ -274,7 +270,7 @@ export const LegalAidMapScreen: React.FC = () => {
                                     style={styles.actionBtn}
                                 >
                                     <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onPrimary} />
-                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Send enquiry</Text>
+                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>View firm</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
