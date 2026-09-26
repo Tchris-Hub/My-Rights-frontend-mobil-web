@@ -234,10 +234,10 @@ export interface Lawyer {
     name: string;
     specialization: string;
     location: string;
-    experience_years: number;
-    cases_won: number;
-    rating: number;
-    reviews: number;
+    experience_years?: number;
+    cases_won?: number;
+    rating?: number;
+    reviews?: number;
     credibility: 'Verified by source registry' | 'Unverified';
     verification_status?: 'verified' | 'unverified';
     verification_source_url?: string;
