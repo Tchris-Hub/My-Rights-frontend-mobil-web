@@ -40,7 +40,7 @@ export type ProfileStackParamList = {
     EditProfile: undefined;
     ChatHistory: undefined;
     LegalEnquiries: undefined;
-    ProfessionalProfile: undefined;
+    ProfessionalProfile: undefined;\n    SavedRights: undefined;\n    PrivacyCenter: undefined;\n    SupportCenter: undefined;
     FirmDetails: { firm: any };
 };
 

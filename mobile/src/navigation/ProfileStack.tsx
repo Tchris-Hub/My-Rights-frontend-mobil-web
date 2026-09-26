@@ -9,7 +9,7 @@ import { ProfileHomeScreen } from '../screens/profile/ProfileHomeScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { ChatHistoryScreen } from '../screens/profile/ChatHistoryScreen';
 import { LegalEnquiriesScreen } from '../screens/profile/LegalEnquiriesScreen';
-import { ProfessionalProfileScreen } from '../screens/profile/ProfessionalProfileScreen';
+import { ProfessionalProfileScreen } from '../screens/profile/ProfessionalProfileScreen';\nimport { SavedRightsScreen } from '../screens/profile/SavedRightsScreen';\nimport { PrivacyCenterScreen } from '../screens/profile/PrivacyCenterScreen';\nimport { SupportCenterScreen } from '../screens/profile/SupportCenterScreen';
 import type { ProfileStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();

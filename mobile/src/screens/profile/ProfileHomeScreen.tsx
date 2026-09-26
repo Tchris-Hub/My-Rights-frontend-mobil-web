@@ -3,7 +3,7 @@
  * User profile and account information
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -21,11 +21,18 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Animated, { ZoomIn, FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { accountService } from '../../services/account.service';
 
 export const ProfileHomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
+    const [stats, setStats] = useState({ consultations: 0, enquiries: 0, saved_rights: 0 });
+
+    useEffect(() => {
+        if (isGuest) return;
+        void accountService.getStats().then(setStats).catch(() => undefined);
+    }, [isGuest]);
 
     const handleLogout = async () => {
         await logout();
@@ -68,7 +75,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         </Text>
                         <View style={[styles.roleBadge, { backgroundColor: colors.primary + '15' }]}>
                             <Text style={[styles.roleText, { color: colors.primary }]}>
-                                {isGuest ? 'Public Observer' : 'Verified Member'}
+                                {isGuest ? 'Public Observer' : 'Member'}
                             </Text>
                         </View>
                     </View>
@@ -79,12 +86,12 @@ export const ProfileHomeScreen: React.FC = () => {
                     style={styles.statsContainer}
                 >
                     <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
-                        <Text style={[styles.statValue, { color: colors.onSurface }]}>12</Text>
-                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Legal Consults</Text>
+                        <Text style={[styles.statValue, { color: colors.onSurface }]}>{stats.consultations}</Text>
+                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Consultations</Text>
                     </View>
                     <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
-                        <Text style={[styles.statValue, { color: colors.onSurface }]}>24</Text>
-                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Documents</Text>
+                        <Text style={[styles.statValue, { color: colors.onSurface }]}>{stats.saved_rights}</Text>
+                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Saved Rights</Text>
                     </View>
                 </Animated.View>
 
