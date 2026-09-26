@@ -99,9 +99,8 @@ export const DocumentReviewScreen: React.FC = () => {
                 updateJob(jobId, { progress: phase });
             };
 
-            setTimeout(() => updatePhase('Extracting Clause Patterns...'), 1000);
-            setTimeout(() => updatePhase('Cross-referencing Constitutional Principles...'), 2500);
-            setTimeout(() => updatePhase('Finalizing Safety Audit...'), 4000);
+            setTimeout(() => updatePhase('Analyzing document content...'), 1000);
+            setTimeout(() => updatePhase('Preparing review findings...'), 2500);
 
             const analysis = await documentService.analyzeDocument(targetText);
 
@@ -140,8 +139,8 @@ export const DocumentReviewScreen: React.FC = () => {
         });
 
         try {
-            setLoadingPhase('Reading Document Image...');
-            updateJob(jobId, { progress: 'Reading Document Image...' });
+            setLoadingPhase('Analyzing document image...');
+            updateJob(jobId, { progress: 'Analyzing document image...' });
 
             const analysis = await documentService.analyzeImage(uri, mimeType, size);
             finishJob(jobId, analysis);
