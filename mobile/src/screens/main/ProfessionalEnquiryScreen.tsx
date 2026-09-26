@@ -31,20 +31,21 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
   const submit = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
-      Alert.alert('Message required', 'Tell the professional what legal help you are looking for.');
+      Alert.alert('Message required', 'Tell the legal professional or firm what help you are looking for.');
       return;
     }
 
     try {
       setIsSubmitting(true);
       const result = await legalService.createEnquiry({
-        professional_id: route.params.professionalId,
+        ...(route.params.professionalId ? { professional_id: route.params.professionalId } : {}),
+        ...(route.params.firmId ? { firm_id: route.params.firmId } : {}),
         message: trimmed,
         practice_area: route.params.practiceArea,
       });
       Alert.alert(
         'Enquiry sent',
-        `Your enquiry reference is ${result.reference_number}. The verified professional can now review it.`,
+        `Your enquiry reference is ${result.reference_number}. The verified recipient can now review it.`,
         [{ text: 'Done', onPress: () => navigation.goBack() }],
       );
     } catch (error) {
@@ -71,7 +72,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
             <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.onSurface }]}>Contact professional</Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>Send legal enquiry</Text>
             <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
               {route.params.professionalName}
             </Text>
