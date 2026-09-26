@@ -90,6 +90,14 @@ export const LegalAidMapScreen: React.FC = () => {
         }
     };
 
+    const handleProfessionalEnquiry = (lawyer: Lawyer) => {
+        navigation.navigate('ProfessionalEnquiry', {
+            professionalId: lawyer.id,
+            professionalName: lawyer.name,
+            practiceArea: lawyer.specialization,
+        });
+    };
+
     const handleDirections = async (lat: number, lng: number, name: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
@@ -230,7 +238,7 @@ export const LegalAidMapScreen: React.FC = () => {
 
                         <View style={styles.cardActions}>
                             <TouchableOpacity
-                                onPress={() => handleCall('000')}
+                                onPress={() => handleProfessionalEnquiry(lawyer)}
                                 style={styles.actionBtnContainer}
                             >
                                 <LinearGradient
@@ -240,7 +248,7 @@ export const LegalAidMapScreen: React.FC = () => {
                                     style={styles.actionBtn}
                                 >
                                     <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onPrimary} />
-                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Contact</Text>
+                                    <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Send enquiry</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
                             <TouchableOpacity
