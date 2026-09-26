@@ -24,7 +24,7 @@ export const chatService = {
 
     async sendMessage(
         message: string,
-        options: { conversationId?: string; persist?: boolean },
+        options: { conversationId?: string; persist?: boolean; attachmentText?: string },
     ): Promise<ChatResult> {
         const shouldPersist = options.persist !== false;
         const currentSessionId = shouldPersist
@@ -37,6 +37,7 @@ export const chatService = {
             body: JSON.stringify({
                 conversation_id: currentSessionId,
                 message,
+                ...(options.attachmentText ? { attachment_text: options.attachmentText } : {}),
             }),
         });
 
@@ -52,6 +53,7 @@ export const chatService = {
             persist?: boolean;
             onChunk: (chunk: string) => void;
             onComplete?: (meta: { sources?: GroundingSource[]; citation_status?: string }) => void;
+            attachmentText?: string;
         },
     ): Promise<string | null> {
         const shouldPersist = options.persist !== false;
@@ -65,6 +67,7 @@ export const chatService = {
             body: JSON.stringify({
                 conversation_id: currentSessionId,
                 message,
+                ...(options.attachmentText ? { attachment_text: options.attachmentText } : {}),
             }),
         });
 
