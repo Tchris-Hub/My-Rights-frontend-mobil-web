@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
-import { Chapter, Section, Template, LegalAidCenter, Lawyer } from '../types';
+import { Chapter, Section, Template, LegalAidCenter, Lawyer, ProfessionalMatch, FirmMatch } from '../types';
 
-export { Chapter, Section, Template, LegalAidCenter as Center, Lawyer };
+export { Chapter, Section, Template, LegalAidCenter as Center, Lawyer, ProfessionalMatch, FirmMatch };
 
 export const legalService = {
   async getConstitution() {
@@ -34,6 +34,44 @@ export const legalService = {
     if (filters?.practiceArea) params.set('practice_area', filters.practiceArea);
     const query = params.toString();
     return apiRequest<any[]>(`/api/legal/firms${query ? `?${query}` : ''}`);
+  },
+
+  async getProfessionalMatches(filters: {
+    practiceArea?: string;
+    location?: string;
+    serviceArea?: string;
+    language?: string;
+    feeBand?: string;
+  } = {}) {
+    const params = new URLSearchParams();
+    if (filters.practiceArea) params.set('practice_area', filters.practiceArea);
+    if (filters.location) params.set('location', filters.location);
+    if (filters.serviceArea) params.set('service_area', filters.serviceArea);
+    if (filters.language) params.set('language', filters.language);
+    if (filters.feeBand) params.set('fee_band', filters.feeBand);
+    const query = params.toString();
+    return apiRequest<ProfessionalMatch[]>(
+      `/api/legal/professionals/match${query ? `?${query}` : ''}`,
+    );
+  },
+
+  async getFirmMatches(filters: {
+    practiceArea?: string;
+    location?: string;
+    serviceArea?: string;
+    language?: string;
+    feeBand?: string;
+  } = {}) {
+    const params = new URLSearchParams();
+    if (filters.practiceArea) params.set('practice_area', filters.practiceArea);
+    if (filters.location) params.set('location', filters.location);
+    if (filters.serviceArea) params.set('service_area', filters.serviceArea);
+    if (filters.language) params.set('language', filters.language);
+    if (filters.feeBand) params.set('fee_band', filters.feeBand);
+    const query = params.toString();
+    return apiRequest<FirmMatch[]>(
+      `/api/legal/firms/match${query ? `?${query}` : ''}`,
+    );
   },
 
   async getLawyers() {
