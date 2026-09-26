@@ -22,7 +22,6 @@ import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 interface ConversationSummary {
     id: string;
     title: string | null;
-    created_at: string;
     updated_at: string;
 }
 
