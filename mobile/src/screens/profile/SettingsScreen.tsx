@@ -15,12 +15,16 @@ import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { Linking } from 'react-native';
+import { APP_CONFIG } from '../../constants/config';
 
 const { width } = Dimensions.get('window');
 
 export const SettingsScreen: React.FC = () => {
     const { colors, isDark, toggleTheme } = useTheme();
     const { logout } = useAuth();
+    const navigation = useNavigation<any>();
 
     const handleLogout = () => {
         Alert.alert(
@@ -79,7 +83,7 @@ export const SettingsScreen: React.FC = () => {
                     <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Security & Legal</Text>
                     
                     <View style={[styles.multiCard, { backgroundColor: colors.surface }]}>
-                        <TouchableOpacity style={styles.multiItem}>
+                        <TouchableOpacity style={styles.multiItem} onPress={() => navigation.navigate('PrivacyCenter')}>
                             <View style={styles.settingInfo}>
                                 <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                                     <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
@@ -91,7 +95,7 @@ export const SettingsScreen: React.FC = () => {
 
                         <View style={[styles.separator, { backgroundColor: colors.surfaceContainerLowest }]} />
 
-                        <TouchableOpacity style={styles.multiItem}>
+                        <TouchableOpacity style={styles.multiItem} onPress={() => void Linking.openURL(APP_CONFIG.TERMS_URL)}>
                             <View style={styles.settingInfo}>
                                 <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                                     <Ionicons name="document-text" size={20} color={colors.primary} />
@@ -106,7 +110,7 @@ export const SettingsScreen: React.FC = () => {
                 <View style={styles.section}>
                     <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Help & Support</Text>
                     
-                    <TouchableOpacity style={[styles.settingCard, { backgroundColor: colors.surface }]}>
+                    <TouchableOpacity style={[styles.settingCard, { backgroundColor: colors.surface }]} onPress={() => navigation.navigate('SupportCenter')}>
                         <View style={styles.settingInfo}>
                             <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name="help-buoy" size={20} color={colors.primary} />
