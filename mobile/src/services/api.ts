@@ -95,6 +95,7 @@ export async function binaryApiRequest<T>(
   body: ArrayBuffer | Uint8Array,
   contentType: string,
   idempotencyKey?: string,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const requestBody: ArrayBuffer =
     body instanceof Uint8Array
@@ -109,6 +110,7 @@ export async function binaryApiRequest<T>(
       Accept: 'application/json',
       'Content-Type': contentType,
       ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+      ...(extraHeaders ?? {}),
     }),
   });
 
