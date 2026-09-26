@@ -56,6 +56,19 @@ export const SettingsScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.section}>
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Account</Text>
+                    <TouchableOpacity style={[styles.settingCard, { backgroundColor: colors.surface }]} onPress={() => navigation.navigate('EditProfile')}>
+                        <View style={styles.settingInfo}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.surfaceContainerHigh }]}>
+                                <Ionicons name="person" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.settingLabel, { color: colors.onSurface }]}>Edit Profile</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.section}>
                     <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant }]}>Visual Configuration</Text>
                     
                     <View style={[styles.settingCard, { backgroundColor: colors.surface }]}>
