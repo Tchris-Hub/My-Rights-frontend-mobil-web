@@ -302,19 +302,42 @@ export const ChatScreen: React.FC = () => {
 
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [4, 3],
+                allowsEditing: false,
                 quality: 0.8,
             });
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
-                if (typeof asset.fileSize === 'number' && asset.fileSize > MAX_ATTACHMENT_BYTES) {
-                    Alert.alert('File too large', 'Please choose an image smaller than 10 MB.');
+                if (typeof asset.fileSize === 'number' && asset.fileSize > 4 * 1024 * 1024) {
+                    Alert.alert('File too large', 'Please choose an image smaller than 4 MB.');
                     return;
                 }
-                setInputText(prev => prev + `\n[Image: ${asset.fileName || 'photo.jpg'}]`);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setIsExtractingAttachment(true);
+                try {
+                    const extracted = await documentService.extractImageText(
+                        asset.uri,
+                        asset.fileName || 'contract-image',
+                        asset.mimeType || 'image/jpeg',
+                        asset.fileSize,
+                    );
+                    setAttachment({
+                        name: sanitizeDocumentName(asset.fileName || 'contract-image'),
+                        mimeType: asset.mimeType || 'image/jpeg',
+                        text: extracted.text,
+                        characterCount: extracted.character_count,
+                        truncated: extracted.truncated,
+                    });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (extractionError) {
+                    Alert.alert(
+                        'Could not read image',
+                        extractionError instanceof Error
+                            ? extractionError.message
+                            : 'The image could not be read.',
+                    );
+                } finally {
+                    setIsExtractingAttachment(false);
+                }
             }
         } catch (error) {
             logger.error('Error picking image:', error);
@@ -325,7 +348,7 @@ export const ChatScreen: React.FC = () => {
     const pickFile = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
+                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/rtf', 'text/rtf', 'text/plain'],
                 copyToCacheDirectory: false,
             });
 
