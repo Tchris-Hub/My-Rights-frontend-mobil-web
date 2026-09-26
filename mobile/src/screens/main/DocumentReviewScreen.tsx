@@ -196,13 +196,36 @@ export const DocumentReviewScreen: React.FC = () => {
     const pickDocument = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'image/*',
+                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'image/*'],
                 copyToCacheDirectory: true,
             });
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
-                await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
+                if ((asset.mimeType || '').startsWith('image/')) {
+                    await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
+                } else {
+                    setIsLoading(true);
+                    setLoadingPhase('Extracting document text...');
+                    const jobId = startJob({ type: 'analysis', title: 'Analyzing Document', progress: 'Extracting document text...', params: { uri: asset.uri } });
+                    try {
+                        const extracted = await documentService.extractText(asset.uri, asset.name, asset.mimeType || 'application/octet-stream', asset.size);
+                        setDocumentText(extracted.text);
+                        setLoadingPhase('Analyzing extracted text...');
+                        updateJob(jobId, { progress: 'Analyzing extracted text...' });
+                        const analysis = await documentService.analyzeDocument(extracted.text);
+                        finishJob(jobId, analysis);
+                        setResult(analysis);
+                        if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    } catch (error: any) {
+                        failJob(jobId, error?.message || 'Document extraction failed');
+                        Alert.alert('Document Review Failed', error?.message || 'Could not read this document.');
+                    } finally {
+                        setIsLoading(false);
+                        setLoadingPhase('');
+                    }
+                }
             }
         } catch (error: any) {
             logger.error('Image selection failed:', error);
