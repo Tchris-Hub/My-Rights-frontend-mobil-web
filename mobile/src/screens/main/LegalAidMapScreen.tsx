@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -65,6 +66,12 @@ export const LegalAidMapScreen: React.FC = () => {
     const [lawyers, setLawyers] = useState<Lawyer[]>([]);
     const [firms, setFirms] = useState<Firm[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Google Maps is a native Android dependency. If the development/release build
+    // was created without a restricted Maps key, keep the directory usable instead
+    // of mounting MapView and crashing the whole Legal Aid screen.
+    const googleMapsApiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey;
+    const isMapConfigured = Platform.OS !== 'android' || Boolean(googleMapsApiKey);
 
     useEffect(() => {
         initScreen();
@@ -319,7 +326,7 @@ export const LegalAidMapScreen: React.FC = () => {
 
     const renderHeader = () => (
         <View style={styles.mapContainer}>
-            {mapError ? (
+            {mapError || !isMapConfigured ? (
                 <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center' }]}>
                     <Ionicons name="map-outline" size={48} color={colors.onSurfaceVariant} />
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, marginTop: 8 }]}>Map unavailable</Text>
