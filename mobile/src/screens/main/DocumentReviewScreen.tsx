@@ -296,7 +296,7 @@ export const DocumentReviewScreen: React.FC = () => {
                             )}
                         </View>
                     ) : (
-                        <View style={styles.resultsSection}>
+                        <View testID="document-review-result" style={styles.resultsSection}>
                             <TouchableOpacity style={styles.resetBtn} onPress={() => setResult(null)}>
                                 <Ionicons name="refresh-outline" size={16} color={colors.primary} />
                                 <Text style={[styles.resetText, { color: colors.primary }]}>NEW REVIEW</Text>
@@ -390,7 +390,7 @@ export const DocumentReviewScreen: React.FC = () => {
             </Modal>
 
             {isLoading && (
-                <View style={styles.loadingOverlay}>
+                <View testID="document-review-loading" style={styles.loadingOverlay}>
                     <BlurView intensity={30} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={colors.primary} />
