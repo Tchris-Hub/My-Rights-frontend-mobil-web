@@ -1,0 +1,20 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-tools
+- tapOn:
+    id: tool-map
+- assertVisible:
+    id: legal-discovery-centers
+- tapOn:
+    id: legal-discovery-experts
+- assertVisible:
+    id: legal-discovery-firms
+- tapOn:
+    id: legal-discovery-firms
