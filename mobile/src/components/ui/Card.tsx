@@ -42,7 +42,7 @@ export const Card: React.FC<CardProps> = ({
         ? colors.surfaceContainer 
         : variant === 'elevated' 
             ? colors.surfaceContainerLow 
-            : 'rgba(255, 255, 255, 0.05)'; // Glass fallback
+            : colors.glassBackground;
 
     const cardStyle = [
         styles.cardBase,
