@@ -10,6 +10,9 @@ These flows use Maestro against the Android package `com.myrights.app`.
 - `flows/04-constitution-navigation.yaml` — Tools → Constitution navigation.
 - `flows/05-legal-aid.yaml` — Tools → Legal Aid discovery shell.
 - `flows/06-privacy.yaml` — Profile → Privacy Center data controls.
+- `flows/07-legal-aid-experts.yaml` — Legal Aid expert discovery shell.
+- `flows/08-document-review.yaml` — Document Review entry/input shell.
+- `flows/09-document-generator.yaml` — Document Generator entry/intake shell.
 
 Run against an installed Android development or preview build with `npm run e2e:maestro`.
 
