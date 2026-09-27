@@ -221,6 +221,9 @@ export const ProfileHomeScreen: React.FC = () => {
                     style={styles.footer}
                 >
                     <TouchableOpacity
+                        testID="profile-logout"
+                        accessibilityRole="button"
+                        accessibilityLabel="End session"
                         style={[styles.logoutButton, { borderColor: colors.error + '40' }]}
                         onPress={handleLogout}
                     >
