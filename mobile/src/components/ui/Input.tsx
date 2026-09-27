@@ -150,12 +150,15 @@ const InputComponent: React.FC<InputProps> = ({
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     selectionColor={colors.primary}
+                    accessibilityLabel={textInputProps.accessibilityLabel ?? label}
                     {...textInputProps}
                 />
 
                 {rightIcon && (
                     <TouchableOpacity
                         onPress={onRightIconPress}
+                        accessibilityRole="button"
+                        accessibilityLabel={rightIcon ? `${rightIcon} action` : 'Input action'}
                         style={styles.rightIcon}
                         hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                     >
