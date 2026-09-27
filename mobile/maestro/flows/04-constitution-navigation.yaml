@@ -1,0 +1,16 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- assertVisible:
+    text: "Constitution"
+- tapOn:
+    text: "Constitution"
+- assertVisible:
+    id: "constitution-search"
