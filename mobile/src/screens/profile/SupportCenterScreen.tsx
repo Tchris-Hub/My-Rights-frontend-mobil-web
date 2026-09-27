@@ -37,8 +37,8 @@ export const SupportCenterScreen: React.FC = () => {
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Report a problem</Text>
         <View style={styles.categoryRow}>{['general','content','privacy','professional'].map(value=><TouchableOpacity key={value} onPress={()=>setCategory(value)} style={[styles.category,{backgroundColor:category===value?colors.primary:colors.surfaceContainerHighest}]}><Text style={[styles.categoryText,{color:category===value?colors.onPrimary:colors.onSurfaceVariant}]}>{value}</Text></TouchableOpacity>)}</View>
-        <TextInput value={message} onChangeText={setMessage} multiline maxLength={4000} placeholder="Describe the issue..." placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surface,borderColor:colors.outlineVariant}]}/>
-        <TouchableOpacity disabled={sending} onPress={()=>void submit()} style={[styles.action,{backgroundColor:colors.primary,opacity:sending?.6:1}]}>{sending?<ActivityIndicator color={colors.onPrimary}/>:<Text style={[styles.actionText,{color:colors.onPrimary}]}>Submit report</Text>}</TouchableOpacity>
+        <TextInput testID="support-message" accessibilityLabel="Support message" value={message} onChangeText={setMessage} multiline maxLength={4000} placeholder="Describe the issue..." placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surface,borderColor:colors.outlineVariant}]}/>
+        <TouchableOpacity testID="support-submit" accessibilityRole="button" disabled={sending} onPress={()=>void submit()} style={[styles.action,{backgroundColor:colors.primary,opacity:sending?.6:1}]}>{sending?<ActivityIndicator color={colors.onPrimary}/>:<Text style={[styles.actionText,{color:colors.onPrimary}]}>Submit report</Text>}</TouchableOpacity>
       </View>
     </ScrollView>
     </KeyboardAvoidingView>
