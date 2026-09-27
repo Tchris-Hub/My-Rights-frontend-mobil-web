@@ -41,6 +41,7 @@ export const SupportCenterScreen: React.FC = () => {
         <TouchableOpacity disabled={sending} onPress={()=>void submit()} style={[styles.action,{backgroundColor:colors.primary,opacity:sending?.6:1}]}>{sending?<ActivityIndicator color={colors.onPrimary}/>:<Text style={[styles.actionText,{color:colors.onPrimary}]}>Submit report</Text>}</TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   </SafeAreaView>;
 };
 const styles=StyleSheet.create({
