@@ -25,6 +25,7 @@ const requiredFlows = [
   'maestro/flows/10-professional-enquiry.yaml',
   'maestro/flows/11-saved-rights.yaml',
   'maestro/flows/12-document-review-keyboard.yaml',
+  'maestro/flows/13-navigation-accessibility.yaml',
 ];
 
 for (const flow of requiredFlows) {
