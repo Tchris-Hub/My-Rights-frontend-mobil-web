@@ -15,6 +15,10 @@ These flows use Maestro against the Android package `com.myrights.app`.
 - `flows/09-document-generator.yaml` — Document Generator entry/intake shell.
 - `flows/10-professional-enquiry.yaml` — Legal Aid expert → enquiry form and keyboard interaction.
 - `flows/11-saved-rights.yaml` — Profile → Saved Rights navigation shell.
+- `flows/12-document-review-keyboard.yaml` — Document Review keyboard behavior.
+- `flows/13-navigation-accessibility.yaml` — deterministic navigation/accessibility controls.
+- `flows/14-state-coverage.yaml` — deterministic empty-state, attachment and privacy coverage.
+- `flows/15-session-exit-recovery.yaml` — guest-session exit/auth recovery coverage.
 
 Run against an installed Android development or preview build with `npm run e2e:maestro`.
 
