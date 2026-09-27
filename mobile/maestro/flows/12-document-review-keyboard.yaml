@@ -1,0 +1,20 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Document Review"
+- assertVisible:
+    id: "document-review-text"
+- tapOn:
+    id: "document-review-text"
+- inputText: "Please review this sample legal document text."
+- hideKeyboard
+- assertVisible:
+    id: "document-review-submit"
