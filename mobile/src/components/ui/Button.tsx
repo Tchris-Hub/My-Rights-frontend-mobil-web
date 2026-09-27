@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     container_outline: {
         backgroundColor: 'transparent',
         borderWidth: 1.5,
-        borderColor: colors.outlineVariant
+        borderColor: theme.colors.outlineVariant
     },
     container_ghost: {
         backgroundColor: 'transparent',
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     text_primary: {
-        color: colors.onPrimary
+        color: theme.colors.onPrimary
     },
     text_secondary: {
-        color: colors.primary,
+        color: theme.colors.primary,
     },
     text_outline: {
-        color: colors.onSurface,
+        color: theme.colors.onSurface,
     },
     text_ghost: {
         color: theme.colors.onSurface,
