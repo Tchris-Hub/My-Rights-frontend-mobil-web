@@ -17,7 +17,7 @@
 
 ## Repository flow coverage
 
-The repository now contains deterministic Maestro definitions for the critical verification surfaces, including authentication, chat/keyboard, Constitution, legal discovery, privacy, document review/generation, professional enquiry, saved rights, and navigation/accessibility. These definitions validate test contracts; they do not substitute for Android device/emulator execution evidence.
+The repository now contains deterministic Maestro definitions for the critical verification surfaces, including authentication, consent, chat/keyboard/attachment states, Constitution, legal discovery, privacy, document review/generation, professional enquiry, saved rights, and navigation/accessibility. Flow 14 adds deterministic empty-state, attachment prompt, profile and privacy navigation coverage. These definitions validate test contracts; they do not substitute for Android device/emulator execution evidence.
 
 ## Evidence required
 
