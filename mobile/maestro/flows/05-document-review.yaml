@@ -1,0 +1,20 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-tools
+- tapOn:
+    id: tool-review
+- assertVisible:
+    text: "AI Document Review"
+- tapOn:
+    id: document-review-input
+- inputText: "This is a sample document for general information."
+- hideKeyboard
+- assertVisible:
+    id: document-review-submit
