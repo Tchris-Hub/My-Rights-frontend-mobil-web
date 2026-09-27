@@ -51,6 +51,7 @@ export const SavedRightsScreen: React.FC = () => {
           <Text style={[styles.empty, { color: colors.onSurfaceVariant }]}>Save a citation from the Constitution Explorer and it will appear here.</Text>
         </View> :
         <FlatList
+          testID="saved-rights-list"
           data={items}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
@@ -63,7 +64,7 @@ export const SavedRightsScreen: React.FC = () => {
               </View>
               {item.citation ? <Text style={[styles.citation, { color: colors.primary }]}>{item.citation}</Text> : null}
               {item.summary ? <Text style={[styles.summary, { color: colors.onSurfaceVariant }]}>{item.summary}</Text> : null}
-              <TouchableOpacity onPress={() => remove(item)} style={[styles.remove, { borderColor: colors.outlineVariant }]}>
+              <TouchableOpacity testID={`saved-right-${item.id}-remove`} accessibilityRole="button" accessibilityLabel={`Remove ${item.title}`} onPress={() => remove(item)} style={[styles.remove, { borderColor: colors.outlineVariant }]}>
                 <Text style={[styles.removeText, { color: colors.error }]}>Remove</Text>
               </TouchableOpacity>
             </View>
