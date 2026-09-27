@@ -253,7 +253,8 @@ export const DocumentReviewScreen: React.FC = () => {
                 </View>
             </SafeAreaView>
 
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
@@ -333,6 +334,7 @@ export const DocumentReviewScreen: React.FC = () => {
                     )}
                 </ScrollView>
             </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
 
             {/* Analysis Detail Modal */}
             <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -400,6 +402,9 @@ export const DocumentReviewScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+    },
+    keyboardView: {
         flex: 1,
     },
     globalBackground: {
