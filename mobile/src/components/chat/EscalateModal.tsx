@@ -13,6 +13,9 @@ import {
     Modal,
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -151,6 +154,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 24,
     },
+    keyboardView: { width: '100%', maxHeight: '92%' },
+    modalScroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
     modal: {
         width: '100%',
         borderRadius: 32,
