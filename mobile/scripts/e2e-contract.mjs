@@ -84,6 +84,9 @@ requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-requ
 requireText('src/screens/profile/SavedRightsScreen.tsx', 'testID="saved-rights-loading"');
 requireText('src/screens/profile/SavedRightsScreen.tsx', 'testID="saved-rights-empty"');
 requireText('src/navigation/GlassmorphicTabBar.tsx', 'testID={`tab-${route.name.toLowerCase()}`}');
+requireText('src/components/common/BackgroundJobOverlay.tsx', 'testID="background-job-overlay"');
+requireText('src/components/common/BackgroundJobOverlay.tsx', 'testID="background-job-dismiss"');
+requireText('src/components/common/FloatingChatButton.tsx', 'testID="floating-chat"');
 requireText('src/screens/main/ToolsHomeScreen.tsx', 'testID={`tool-${tool.id}`}');
 
 if (failures.length) {
