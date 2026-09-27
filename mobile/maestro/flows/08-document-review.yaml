@@ -1,0 +1,16 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Document Review"
+- assertVisible:
+    id: "document-review-upload"
+- assertVisible:
+    id: "document-review-text"
