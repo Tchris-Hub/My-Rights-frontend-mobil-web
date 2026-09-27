@@ -20,6 +20,10 @@ const requiredFlows = [
   'maestro/flows/05-legal-aid.yaml',
   'maestro/flows/06-privacy.yaml',
   'maestro/flows/07-legal-aid-experts.yaml',
+  'maestro/flows/08-document-review.yaml',
+  'maestro/flows/09-document-generator.yaml',
+  'maestro/flows/10-professional-enquiry.yaml',
+  'maestro/flows/11-saved-rights.yaml',
 ];
 
 for (const flow of requiredFlows) {
@@ -44,6 +48,7 @@ requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-dele
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-centers"');
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-experts"');
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-firms"');
+requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-send-enquiry"');
 
 requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-upload"');
 requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-text"');
