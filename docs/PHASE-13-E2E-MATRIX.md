@@ -15,6 +15,10 @@
 11. Professional enquiry form: expert selection → enquiry screen, multiline input, keyboard dismissal, submit control
 12. Navigation accessibility: deterministic tab/tool controls and profile/support entry points
 
+## Repository flow coverage
+
+The repository now contains deterministic Maestro definitions for the critical verification surfaces, including authentication, chat/keyboard, Constitution, legal discovery, privacy, document review/generation, professional enquiry, saved rights, and navigation/accessibility. These definitions validate test contracts; they do not substitute for Android device/emulator execution evidence.
+
 ## Evidence required
 
 For each flow record pass/fail, device/emulator model, Android version, screen size, and a screenshot/video for any visual or interaction defect. Capture at least one keyboard-open state and one loading state for every form-heavy flow. Flows that depend on real verified marketplace records or live AI services must be executed with an explicit test fixture or marked blocked rather than treated as passed.
