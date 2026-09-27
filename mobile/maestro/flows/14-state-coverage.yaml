@@ -1,0 +1,30 @@
+appId: com.myrights.app
+---
+# Deterministic shell/state coverage. Data-dependent results remain explicit
+# device evidence requirements in the Phase 13 matrix.
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: onboarding-primary
+- tapOn:
+    id: onboarding-skip
+- assertVisible:
+    id: auth-guest
+- tapOn:
+    id: auth-guest
+- assertVisible:
+    id: chat-empty-state
+- tapOn:
+    id: chat-attachment
+- assertVisible:
+    text: "Add Attachment"
+- tapOn:
+    text: "Cancel"
+- tapOn:
+    id: tab-profile
+- assertVisible:
+    text: "Profile"
+- tapOn:
+    text: "Security & Privacy"
+- assertVisible:
+    text: "Privacy Center"
