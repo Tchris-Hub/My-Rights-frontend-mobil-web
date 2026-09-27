@@ -1,0 +1,35 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-profile
+- assertVisible:
+    text: "Profile"
+- tapOn:
+    text: "Privacy"
+    optional: true
+- assertVisible:
+    text: "Privacy Center"
+    optional: true
+- tapOn:
+    id: privacy-request-export
+    optional: true
+- tapOn:
+    text: "Support"
+    optional: true
+- assertVisible:
+    text: "Support Center"
+    optional: true
+- tapOn:
+    id: support-message
+    optional: true
+- inputText: "E2E support contract test"
+- hideKeyboard
+- assertVisible:
+    id: support-submit
+    optional: true
