@@ -104,7 +104,7 @@ export const ProfileHomeScreen: React.FC = () => {
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => navigation.navigate('SavedRights')}
+                            onPress={() => {
                                 if (isGuest) {
                                     Alert.alert(
                                         "Locked Feature",
@@ -167,7 +167,13 @@ export const ProfileHomeScreen: React.FC = () => {
 
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
-                        <TouchableOpacity style={styles.menuItem}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                if (!isGuest) navigation.navigate('SavedRights');
+                            }}
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
                                 <Ionicons name="document-text" size={20} color={colors.secondary} />
                             </View>
@@ -182,7 +188,11 @@ export const ProfileHomeScreen: React.FC = () => {
                     <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant, marginTop: 32 }]}>Application</Text>
 
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
-                        <TouchableOpacity style={styles.menuItem}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('PrivacyCenter')}
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconBox, { backgroundColor: colors.primary + '10' }]}>
                                 <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
                             </View>
@@ -192,7 +202,11 @@ export const ProfileHomeScreen: React.FC = () => {
 
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
-                        <TouchableOpacity style={styles.menuItem}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('Settings')}
+                            accessibilityRole="button"
+                        >
                             <View style={[styles.iconBox, { backgroundColor: colors.onSurfaceVariant + '15' }]}>
                                 <Ionicons name="information-circle" size={20} color={colors.onSurface} />
                             </View>
@@ -227,8 +241,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingTop: 60,
-        paddingHorizontal: 24,
+        paddingTop: theme.spacing.xxl,
+        paddingHorizontal: theme.spacing.lg,
         paddingBottom: 40,
     },
     blob1: {
@@ -259,7 +273,7 @@ const styles = StyleSheet.create({
     avatarWrapper: {
         width: 64,
         height: 64,
-        borderRadius: 20,
+        borderRadius: theme.borderRadius.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -334,7 +348,7 @@ const styles = StyleSheet.create({
         paddingLeft: 4,
     },
     menuCard: {
-        borderRadius: 28,
+        borderRadius: theme.borderRadius.xl,
         overflow: 'hidden',
         padding: 8,
     },
@@ -377,7 +391,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
         paddingHorizontal: 24,
-        paddingVertical: 14,
+        paddingVertical: theme.spacing.sm + theme.spacing.xs,
         borderRadius: 20,
         borderWidth: 1.5,
     },
