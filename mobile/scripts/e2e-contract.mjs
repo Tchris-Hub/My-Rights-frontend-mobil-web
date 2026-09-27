@@ -45,6 +45,13 @@ requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-centers
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-experts"');
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-firms"');
 
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-upload"');
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-text"');
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-submit"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-continue"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-consult-input"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-build"');
+
 if (failures.length) {
   console.error('E2E contract check failed:');
   for (const failure of failures) console.error(`- ${failure}`);
@@ -52,10 +59,3 @@ if (failures.length) {
 }
 
 console.log('E2E contract checks passed.');
-
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-upload"');
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-text"');
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-submit"');
-requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-continue"');
-requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-consult-input"');
-requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-build"');
