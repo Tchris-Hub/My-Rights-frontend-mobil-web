@@ -283,7 +283,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
                     {step === 'INTAKE' && selectedTemplate && (
                         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-                            <ScrollView contentContainerStyle={styles.intakeScroll}>
+                            <ScrollView contentContainerStyle={styles.intakeScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                                 <View style={styles.asymmetricHeader}>
                                     <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
                                     <Text style={[styles.sectionHeader, { color: colors.onSurface }]}>Primary Details</Text>
@@ -314,7 +314,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
                     {step === 'CONSULT' && (
                         <View style={{ flex: 1 }}>
-                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ padding: 24 }}>
+                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                                 {consultMessages.map(msg => (
                                     <View key={msg.id} style={[
                                         styles.chatBubble, 
