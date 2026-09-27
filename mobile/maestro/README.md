@@ -13,6 +13,8 @@ These flows use Maestro against the Android package `com.myrights.app`.
 - `flows/07-legal-aid-experts.yaml` — Legal Aid expert discovery shell.
 - `flows/08-document-review.yaml` — Document Review entry/input shell.
 - `flows/09-document-generator.yaml` — Document Generator entry/intake shell.
+- `flows/10-professional-enquiry.yaml` — Legal Aid expert → enquiry form and keyboard interaction.
+- `flows/11-saved-rights.yaml` — Profile → Saved Rights navigation shell.
 
 Run against an installed Android development or preview build with `npm run e2e:maestro`.
 
