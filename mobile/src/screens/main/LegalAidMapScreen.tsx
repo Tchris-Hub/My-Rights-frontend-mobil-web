@@ -388,7 +388,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     <TouchableOpacity
                         testID="legal-aid-centers"
                         accessibilityRole="button"
-                        style={[styles.toggleBtn, viewMode === 'centers' && { backgroundColor: colors.primary }] 
+                        style={[styles.toggleBtn, viewMode === 'centers' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('centers');
@@ -401,7 +401,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     <TouchableOpacity
                         testID="legal-aid-experts"
                         accessibilityRole="button"
-                        style={[styles.toggleBtn, viewMode === 'experts' && { backgroundColor: colors.primary }] 
+                        style={[styles.toggleBtn, viewMode === 'experts' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('experts');
@@ -414,7 +414,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     <TouchableOpacity
                         testID="legal-aid-firms"
                         accessibilityRole="button"
-                        style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }] 
+                        style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('firms');
