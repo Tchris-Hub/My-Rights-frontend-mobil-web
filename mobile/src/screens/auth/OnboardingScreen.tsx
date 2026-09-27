@@ -124,7 +124,7 @@ export const OnboardingScreen: React.FC = () => {
                     <Text style={[styles.logoText, { color: colors.primary }]}>My Rights</Text>
                 </View>
                 {currentIndex < slides.length - 1 && (
-                    <TouchableOpacity onPress={() => completeOnboarding()}>
+                    <TouchableOpacity testID="onboarding-skip" accessibilityRole="button" accessibilityLabel="Skip onboarding" onPress={() => completeOnboarding()}>
                         <Text style={[styles.headerSkip, { color: colors.onSurfaceVariant }]}>Skip</Text>
                     </TouchableOpacity>
                 )}
@@ -170,7 +170,7 @@ export const OnboardingScreen: React.FC = () => {
                     </View>
 
                     {/* Primary Action */}
-                    <TouchableOpacity activeOpacity={0.8} onPress={handleNext} style={styles.buttonWrapper}>
+                    <TouchableOpacity testID="onboarding-primary" accessibilityRole="button" activeOpacity={0.8} onPress={handleNext} style={styles.buttonWrapper}>
                         <LinearGradient
                             colors={[colors.primary, colors.primaryContainer]}
                             start={{ x: 0, y: 0 }}
