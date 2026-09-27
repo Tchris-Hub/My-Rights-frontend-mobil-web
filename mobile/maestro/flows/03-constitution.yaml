@@ -5,6 +5,12 @@ appId: com.myrights.app
 - tapOn:
     text: "Skip"
 - tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Constitution"
+- tapOn:
     id: "constitution-search"
 - inputText: "fundamental"
 - assertVisible:
