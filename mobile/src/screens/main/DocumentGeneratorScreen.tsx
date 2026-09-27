@@ -253,7 +253,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
                         <ScrollView contentContainerStyle={styles.templatesList} showsVerticalScrollIndicator={false}>
                             {templates.map((t, idx) => (
                                 <Animated.View key={t.id} entering={FadeInRight.delay(idx * 100)}>
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
+                                        testID={`document-template-${t.id}`}
+                                        accessibilityRole="button"
                                         style={[
                                             styles.templateCard, 
                                             { 
@@ -293,6 +295,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         <View key={field.key} style={styles.inputGroup}>
                                             <Text style={[styles.inputLabel, { color: colors.primary }]}>{field.label}</Text>
                                             <TextInput
+                                                testID={`document-intake-${field.key}`}
+                                                accessibilityLabel={field.label}
                                                 style={[styles.input, { backgroundColor: colors.surfaceContainerLow, color: colors.onSurface }]}
                                                 placeholder={field.placeholder}
                                                 placeholderTextColor={colors.onSurfaceVariant + '60'}
@@ -304,6 +308,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                     ))}
                                 </View>
                                 <Button 
+                                    testID="document-intake-continue"
                                     title="Continue to AI Review" 
                                     onPress={handleIntakeSubmit}
                                     style={styles.submitBtn}
@@ -328,6 +333,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
                             <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.inputBlur}>
                                 <View style={[styles.chatInputRow]}>
                                     <TextInput
+                                        testID="document-consult-input"
+                                        accessibilityLabel="Additional document requirements"
                                         style={[styles.chatInput, { backgroundColor: colors.surfaceContainerHighest, color: colors.onSurface }]}
                                         placeholder="Add custom requirements..."
                                         placeholderTextColor={colors.onSurfaceVariant}
@@ -335,7 +342,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         onChangeText={setUserInput}
                                         multiline
                                     />
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
+                                        testID="document-consult-send"
+                                        accessibilityRole="button"
                                         style={[styles.sendBtn, { backgroundColor: colors.primary }]}
                                         onPress={handleConsultSubmit}
                                     >
@@ -348,7 +357,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                             Free plan: {generationQuotaRemaining} document generation{generationQuotaRemaining === 1 ? '' : 's'} remaining today.
                                         </Text>
                                     )}
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
+                                        testID="document-generate"
+                                        accessibilityRole="button"
                                         style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
                                         onPress={handleStartBuild}
                                     >
