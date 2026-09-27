@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
     "verify:release": "node scripts/release-integrity.mjs",
-    "test:security": "node scripts/security-regression.mjs"
+    "test:security": "node scripts/security-regression.mjs",
+    "e2e:maestro": "maestro test maestro/flows",
+    "test:e2e-contract": "node scripts/e2e-contract.mjs"
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.6",

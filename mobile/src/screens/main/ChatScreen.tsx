@@ -521,7 +521,7 @@ export const ChatScreen: React.FC = () => {
 
             {/* FIX: 'padding' on iOS only; offset=0 because header is outside this view */}
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
                 keyboardVerticalOffset={0}
             >
@@ -623,6 +623,8 @@ export const ChatScreen: React.FC = () => {
                             </TouchableOpacity>
 
                             <TextInput
+                                testID="chat-input"
+                                accessibilityLabel="Message AI"
                                 style={[styles.input, { color: colors.onSurface }]}
                                 placeholder={isRecording ? "Listening..." : "Message AI..."}
                                 placeholderTextColor={colors.onSurfaceVariant}
@@ -656,6 +658,9 @@ export const ChatScreen: React.FC = () => {
                         </View>
 
                         <TouchableOpacity
+                            testID="chat-send"
+                            accessibilityRole="button"
+                            accessibilityLabel="Send message"
                             onPress={() => handleSend()}
                             disabled={(!inputText.trim() && !attachment) || isLoading || isExtractingAttachment || inputText.length > 10000}
                             activeOpacity={0.7}

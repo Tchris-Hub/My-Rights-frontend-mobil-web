@@ -18,6 +18,8 @@ import {
     Alert,
     Modal,
     Keyboard,
+    KeyboardAvoidingView,
+    Platform,
     TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -253,8 +255,9 @@ export const DocumentReviewScreen: React.FC = () => {
                 </View>
             </SafeAreaView>
 
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
@@ -333,6 +336,7 @@ export const DocumentReviewScreen: React.FC = () => {
                     )}
                 </ScrollView>
             </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
 
             {/* Analysis Detail Modal */}
             <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -400,6 +404,9 @@ export const DocumentReviewScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+    },
+    keyboardView: {
         flex: 1,
     },
     globalBackground: {

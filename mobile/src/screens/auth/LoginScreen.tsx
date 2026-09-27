@@ -78,7 +78,7 @@ export const LoginScreen: React.FC = () => {
             </View>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
@@ -112,6 +112,8 @@ export const LoginScreen: React.FC = () => {
                             </Text>
 
                             <Input
+                                testID="auth-email"
+                                accessibilityLabel="Email address"
                                 label="EMAIL ADDRESS"
                                 value={email}
                                 onChangeText={(text) => {
@@ -127,6 +129,7 @@ export const LoginScreen: React.FC = () => {
                             />
 
                             <Button
+                                testID="auth-magic-link"
                                 title="Email me a sign-in link"
                                 onPress={handleMagicLink}
                                 loading={isLoading}
@@ -142,6 +145,9 @@ export const LoginScreen: React.FC = () => {
                             </View>
 
                             <TouchableOpacity
+                                testID="auth-google"
+                                accessibilityRole="button"
+                                accessibilityLabel="Continue with Google"
                                 style={[styles.googleButton, { backgroundColor: colors.surfaceContainerHigh }]}
                                 onPress={handleGoogle}
                                 disabled={isLoading}
@@ -155,7 +161,7 @@ export const LoginScreen: React.FC = () => {
                             After authentication, you'll be asked to accept the current Terms of Service and Privacy Policy before using private features.
                         </Text>
 
-                        <TouchableOpacity style={styles.guestLink} onPress={continueAsGuest} disabled={isLoading}>
+                        <TouchableOpacity testID="auth-guest" accessibilityRole="button" style={styles.guestLink} onPress={continueAsGuest} disabled={isLoading}>
                             <Text style={[styles.guestText, { color: colors.onSurfaceVariant }]}>Continue as Guest</Text>
                         </TouchableOpacity>
                     </View>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ export const SupportCenterScreen: React.FC = () => {
 
   return <SafeAreaView style={[styles.container,{backgroundColor:colors.surface}]} edges={['top']}>
     <View style={styles.header}><TouchableOpacity onPress={()=>navigation.goBack()} style={[styles.back,{backgroundColor:colors.surfaceContainer}]}><Ionicons name="chevron-back" size={24} color={colors.onSurface}/></TouchableOpacity><View style={styles.headerText}><Text style={[styles.title,{color:colors.onSurface}]}>Support Center</Text><Text style={[styles.subtitle,{color:colors.onSurfaceVariant}]}>Get help or report a problem</Text></View></View>
-    <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Contact support</Text>
         <Text style={[styles.body,{color:colors.onSurfaceVariant}]}>For account or app assistance, email our support team.</Text>
@@ -41,6 +41,7 @@ export const SupportCenterScreen: React.FC = () => {
         <TouchableOpacity disabled={sending} onPress={()=>void submit()} style={[styles.action,{backgroundColor:colors.primary,opacity:sending?.6:1}]}>{sending?<ActivityIndicator color={colors.onPrimary}/>:<Text style={[styles.actionText,{color:colors.onPrimary}]}>Submit report</Text>}</TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   </SafeAreaView>;
 };
 const styles=StyleSheet.create({

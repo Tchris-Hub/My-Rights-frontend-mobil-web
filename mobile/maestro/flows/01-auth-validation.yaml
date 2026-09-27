@@ -1,0 +1,25 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    text: "My Rights"
+- assertVisible:
+    id: "onboarding-primary"
+- tapOn:
+    id: "onboarding-primary"
+- tapOn:
+    id: "onboarding-primary"
+- assertVisible:
+    text: "Get Started"
+- tapOn:
+    id: "onboarding-primary"
+- assertVisible:
+    id: "auth-email"
+- tapOn:
+    id: "auth-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "auth-magic-link"
+- assertVisible:
+    text: "Please enter a valid email"
