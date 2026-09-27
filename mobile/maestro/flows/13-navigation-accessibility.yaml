@@ -1,0 +1,22 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-tools
+- assertVisible:
+    id: tool-generate
+- assertVisible:
+    id: tool-review
+- assertVisible:
+    id: tool-constitution
+- assertVisible:
+    id: tool-map
+- tapOn:
+    id: tab-profile
+- assertVisible:
+    text: "Profile"
