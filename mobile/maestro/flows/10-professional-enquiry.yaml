@@ -15,7 +15,7 @@ appId: com.myrights.app
 - assertVisible:
     id: "legal-aid-experts"
 - tapOn:
-    text: "Send enquiry"
+    id: "legal-aid-send-enquiry"
 - assertVisible:
     id: "enquiry-message"
 - tapOn:
