@@ -254,7 +254,7 @@ export const DocumentReviewScreen: React.FC = () => {
             </SafeAreaView>
 
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
