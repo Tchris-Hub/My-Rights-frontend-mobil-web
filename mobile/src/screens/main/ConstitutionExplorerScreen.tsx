@@ -146,7 +146,7 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {filteredChapters.map(chapter => (
                         <View key={chapter.id.toString()} style={styles.chapterWrapper}>
                             <TouchableOpacity
