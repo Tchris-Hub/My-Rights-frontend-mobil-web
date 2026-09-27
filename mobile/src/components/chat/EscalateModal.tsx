@@ -13,6 +13,9 @@ import {
     Modal,
     ActivityIndicator,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -75,6 +78,8 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <BlurView intensity={isDark ? 40 : 80} style={styles.overlay} tint="dark">
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+                    <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                 <View style={[styles.modal, { backgroundColor: colors.surfaceContainer }]}>
                     <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
                         <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
@@ -139,6 +144,8 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
                         )}
                     </TouchableOpacity>
                 </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </BlurView>
         </Modal>
     );
@@ -151,6 +158,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 24,
     },
+    keyboardView: { width: '100%', maxHeight: '92%' },
+    modalScroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
     modal: {
         width: '100%',
         borderRadius: 32,
