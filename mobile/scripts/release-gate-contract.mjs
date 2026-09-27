@@ -45,7 +45,7 @@ for (const [file, marker] of phase12Contracts) {
 }
 
 const packageJson = JSON.parse(read('package.json'));
-for (const script of ['typecheck', 'verify:release', 'test:e2e-contract']) {
+for (const script of ['typecheck', 'verify:release', 'test:e2e-contract', 'test:security', 'test:release-gate']) {
   if (typeof packageJson.scripts?.[script] !== 'string') {
     failures.push(`Missing release verification script: ${script}`);
   }

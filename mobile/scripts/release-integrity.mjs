@@ -10,7 +10,6 @@ if (existsSync(join(root, '.env'))) fail('mobile/.env must not exist in a releas
 if (!existsSync(join(root, '.env.example'))) fail('mobile/.env.example is required.');
 if (existsSync(join(root, 'app.json'))) fail('Duplicate mobile/app.json configuration detected; app.config.ts is canonical.');
 if (existsSync(join(root, 'src/services/supabaseClient.ts'))) fail('Legacy src/services/supabaseClient.ts must not exist.');
-if (existsSync(join(root, 'src/services/api.ts'))) fail('Legacy src/services/api.ts must not exist.');
 
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const lockJson = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
@@ -41,11 +40,11 @@ if (!appConfig.includes("projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4'")) fa
 if (appConfig.includes('railway.app') || appConfig.includes('EXPO_PUBLIC_API_URL')) fail('Legacy backend configuration remains in app.config.ts.');
 
 const envExample = readFileSync(join(root, '.env.example'), 'utf8');
-if (!envExample.includes('EXPO_PUBLIC_SUPABASE_URL=') || !envExample.includes('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=')) {
-  fail('.env.example must contain only the documented public Supabase client configuration.');
+if (!envExample.includes('EXPO_PUBLIC_API_BASE_URL=')) {
+  fail('.env.example must document the public backend origin as EXPO_PUBLIC_API_BASE_URL.');
 }
-if (/SERVICE_ROLE|OPENROUTER_API_KEY|SECRET|PRIVATE_KEY|ANON_KEY/.test(envExample)) {
-  fail('.env.example contains a server-secret or legacy key name.');
+if (/SUPABASE|SERVICE_ROLE|OPENROUTER_API_KEY|SECRET|PRIVATE_KEY|ANON_KEY/.test(envExample)) {
+  fail('.env.example contains a legacy provider name or server-secret key name.');
 }
 
 const eas = JSON.parse(readFileSync(join(root, 'eas.json'), 'utf8'));
