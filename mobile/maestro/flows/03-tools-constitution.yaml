@@ -1,0 +1,22 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-tools
+- assertVisible:
+    id: tool-constitution
+- tapOn:
+    id: tool-constitution
+- assertVisible:
+    id: constitution-search
+- tapOn:
+    id: constitution-search
+- inputText: "fundamental"
+- hideKeyboard
+- assertVisible:
+    text: "CLEAR SEARCH"
