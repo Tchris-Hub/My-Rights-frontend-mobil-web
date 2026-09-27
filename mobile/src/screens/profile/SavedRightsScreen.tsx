@@ -44,8 +44,8 @@ export const SavedRightsScreen: React.FC = () => {
           <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>Your bookmarked legal provisions</Text>
         </View>
       </View>
-      {loading ? <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View> :
-        items.length === 0 ? <View style={styles.center}>
+      {loading ? <View testID="saved-rights-loading" style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View> :
+        items.length === 0 ? <View testID="saved-rights-empty" style={styles.center}>
           <Ionicons name="bookmark-outline" size={52} color={colors.onSurfaceVariant} />
           <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>No saved rights yet</Text>
           <Text style={[styles.empty, { color: colors.onSurfaceVariant }]}>Save a citation from the Constitution Explorer and it will appear here.</Text>
