@@ -135,12 +135,12 @@ export const ConstitutionExplorerScreen: React.FC = () => {
             </BlurView>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
+                <View testID="constitution-loading" style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Archives...</Text>
                 </View>
             ) : filteredChapters.length === 0 ? (
-                <View style={styles.emptyContainer}>
+                <View testID="constitution-empty" style={styles.emptyContainer}>
                     <Ionicons name="search-outline" size={48} color={colors.onSurfaceVariant} />
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>No matches found in the Constitution</Text>
                     <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginTop: 20 }}>
