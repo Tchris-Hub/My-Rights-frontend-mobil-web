@@ -104,7 +104,7 @@ export const ProfileHomeScreen: React.FC = () => {
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => {
+                            onPress={() => navigation.navigate('SavedRights')}
                                 if (isGuest) {
                                     Alert.alert(
                                         "Locked Feature",
