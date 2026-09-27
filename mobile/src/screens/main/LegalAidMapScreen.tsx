@@ -386,7 +386,9 @@ export const LegalAidMapScreen: React.FC = () => {
             <View style={styles.navToggleContainer}>
                 <View style={[styles.navToggle, { backgroundColor: colors.surfaceContainer }]}>
                     <TouchableOpacity
-                        style={[styles.toggleBtn, viewMode === 'centers' && { backgroundColor: colors.primary }]}
+                        testID="legal-aid-centers"
+                        accessibilityRole="button"
+                        style={[styles.toggleBtn, viewMode === 'centers' && { backgroundColor: colors.primary }] 
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('centers');
@@ -397,7 +399,9 @@ export const LegalAidMapScreen: React.FC = () => {
                         <Text style={[styles.toggleText, { color: viewMode === 'centers' ? '#FFF' : colors.onSurfaceVariant }]}>Centers</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.toggleBtn, viewMode === 'experts' && { backgroundColor: colors.primary }]}
+                        testID="legal-aid-experts"
+                        accessibilityRole="button"
+                        style={[styles.toggleBtn, viewMode === 'experts' && { backgroundColor: colors.primary }] 
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('experts');
@@ -408,7 +412,9 @@ export const LegalAidMapScreen: React.FC = () => {
                         <Text style={[styles.toggleText, { color: viewMode === 'experts' ? '#FFF' : colors.onSurfaceVariant }]}>Experts</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }]}
+                        testID="legal-aid-firms"
+                        accessibilityRole="button"
+                        style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }] 
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             setViewMode('firms');
