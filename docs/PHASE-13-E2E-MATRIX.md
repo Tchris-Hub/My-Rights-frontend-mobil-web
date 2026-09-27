@@ -13,6 +13,18 @@
 9. Profile: edit profile, saved rights, privacy/data requests, support report
 10. Navigation/deep-link recovery and background-job overlay
 
+## Repository flow coverage
+
+- `01-auth-validation.yaml` — onboarding/auth validation contract
+- `02-guest-chat-shell.yaml` — guest chat + keyboard contract
+- `03-tools-constitution.yaml` — tools navigation + Constitution search contract
+- `04-document-workflow.yaml` — document-generation shell contract
+- `05-document-review.yaml` — document-review input/submit contract
+- `06-legal-discovery.yaml` — legal discovery mode navigation contract
+- `07-profile-privacy-support.yaml` — profile/privacy/support shell contract
+
+These files verify that the repository exposes deterministic controls for the intended flows. They do **not** count as device execution evidence.
+
 ## Evidence required
 
 For each flow record pass/fail, device/emulator model, Android version, screen size, and a screenshot/video for any visual or interaction defect. Capture at least one keyboard-open state and one loading state for every form-heavy flow.
