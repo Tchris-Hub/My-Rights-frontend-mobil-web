@@ -19,6 +19,7 @@ const requiredFlows = [
   'maestro/flows/04-constitution-navigation.yaml',
   'maestro/flows/05-legal-aid.yaml',
   'maestro/flows/06-privacy.yaml',
+  'maestro/flows/07-legal-aid-experts.yaml',
 ];
 
 for (const flow of requiredFlows) {
@@ -40,6 +41,9 @@ requireText('src/screens/main/ProfessionalEnquiryScreen.tsx', 'testID="enquiry-s
 requireText('src/screens/profile/SavedRightsScreen.tsx', 'testID="saved-rights-list"');
 requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-export"');
 requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-delete"');
+requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-centers"');
+requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-experts"');
+requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-firms"');
 
 if (failures.length) {
   console.error('E2E contract check failed:');
