@@ -1,0 +1,21 @@
+appId: com.myrights.app
+---
+# Deterministic guest-session exit/recovery coverage.
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: onboarding-primary
+- tapOn:
+    id: onboarding-skip
+- assertVisible:
+    id: auth-guest
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-profile
+- assertVisible:
+    text: "Profile"
+- tapOn:
+    id: profile-logout
+- assertVisible:
+    id: auth-guest
