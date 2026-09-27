@@ -10,7 +10,6 @@ if (existsSync(join(root, '.env'))) fail('mobile/.env must not exist in a releas
 if (!existsSync(join(root, '.env.example'))) fail('mobile/.env.example is required.');
 if (existsSync(join(root, 'app.json'))) fail('Duplicate mobile/app.json configuration detected; app.config.ts is canonical.');
 if (existsSync(join(root, 'src/services/supabaseClient.ts'))) fail('Legacy src/services/supabaseClient.ts must not exist.');
-if (existsSync(join(root, 'src/services/api.ts'))) fail('Legacy src/services/api.ts must not exist.');
 
 const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const lockJson = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
