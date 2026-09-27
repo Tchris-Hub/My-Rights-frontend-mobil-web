@@ -32,6 +32,8 @@ interface ButtonProps {
     iconPosition?: 'left' | 'right';
     fullWidth?: boolean;
     style?: StyleProp<ViewStyle>;
+    testID?: string;
+    accessibilityLabel?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -45,6 +47,8 @@ export const Button: React.FC<ButtonProps> = ({
     iconPosition = 'left',
     fullWidth = false,
     style,
+    testID,
+    accessibilityLabel,
 }) => {
     const { colors } = useTheme();
 
@@ -66,6 +70,9 @@ export const Button: React.FC<ButtonProps> = ({
             ]}
             onPress={handlePress}
             disabled={isDisabled}
+            testID={testID}
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel ?? title}
             activeOpacity={0.7}
         >
             <View style={[styles.container, isDisabled && styles.disabled, { backgroundColor: variant === 'primary' ? colors.primary : variant === 'secondary' ? colors.surfaceContainerHigh : variant === 'danger' ? colors.error : 'transparent' }, styles[`container_${variant}`]]}>
