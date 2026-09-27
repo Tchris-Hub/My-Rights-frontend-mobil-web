@@ -7,6 +7,7 @@ import React from 'react';
 import {
     View,
     TouchableOpacity,
+    Keyboard,
     StyleSheet,
     Platform,
     Dimensions,
@@ -112,11 +113,18 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
     const { state, descriptors, navigation } = props;
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+    const [keyboardVisible, setKeyboardVisible] = React.useState(false);
+
+    React.useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
 
     const focusedOptions = descriptors[state.routes[state.index].key].options;
     const isTabBarHidden = (focusedOptions.tabBarStyle as any)?.display === 'none';
 
-    if (isTabBarHidden) {
+    if (isTabBarHidden || keyboardVisible) {
         return null;
     }
 
