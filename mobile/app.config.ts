@@ -31,6 +31,13 @@ export default {
                 backgroundColor: '#006B3F',
             },
             package: 'com.myrights.app',
+            config: {
+                googleMaps: {
+                    // Publicly embedded Google Maps key; restrict it to Android package
+                    // com.myrights.app and the Maps SDK for Android in Google Cloud.
+                    apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
+                },
+            },
             softwareKeyboardLayoutMode: 'resize',
         },
         web: {
