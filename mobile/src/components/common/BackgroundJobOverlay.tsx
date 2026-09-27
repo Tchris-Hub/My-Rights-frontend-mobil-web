@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator, Keyboard } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -15,6 +15,7 @@ import Animated, {
 import { useJobs } from '../../contexts/JobContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../../constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -23,6 +24,14 @@ export const BackgroundJobOverlay: React.FC = () => {
     const { activeJob, clearJob } = useJobs();
     const { colors, isDark } = useTheme();
     const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
 
     const translateY = useSharedValue(100);
     const opacity = useSharedValue(0);
@@ -59,7 +68,7 @@ export const BackgroundJobOverlay: React.FC = () => {
         opacity: opacity.value,
     }));
 
-    if (!activeJob) return null;
+    if (!activeJob || keyboardVisible) return null;
 
     const handlePress = () => {
         if (activeJob.status === 'completed' || activeJob.status === 'running') {
@@ -106,7 +115,7 @@ export const BackgroundJobOverlay: React.FC = () => {
     if (!status) return null;
 
     return (
-        <Animated.View style={[styles.container, animatedStyle]}>
+        <Animated.View style={[styles.container, animatedStyle, { bottom: theme.spacing.xl + insets.bottom }]}>
             <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={handlePress}
