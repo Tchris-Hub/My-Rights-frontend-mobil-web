@@ -20,6 +20,9 @@ for (const file of required) {
 }
 
 const appConfig = read('app.config.ts');
+if (!appConfig.includes("package: 'com.myrights.app'")) {
+  failures.push('Android application package must remain com.myrights.app.');
+}
 if (!appConfig.includes("softwareKeyboardLayoutMode: 'resize'")) {
   failures.push('Android software keyboard layout mode must remain resize.');
 }
