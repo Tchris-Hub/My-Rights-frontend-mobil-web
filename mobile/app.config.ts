@@ -31,6 +31,7 @@ export default {
                 backgroundColor: '#006B3F',
             },
             package: 'com.myrights.app',
+            softwareKeyboardLayoutMode: 'resize',
         },
         web: {
             favicon: './assets/favicon.png',
