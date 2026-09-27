@@ -127,7 +127,7 @@ export const CustomSplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFin
     }));
 
     return (
-        <Animated.View style={[styles.container, containerStyle]}>
+        <Animated.View testID={isAppReady ? "app-splash-ready" : "app-session-restoring"} style={[styles.container, containerStyle]}>
             <StatusBar barStyle="light-content" />
 
             <LinearGradient
