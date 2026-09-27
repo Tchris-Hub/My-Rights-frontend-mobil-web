@@ -268,7 +268,7 @@ export const LegalAidMapScreen: React.FC = () => {
                             </View> : null}
                         </View>
                         <View style={styles.cardActions}>
-                            <TouchableOpacity onPress={() => handleProfessionalEnquiry(lawyer)} style={styles.actionBtnContainer}>
+                            <TouchableOpacity testID="legal-aid-send-enquiry" accessibilityRole="button" accessibilityLabel="Send legal enquiry" onPress={() => handleProfessionalEnquiry(lawyer)} style={styles.actionBtnContainer}>
                                 <LinearGradient colors={[colors.primary, theme.colors.primaryContainer]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.actionBtn}>
                                     <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.onPrimary} />
                                     <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Send enquiry</Text>
