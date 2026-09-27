@@ -75,7 +75,9 @@ const TabItem = ({ route, index, state, descriptors, navigation, getTabIcon }: a
 
     return (
         <TouchableOpacity
+            testID={`tab-${route.name.toLowerCase()}`}
             accessibilityRole="button"
+            accessibilityLabel={route.name}
             accessibilityState={isFocused ? { selected: true } : {}}
             onPress={onPress}
             style={styles.tab}
