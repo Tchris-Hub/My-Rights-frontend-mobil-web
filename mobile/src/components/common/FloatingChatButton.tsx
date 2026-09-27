@@ -1,12 +1,23 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Keyboard, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import theme from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { BlurView } from 'expo-blur';
 
 export const FloatingChatButton: React.FC = () => {
     const navigation = useNavigation<any>();
+    const { colors } = useTheme();
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
+
+    if (keyboardVisible) return null;
 
     const onPress = () => {
         navigation.navigate('Chat');
@@ -14,12 +25,12 @@ export const FloatingChatButton: React.FC = () => {
 
     return (
         <TouchableOpacity
-            style={styles.container}
+            style={[styles.container, { backgroundColor: colors.secondary }]}
             onPress={onPress}
             activeOpacity={0.8}
         >
-            <BlurView intensity={20} tint="light" style={styles.blur}>
-                <Ionicons name="chatbubble" size={24} color={theme.colors.onSecondary} />
+            <BlurView intensity={20} tint="dark" style={styles.blur}>
+                <Ionicons name="chatbubble" size={24} color={colors.onSecondary} />
             </BlurView>
         </TouchableOpacity>
     );
