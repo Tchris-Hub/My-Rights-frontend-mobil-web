@@ -215,10 +215,10 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                                             )}
 
                                             <View style={styles.cardFooter}>
-                                                <TouchableOpacity
-                                                    testID={`constitution-save-${section.id}`}
+                                                <TouchableOpacity 
+                                                    testID="constitution-save-citation"
                                                     accessibilityRole="button"
-                                                    accessibilityLabel={`Save citation for Article ${section.section_number}`}
+                                                    accessibilityLabel="Save citation"
                                                     style={styles.citeButton}
                                                     onPress={async () => {
                                                         try {
