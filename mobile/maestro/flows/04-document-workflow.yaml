@@ -1,4 +1,4 @@
-appId: com.myrights.mobile
+appId: com.myrights.app
 ---
 - launchApp:
     clearState: true
