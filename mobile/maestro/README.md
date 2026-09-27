@@ -6,6 +6,15 @@ These flows use Maestro against the Android package `com.myrights.app`.
 
 - `flows/01-auth-validation.yaml` — boot, onboarding progression, auth form validation.
 - `flows/02-guest-chat-shell.yaml` — boot, guest entry, chat input visibility, keyboard dismissal.
+- `flows/03-constitution.yaml` — Constitution search and keyboard handling.
+- `flows/04-constitution-navigation.yaml` — Tools → Constitution navigation.
+- `flows/05-legal-aid.yaml` — Tools → Legal Aid discovery shell.
+- `flows/06-privacy.yaml` — Profile → Privacy Center data controls.
+- `flows/07-legal-aid-experts.yaml` — Legal Aid expert discovery shell.
+- `flows/08-document-review.yaml` — Document Review entry/input shell.
+- `flows/09-document-generator.yaml` — Document Generator entry/intake shell.
+- `flows/10-professional-enquiry.yaml` — Legal Aid expert → enquiry form and keyboard interaction.
+- `flows/11-saved-rights.yaml` — Profile → Saved Rights navigation shell.
 
 Run against an installed Android development or preview build with `npm run e2e:maestro`.
 

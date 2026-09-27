@@ -260,7 +260,7 @@ export const DocumentReviewScreen: React.FC = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
-                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
+                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Upload or scan a document" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
                                 <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
                                 <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
@@ -269,6 +269,8 @@ export const DocumentReviewScreen: React.FC = () => {
                             <View style={styles.editorialInput}>
                                 <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE TEXT BELOW</Text>
                                 <TextInput
+                                    testID="document-review-text"
+                                    accessibilityLabel="Document text"
                                     style={[styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
                                     placeholder="Paste document text for general information and review..."
                                     placeholderTextColor={colors.onSurfaceVariant + '80'}
@@ -279,6 +281,7 @@ export const DocumentReviewScreen: React.FC = () => {
                             </View>
 
                             <Button
+                                testID="document-review-submit"
                                 title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
                                 onPress={() => handleAnalyze()}
                                 loading={isLoading}

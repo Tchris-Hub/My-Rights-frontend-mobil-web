@@ -1,0 +1,26 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Legal Aid"
+- tapOn:
+    id: "legal-aid-experts"
+- assertVisible:
+    id: "legal-aid-experts"
+- tapOn:
+    id: "legal-aid-send-enquiry"
+- assertVisible:
+    id: "enquiry-message"
+- tapOn:
+    id: "enquiry-message"
+- inputText: "I need help understanding my legal rights."
+- hideKeyboard
+- assertVisible:
+    id: "enquiry-submit"
