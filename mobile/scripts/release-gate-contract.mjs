@@ -2,11 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
+const repoRoot = path.resolve(root, '..');
 const failures = [];
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const required = [
-  'docs/PHASE-13-E2E-MATRIX.md',
+  '../docs/PHASE-13-E2E-MATRIX.md',
   'maestro/README.md',
   'maestro/flows/01-auth-validation.yaml',
   'maestro/flows/02-guest-chat-shell.yaml',
@@ -14,7 +15,8 @@ const required = [
 ];
 
 for (const file of required) {
-  if (!fs.existsSync(path.join(root, file))) failures.push(`Missing release-gate artifact: ${file}`);
+  const resolved = path.resolve(root, file);
+  if (!fs.existsSync(resolved)) failures.push(`Missing release-gate artifact: ${file}`);
 }
 
 const appConfig = read('app.config.ts');
