@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -79,7 +80,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
@@ -130,7 +131,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
               </>
             )}
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
