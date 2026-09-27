@@ -27,6 +27,7 @@ const requiredFlows = [
   'maestro/flows/12-document-review-keyboard.yaml',
   'maestro/flows/13-navigation-accessibility.yaml',
   'maestro/flows/14-state-coverage.yaml',
+  'maestro/flows/15-session-exit-recovery.yaml',
 ];
 
 for (const flow of requiredFlows) {
