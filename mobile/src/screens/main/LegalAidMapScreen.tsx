@@ -386,6 +386,8 @@ export const LegalAidMapScreen: React.FC = () => {
             <View style={styles.navToggleContainer}>
                 <View style={[styles.navToggle, { backgroundColor: colors.surfaceContainer }]}>
                     <TouchableOpacity
+                        testID="legal-aid-centers"
+                        accessibilityRole="button"
                         style={[styles.toggleBtn, viewMode === 'centers' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -397,6 +399,8 @@ export const LegalAidMapScreen: React.FC = () => {
                         <Text style={[styles.toggleText, { color: viewMode === 'centers' ? '#FFF' : colors.onSurfaceVariant }]}>Centers</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                        testID="legal-aid-experts"
+                        accessibilityRole="button"
                         style={[styles.toggleBtn, viewMode === 'experts' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -408,6 +412,8 @@ export const LegalAidMapScreen: React.FC = () => {
                         <Text style={[styles.toggleText, { color: viewMode === 'experts' ? '#FFF' : colors.onSurfaceVariant }]}>Experts</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                        testID="legal-aid-firms"
+                        accessibilityRole="button"
                         style={[styles.toggleBtn, viewMode === 'firms' && { backgroundColor: colors.primary }]}
                         onPress={() => {
                             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
