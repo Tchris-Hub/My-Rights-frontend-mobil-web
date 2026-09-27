@@ -36,7 +36,7 @@ export const EditProfileScreen: React.FC = () => {
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={[styles.label,{color:colors.onSurface}]}>Name</Text>
-        <TextInput value={name} onChangeText={setName} maxLength={200} placeholder="Your name" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surfaceContainer,borderColor:colors.outlineVariant}]}/>
+        <TextInput testID="profile-name" accessibilityLabel="Name" value={name} onChangeText={setName} maxLength={200} placeholder="Your name" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surfaceContainer,borderColor:colors.outlineVariant}]}/>
         <Text style={[styles.label,{color:colors.onSurface}]}>Phone number</Text>
         <TextInput value={phone} onChangeText={setPhone} maxLength={50} keyboardType="phone-pad" placeholder="Optional phone number" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surfaceContainer,borderColor:colors.outlineVariant}]}/>
         <Text style={[styles.email,{color:colors.onSurfaceVariant}]}>Email: {user?.email || '—'}</Text>
