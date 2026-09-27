@@ -15,6 +15,10 @@ const requireText = (relativePath, text) => {
 const requiredFlows = [
   'maestro/flows/01-auth-validation.yaml',
   'maestro/flows/02-guest-chat-shell.yaml',
+  'maestro/flows/03-constitution.yaml',
+  'maestro/flows/04-constitution-navigation.yaml',
+  'maestro/flows/05-legal-aid.yaml',
+  'maestro/flows/06-privacy.yaml',
 ];
 
 for (const flow of requiredFlows) {
@@ -29,6 +33,13 @@ requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-google"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-guest"');
 requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-input"');
 requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-send"');
+requireText('src/screens/main/ConstitutionExplorerScreen.tsx', 'testID="constitution-search"');
+requireText('src/screens/main/ConstitutionExplorerScreen.tsx', 'testID="constitution-save-citation"');
+requireText('src/screens/main/ProfessionalEnquiryScreen.tsx', 'testID="enquiry-message"');
+requireText('src/screens/main/ProfessionalEnquiryScreen.tsx', 'testID="enquiry-submit"');
+requireText('src/screens/profile/SavedRightsScreen.tsx', 'testID="saved-rights-list"');
+requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-export"');
+requireText('src/screens/profile/PrivacyCenterScreen.tsx', 'testID="privacy-delete"');
 
 if (failures.length) {
   console.error('E2E contract check failed:');
