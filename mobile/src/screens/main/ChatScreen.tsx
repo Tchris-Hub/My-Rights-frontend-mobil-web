@@ -543,7 +543,7 @@ export const ChatScreen: React.FC = () => {
                 )}
 
                 {messages.length === 0 ? (
-                    <Pressable style={styles.emptyState} onPress={Keyboard.dismiss}>
+                    <Pressable testID="chat-empty-state" style={styles.emptyState} onPress={Keyboard.dismiss}>
                         <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
                             <Ionicons name="sparkles" size={48} color={colors.primary} />
                         </View>
@@ -561,7 +561,7 @@ export const ChatScreen: React.FC = () => {
                         data={messages}
                         renderItem={({ item }) => (
                             item.isLoading || isTranscribing ? (
-                                <View style={styles.loadingBubble}>
+                                <View testID="chat-loading-state" style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
                                         {isTranscribing ? "Transcribing voice..." : "Drafting response..."}
@@ -589,7 +589,7 @@ export const ChatScreen: React.FC = () => {
                     ]}
                 >
                     {(attachment || isExtractingAttachment) && (
-                        <View style={[styles.attachmentCard, { backgroundColor: colors.surfaceContainerHigh }]}> 
+                        <View testID="chat-attachment-state" style={[styles.attachmentCard, { backgroundColor: colors.surfaceContainerHigh }]}> 
                             <View style={[styles.attachmentIcon, { backgroundColor: colors.primary + '12' }]}>
                                 <Ionicons name={isExtractingAttachment ? 'sync-outline' : 'document-text-outline'} size={20} color={colors.primary} />
                             </View>
@@ -616,6 +616,9 @@ export const ChatScreen: React.FC = () => {
                             ]}
                         >
                             <TouchableOpacity
+                                testID="chat-attachment"
+                                accessibilityRole="button"
+                                accessibilityLabel="Add attachment"
                                 style={styles.inputLeftIcon}
                                 onPress={pickDocument}
                             >
