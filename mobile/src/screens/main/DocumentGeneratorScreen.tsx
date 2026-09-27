@@ -243,7 +243,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
             {renderHeader()}
 
             {isLoading && step === 'SELECT' ? (
-                <View style={styles.centerContainer}>
+                <View testID="document-generator-loading" style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Library...</Text>
                 </View>
@@ -326,7 +326,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         <Text style={[styles.chatText, { color: msg.role === 'user' ? '#FFF' : colors.onSurface }]}>{msg.content}</Text>
                                     </View>
                                 ) )}
-                                {isLoading && <ActivityIndicator color={colors.primary} style={{ alignSelf: 'center', marginTop: 10 }} />}
+                                {isLoading && <ActivityIndicator testID="document-generator-consult-loading" color={colors.primary} style={{ alignSelf: 'center', marginTop: 10 }} />}
                             </ScrollView>
                             <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.inputBlur}>
                                 <View style={[styles.chatInputRow]}>
@@ -368,14 +368,14 @@ export const DocumentGeneratorScreen: React.FC = () => {
                     )}
 
                     {step === 'BUILD' && (
-                        <View style={styles.centerContainer}>
+                        <View testID="document-generator-build-loading" style={styles.centerContainer}>
                             <ActivityIndicator size="large" color={colors.primary} />
                             <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Architecting Legal Instrument...</Text>
                         </View>
                     )}
 
                     {step === 'PREVIEW' && (
-                        <View style={{ flex: 1 }}>
+                        <View testID="document-generator-result" style={{ flex: 1 }}>
                             <ScrollView style={[styles.previewScroll, { backgroundColor: colors.surfaceContainerLow }]}>
                                 <View style={styles.previewSheet}>
                                     <Text style={[styles.previewText, { color: colors.onSurface }]}>{draftContent.replace(/<[^>]*>?/gm, '')}</Text>
