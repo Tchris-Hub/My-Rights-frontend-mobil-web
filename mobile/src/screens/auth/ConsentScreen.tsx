@@ -59,9 +59,10 @@ export const ConsentScreen: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
 
-                {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
+                {error ? <Text testID="consent-error" style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
                 <Button
+                    testID="consent-accept"
                     title="Accept and Continue"
                     onPress={submit}
                     disabled={!accepted || isLoading}
