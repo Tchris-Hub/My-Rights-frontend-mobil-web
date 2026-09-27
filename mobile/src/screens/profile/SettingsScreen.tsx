@@ -159,9 +159,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingHorizontal: 24,
-        paddingTop: 24,
-        paddingBottom: 16,
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
     headerTop: {
         flexDirection: 'row',
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     headerIcon: {
         width: 48,
         height: 48,
-        borderRadius: 24,
+        borderRadius: theme.borderRadius.xl,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -193,25 +193,25 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     section: {
-        marginTop: 32,
+        marginTop: theme.spacing.xl,
     },
     sectionHeader: {
         fontFamily: theme.typography.fontFamily.headline,
         fontSize: 14,
         fontWeight: '700',
         letterSpacing: 1,
-        marginBottom: 16,
+        marginBottom: theme.spacing.md,
         textTransform: 'uppercase',
     },
     settingCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 16,
-        borderRadius: 24,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.xl,
     },
     multiCard: {
-        borderRadius: 24,
+        borderRadius: theme.borderRadius.xl,
         overflow: 'hidden',
     },
     multiItem: {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     settingInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
+        gap: theme.spacing.md,
         flex: 1,
     },
     iconBox: {
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     separator: {
-        height: 2,
-        marginHorizontal: 16,
+        height: 1,
+        marginHorizontal: theme.spacing.md,
     },
     footer: {
         marginTop: 48,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 16,
         paddingHorizontal: 32,
-        borderRadius: 28,
+        borderRadius: theme.borderRadius.xl,
         width: '100%',
         justifyContent: 'center',
     },

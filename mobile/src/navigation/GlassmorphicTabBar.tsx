@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import theme from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -35,6 +36,7 @@ const FOCUS_HUB_SIZE = 56;
 const ICON_CONTAINER_SIZE = 56;
 
 const TabItem = ({ route, index, state, descriptors, navigation, getTabIcon }: any) => {
+    const { colors } = useTheme();
     const isFocused = state.index === index;
     const isFocusHub = route.name === 'Chat';
     const scale = useSharedValue(isFocused ? 1.15 : 1);
@@ -84,7 +86,7 @@ const TabItem = ({ route, index, state, descriptors, navigation, getTabIcon }: a
                         <Ionicons
                             name={iconName}
                             size={ICON_SIZE}
-                            color={theme.colors.onSecondary}
+                            color={colors.onPrimary}
                         />
                     </View>
                 ) : (
@@ -94,8 +96,8 @@ const TabItem = ({ route, index, state, descriptors, navigation, getTabIcon }: a
                             size={ICON_SIZE}
                             color={
                                 isFocused
-                                    ? theme.colors.tabBarIconActive
-                                    : theme.colors.tabBarIconInactive
+                                    ? colors.tabBarIconActive
+                                    : colors.tabBarIconInactive
                             }
                             style={isFocused && styles.activeIconGlow}
                         />
@@ -108,6 +110,7 @@ const TabItem = ({ route, index, state, descriptors, navigation, getTabIcon }: a
 
 export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
     const { state, descriptors, navigation } = props;
+    const { colors } = useTheme();
     const insets = useSafeAreaInsets();
 
     const focusedOptions = descriptors[state.routes[state.index].key].options;
@@ -143,7 +146,7 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
                 tint="dark"
                 style={StyleSheet.absoluteFill}
             >
-                <View style={styles.glassBackground} />
+                <View style={[styles.glassBackground, { backgroundColor: colors.tabBarBackground, borderTopColor: colors.tabBarBorder }]} />
             </BlurView>
 
             <View style={styles.tabsContainer}>

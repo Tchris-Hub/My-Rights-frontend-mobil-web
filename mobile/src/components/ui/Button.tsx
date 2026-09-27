@@ -15,9 +15,8 @@ import {
     StyleProp,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'small' | 'medium' | 'large';
@@ -47,6 +46,8 @@ export const Button: React.FC<ButtonProps> = ({
     fullWidth = false,
     style,
 }) => {
+    const { colors } = useTheme();
+
     const handlePress = () => {
         // Haptic feedback
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -67,19 +68,7 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={isDisabled}
             activeOpacity={0.7}
         >
-            <View style={[styles.container, isDisabled && styles.disabled, styles[`container_${variant}`]]}>
-                {variant === 'primary' && (
-                    <LinearGradient
-                        colors={[theme.colors.primary, theme.colors.primaryContainer]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
-                        locations={[0, 1]}
-                    />
-                )}
-                {variant === 'secondary' && (
-                    <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-                )}
+            <View style={[styles.container, isDisabled && styles.disabled, { backgroundColor: variant === 'primary' ? colors.primary : variant === 'secondary' ? colors.surfaceContainerHigh : variant === 'danger' ? colors.error : 'transparent' }, styles[`container_${variant}`]]}>
                 <View style={styles.content}>
                     {loading ? (
                         <ActivityIndicator
@@ -89,7 +78,7 @@ export const Button: React.FC<ButtonProps> = ({
                     ) : (
                         <>
                             {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-                            <Text style={[styles.text, styles[`text_${variant}`], styles[`text_${size}`]]}>
+                            <Text style={[styles.text, styles[`text_${size}`], { color: variant === 'primary' || variant === 'danger' ? colors.onPrimary : variant === 'secondary' ? colors.primary : colors.onSurface }]}>
                                 {title}
                             </Text>
                             {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
@@ -106,11 +95,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.lg,
         overflow: 'hidden', // Ensures inner gradient/blur conforms to border radius
         justifyContent: 'center',
-        shadowColor: 'rgba(0, 0, 0, 0.4)',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 1,
-        shadowRadius: 20,
-        elevation: 6,
+        ...theme.shadows.glass,
     },
     container: {
         flex: 1,
@@ -122,13 +107,11 @@ const styles = StyleSheet.create({
     container_primary: {
         // LinearGradient applied via absoluteFill
     },
-    container_secondary: {
-        backgroundColor: 'rgba(34, 42, 61, 0.7)', // surfaceContainerHigh @ 70%
-    },
+    container_secondary: {},
     container_outline: {
         backgroundColor: 'transparent',
         borderWidth: 1.5,
-        borderColor: 'rgba(61, 74, 65, 0.2)', // ghost border fallback
+        borderColor: theme.colors.outlineVariant
     },
     container_ghost: {
         backgroundColor: 'transparent',
@@ -139,7 +122,7 @@ const styles = StyleSheet.create({
 
     // Sizes
     buttonBase_small: {
-        minHeight: 36,
+        minHeight: theme.touchTargets.min,
     },
     buttonBase_medium: {
         minHeight: theme.touchTargets.min,
@@ -167,7 +150,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     text_primary: {
-        color: '#00331d', // onPrimaryContainer to match gradient
+        color: theme.colors.onPrimary
     },
     text_secondary: {
         color: theme.colors.primary,
