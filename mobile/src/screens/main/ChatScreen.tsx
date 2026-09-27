@@ -521,7 +521,7 @@ export const ChatScreen: React.FC = () => {
 
             {/* FIX: 'padding' on iOS only; offset=0 because header is outside this view */}
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
                 keyboardVerticalOffset={0}
             >
