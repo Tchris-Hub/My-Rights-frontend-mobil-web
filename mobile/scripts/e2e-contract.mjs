@@ -57,6 +57,11 @@ requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-revie
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-continue"');
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-consult-input"');
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-build"');
+requireText('src/screens/profile/EditProfileScreen.tsx', 'testID="profile-save"');
+requireText('src/screens/profile/SupportCenterScreen.tsx', 'testID="support-submit"');
+requireText('src/screens/profile/SupportCenterScreen.tsx', 'testID="support-message"');
+requireText('src/navigation/GlassmorphicTabBar.tsx', 'testID={`tab-${route.name.toLowerCase()}`}');
+requireText('src/screens/main/ToolsHomeScreen.tsx', 'testID={`tool-${tool.id}`}');
 
 if (failures.length) {
   console.error('E2E contract check failed:');
