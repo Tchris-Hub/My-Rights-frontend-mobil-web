@@ -120,6 +120,8 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                         <View style={[styles.searchBar, { backgroundColor: colors.surfaceContainerLow }]}>
                             <Ionicons name="search" size={20} color={colors.onSurfaceVariant} />
                             <TextInput
+                                testID="constitution-search"
+                                accessibilityLabel="Search the Constitution"
                                 style={[theme.typography.bodyMd, styles.searchInput, { color: colors.onSurface }]}
                                 placeholder="Search rights, duties, or citations..."
                                 placeholderTextColor={colors.onSurfaceVariant}
@@ -213,7 +215,10 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                                             )}
 
                                             <View style={styles.cardFooter}>
-                                                <TouchableOpacity 
+                                                <TouchableOpacity
+                                                    testID={`constitution-save-${section.id}`}
+                                                    accessibilityRole="button"
+                                                    accessibilityLabel={`Save citation for Article ${section.section_number}`}
                                                     style={styles.citeButton}
                                                     onPress={async () => {
                                                         try {
