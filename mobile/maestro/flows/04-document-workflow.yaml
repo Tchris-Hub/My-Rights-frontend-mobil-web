@@ -1,0 +1,26 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: onboarding-skip
+- tapOn:
+    id: auth-guest
+- tapOn:
+    id: tab-tools
+- tapOn:
+    id: tool-generate
+- assertVisible:
+    text: "Document Architect"
+- tapOn:
+    id: document-template-1
+    optional: true
+- assertVisible:
+    text: "Primary Details"
+    optional: true
+- tapOn:
+    id: document-intake-continue
+    optional: true
+- assertVisible:
+    id: document-consult-input
+    optional: true
