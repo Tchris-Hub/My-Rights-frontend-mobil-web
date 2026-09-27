@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
         borderRadius: theme.borderRadius.xl,
     },
     multiCard: {
-        borderRadius: 24,
+        borderRadius: theme.borderRadius.xl,
         overflow: 'hidden',
     },
     multiItem: {
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     separator: {
-        height: 2,
-        marginHorizontal: 16,
+        height: 1,
+        marginHorizontal: theme.spacing.md,
     },
     footer: {
         marginTop: 48,
