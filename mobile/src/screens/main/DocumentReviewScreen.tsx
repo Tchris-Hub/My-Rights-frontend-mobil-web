@@ -18,6 +18,8 @@ import {
     Alert,
     Modal,
     Keyboard,
+    KeyboardAvoidingView,
+    Platform,
     TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
