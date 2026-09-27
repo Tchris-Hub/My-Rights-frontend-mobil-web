@@ -52,3 +52,10 @@ if (failures.length) {
 }
 
 console.log('E2E contract checks passed.');
+
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-upload"');
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-text"');
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-submit"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-continue"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-consult-input"');
+requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-build"');
