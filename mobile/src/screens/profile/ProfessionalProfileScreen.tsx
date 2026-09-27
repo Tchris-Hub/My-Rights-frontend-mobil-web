@@ -88,7 +88,7 @@ export const ProfessionalProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.header}>
           <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
@@ -99,7 +99,7 @@ export const ProfessionalProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
