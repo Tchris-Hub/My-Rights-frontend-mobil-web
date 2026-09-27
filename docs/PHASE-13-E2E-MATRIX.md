@@ -13,6 +13,11 @@
 9. Profile: edit profile, saved rights, privacy/data requests, support report
 10. Navigation/deep-link recovery and background-job overlay
 11. Professional enquiry form: expert selection → enquiry screen, multiline input, keyboard dismissal, submit control
+12. Navigation accessibility: deterministic tab/tool controls and profile/support entry points
+
+## Repository flow coverage
+
+The repository now contains deterministic Maestro definitions for the critical verification surfaces, including authentication, chat/keyboard, Constitution, legal discovery, privacy, document review/generation, professional enquiry, saved rights, and navigation/accessibility. These definitions validate test contracts; they do not substitute for Android device/emulator execution evidence.
 
 ## Evidence required
 
