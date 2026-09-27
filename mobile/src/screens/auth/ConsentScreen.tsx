@@ -44,6 +44,7 @@ export const ConsentScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                    testID="consent-checkbox"
                     style={styles.checkboxRow}
                     onPress={() => setAccepted((value) => !value)}
                     accessibilityRole="checkbox"
