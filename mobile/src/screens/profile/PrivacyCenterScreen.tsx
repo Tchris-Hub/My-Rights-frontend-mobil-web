@@ -40,7 +40,7 @@ export const PrivacyCenterScreen: React.FC = () => {
       <TouchableOpacity onPress={()=>navigation.goBack()} style={[styles.back,{backgroundColor:colors.surfaceContainer}]}><Ionicons name="chevron-back" size={24} color={colors.onSurface}/></TouchableOpacity>
       <View style={styles.headerText}><Text style={[styles.title,{color:colors.onSurface}]}>Privacy Center</Text><Text style={[styles.subtitle,{color:colors.onSurfaceVariant}]}>Consent, data access and account privacy</Text></View>
     </View>
-    {loading ? <View style={styles.center}><ActivityIndicator size="large" color={colors.primary}/></View> :
+    {loading ? <View testID="privacy-loading" style={styles.center}><ActivityIndicator size="large" color={colors.primary}/></View> :
     <ScrollView contentContainerStyle={styles.content}>
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Current policies</Text>
@@ -52,14 +52,14 @@ export const PrivacyCenterScreen: React.FC = () => {
       </View>
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Consent history</Text>
-        {consents.length===0 ? <Text style={[styles.body,{color:colors.onSurfaceVariant}]}>No consent records found.</Text> : consents.map((c,i)=><Text key={i} style={[styles.body,{color:colors.onSurfaceVariant}]}>Accepted {new Date(c.accepted_at).toLocaleString()} • Terms {c.terms_version} • Privacy {c.privacy_version}</Text>)}
+        {consents.length===0 ? <Text testID="privacy-empty-consents" style={[styles.body,{color:colors.onSurfaceVariant}]}>No consent records found.</Text> : consents.map((c,i)=><Text key={i} style={[styles.body,{color:colors.onSurfaceVariant}]}>Accepted {new Date(c.accepted_at).toLocaleString()} • Terms {c.terms_version} • Privacy {c.privacy_version}</Text>)}
       </View>
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Your data</Text>
         <TouchableOpacity testID="privacy-export" accessibilityRole="button" accessibilityLabel="Request my data" style={[styles.action,{backgroundColor:colors.primary}]} onPress={()=>void request('export')}><Text style={[styles.actionText,{color:colors.onPrimary}]}>Request my data</Text></TouchableOpacity>
         <TouchableOpacity testID="privacy-delete" accessibilityRole="button" accessibilityLabel="Request data deletion" style={[styles.secondary,{borderColor:colors.outlineVariant}]} onPress={()=>void request('deletion')}><Text style={[styles.secondaryText,{color:colors.error}]}>Request data deletion</Text></TouchableOpacity>
       </View>
-      {requests.length>0 && <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
+      {requests.length>0 && <View testID="privacy-request-history" style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Request history</Text>
         {requests.map(r=><Text key={r.id} style={[styles.body,{color:colors.onSurfaceVariant}]}>{r.request_type} • {r.status} • {new Date(r.created_at).toLocaleString()}</Text>)}
       </View>}
