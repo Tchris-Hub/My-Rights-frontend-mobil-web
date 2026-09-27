@@ -25,6 +25,9 @@ export const FloatingChatButton: React.FC = () => {
 
     return (
         <TouchableOpacity
+            testID="floating-chat"
+            accessibilityRole="button"
+            accessibilityLabel="Open chat"
             style={[styles.container, { backgroundColor: colors.secondary }]}
             onPress={onPress}
             activeOpacity={0.8}
