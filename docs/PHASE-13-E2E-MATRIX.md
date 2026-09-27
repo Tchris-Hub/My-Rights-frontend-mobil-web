@@ -13,6 +13,7 @@
 9. Profile: edit profile, saved rights, privacy/data requests, support report
 10. Navigation/deep-link recovery and background-job overlay
 11. Professional enquiry form: expert selection → enquiry screen, multiline input, keyboard dismissal, submit control
+12. Navigation accessibility: deterministic tab/tool controls and profile/support entry points
 
 ## Evidence required
 
