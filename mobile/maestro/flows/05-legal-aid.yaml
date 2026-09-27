@@ -1,0 +1,14 @@
+appId: com.myrights.mobile
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Legal Aid"
+- assertVisible:
+    text: "Legal"
