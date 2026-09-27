@@ -110,6 +110,9 @@ export const ToolsHomeScreen: React.FC = () => {
                 <View style={styles.grid}>
                     {TOOLS.map((tool, index) => (
                         <TouchableOpacity
+                            testID={`tool-${tool.id}`}
+                            accessibilityRole="button"
+                            accessibilityLabel={tool.title}
                             key={tool.id}
                             style={[
                                 styles.toolCard, 
