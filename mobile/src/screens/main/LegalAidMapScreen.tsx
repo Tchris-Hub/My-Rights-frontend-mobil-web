@@ -454,7 +454,7 @@ export const LegalAidMapScreen: React.FC = () => {
             </View>
 
             {isLoading ? (
-                <View style={styles.emptyState}>
+                <View testID="legal-aid-loading" style={styles.emptyState}>
                     <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, marginTop: 12 }]}>Syncing with High Court Archives...</Text>
                 </View>
@@ -473,7 +473,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     contentContainerStyle={{ paddingBottom: 120 }}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={() => (
-                        <View style={styles.emptyState}>
+                        <View testID="legal-aid-empty" style={styles.emptyState}>
                             <Ionicons name={viewMode === 'centers' ? "map-outline" : viewMode === 'firms' ? "business-outline" : "people-outline"} size={48} color={colors.onSurfaceVariant} />
                             <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>
                                 {viewMode === 'centers' ? 'No centers found in this region.' : viewMode === 'firms' ? 'No verified firms found for this filter.' : 'No verified professionals found for this filter.'}
