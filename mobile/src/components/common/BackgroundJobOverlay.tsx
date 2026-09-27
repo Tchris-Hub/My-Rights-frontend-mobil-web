@@ -115,7 +115,7 @@ export const BackgroundJobOverlay: React.FC = () => {
     if (!status) return null;
 
     return (
-        <Animated.View style={[styles.container, animatedStyle, { bottom: theme.spacing.xl + insets.bottom }]}>
+        <Animated.View testID="background-job-overlay" style={[styles.container, animatedStyle, { bottom: theme.spacing.xl + insets.bottom }]}>
             <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={handlePress}
@@ -142,6 +142,9 @@ export const BackgroundJobOverlay: React.FC = () => {
                         </View>
 
                         <TouchableOpacity
+                            testID="background-job-dismiss"
+                            accessibilityRole="button"
+                            accessibilityLabel="Dismiss background job"
                             onPress={(e) => {
                                 e.stopPropagation();
                                 clearJob();
