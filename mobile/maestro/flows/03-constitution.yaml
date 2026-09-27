@@ -1,0 +1,12 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    id: "constitution-search"
+- inputText: "fundamental"
+- assertVisible:
+    id: "constitution-search"
+- hideKeyboard
