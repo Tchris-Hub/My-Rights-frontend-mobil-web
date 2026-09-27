@@ -96,6 +96,8 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
 
           <Text style={[styles.label, { color: colors.onSurface }]}>What do you need help with?</Text>
           <TextInput
+            testID="professional-enquiry-message"
+            accessibilityLabel="Professional enquiry message"
             value={message}
             onChangeText={setMessage}
             multiline
@@ -118,6 +120,8 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
           </Text>
 
           <TouchableOpacity
+            testID="professional-enquiry-submit"
+            accessibilityRole="button"
             style={[styles.submit, { backgroundColor: colors.primary, opacity: isSubmitting ? 0.6 : 1 }]}
             onPress={submit}
             disabled={isSubmitting}
