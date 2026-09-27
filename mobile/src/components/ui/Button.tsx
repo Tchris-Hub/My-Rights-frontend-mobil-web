@@ -78,7 +78,7 @@ export const Button: React.FC<ButtonProps> = ({
                     ) : (
                         <>
                             {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-                            <Text style={[styles.text, styles[`text_${variant}`], styles[`text_${size}`]]}>
+                            <Text style={[styles.text, styles[`text_${size}`], { color: variant === 'primary' || variant === 'danger' ? colors.onPrimary : variant === 'secondary' ? colors.primary : colors.onSurface }]}>
                                 {title}
                             </Text>
                             {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     container_outline: {
         backgroundColor: 'transparent',
         borderWidth: 1.5,
-        borderColor: theme.colors.outlineVariant
+        borderColor: colors.outlineVariant
     },
     container_ghost: {
         backgroundColor: 'transparent',
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     text_primary: {
-        color: theme.colors.onPrimary
+        color: colors.onPrimary
     },
     text_secondary: {
-        color: theme.colors.primary,
+        color: colors.primary,
     },
     text_outline: {
-        color: theme.colors.onSurface,
+        color: colors.onSurface,
     },
     text_ghost: {
         color: theme.colors.onSurface,
