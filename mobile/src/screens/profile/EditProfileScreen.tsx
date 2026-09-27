@@ -29,12 +29,12 @@ export const EditProfileScreen: React.FC = () => {
   };
 
   return <SafeAreaView style={[styles.container,{backgroundColor:colors.surface}]} edges={['top']}>
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
         <TouchableOpacity onPress={()=>navigation.goBack()} style={[styles.back,{backgroundColor:colors.surfaceContainer}]}><Ionicons name="chevron-back" size={24} color={colors.onSurface}/></TouchableOpacity>
         <View style={styles.headerText}><Text style={[styles.title,{color:colors.onSurface}]}>Edit profile</Text><Text style={[styles.subtitle,{color:colors.onSurfaceVariant}]}>Keep your account details current</Text></View>
       </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={[styles.label,{color:colors.onSurface}]}>Name</Text>
         <TextInput value={name} onChangeText={setName} maxLength={200} placeholder="Your name" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surfaceContainer,borderColor:colors.outlineVariant}]}/>
         <Text style={[styles.label,{color:colors.onSurface}]}>Phone number</Text>
