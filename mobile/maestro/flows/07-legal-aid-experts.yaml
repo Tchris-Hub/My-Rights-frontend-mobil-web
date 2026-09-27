@@ -1,0 +1,18 @@
+appId: com.myrights.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Skip"
+- tapOn:
+    text: "Guest"
+- tapOn:
+    text: "Tools"
+- tapOn:
+    text: "Legal Aid"
+- assertVisible:
+    id: "legal-aid-centers"
+- tapOn:
+    id: "legal-aid-experts"
+- assertVisible:
+    id: "legal-aid-experts"
