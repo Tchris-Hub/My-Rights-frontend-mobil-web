@@ -26,3 +26,9 @@ jobs:
         run: npm ci
       - name: Typecheck
         run: npm run typecheck
+      - name: E2E contract check
+        run: npm run test:e2e-contract
+      - name: Release integrity
+        run: npm run verify:release
+      - name: Security regression
+        run: npm run test:security
