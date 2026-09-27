@@ -66,6 +66,7 @@ export const Card: React.FC<CardProps> = ({
                 style={cardStyle}
                 onPress={handlePress}
                 activeOpacity={0.8}
+                accessibilityRole="button"
             >
                 {content}
             </TouchableOpacity>
