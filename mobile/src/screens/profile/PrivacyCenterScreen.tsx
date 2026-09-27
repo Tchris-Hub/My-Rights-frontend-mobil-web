@@ -56,8 +56,8 @@ export const PrivacyCenterScreen: React.FC = () => {
       </View>
       <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Your data</Text>
-        <TouchableOpacity testID="privacy-request-export" accessibilityRole="button" style={[styles.action,{backgroundColor:colors.primary}] onPress={()=>void request('export')}><Text style={[styles.actionText,{color:colors.onPrimary}]}>Request my data</Text></TouchableOpacity>
-        <TouchableOpacity testID="privacy-request-deletion" accessibilityRole="button" style={[styles.secondary,{borderColor:colors.outlineVariant}] onPress={()=>void request('deletion')}><Text style={[styles.secondaryText,{color:colors.error}]}>Request data deletion</Text></TouchableOpacity>
+        <TouchableOpacity testID="privacy-request-export" accessibilityRole="button" style={[styles.action,{backgroundColor:colors.primary}]} onPress={()=>void request('export')}><Text style={[styles.actionText,{color:colors.onPrimary}]}>Request my data</Text></TouchableOpacity>
+        <TouchableOpacity testID="privacy-request-deletion" accessibilityRole="button" style={[styles.secondary,{borderColor:colors.outlineVariant}]} onPress={()=>void request('deletion')}><Text style={[styles.secondaryText,{color:colors.error}]}>Request data deletion</Text></TouchableOpacity>
       </View>
       {requests.length>0 && <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Request history</Text>
