@@ -149,6 +149,24 @@ export const legalService = {
     languages?: string[];
     availability?: string;
     fee_band?: string;
+    public_phone?: string;
+    whatsapp?: string;
+    public_email?: string;
+    instagram?: string;
+    linkedin?: string;
+    website?: string;
+    bar_admission_number?: string;
+    bar_association?: string;
+    jurisdiction?: string;
+    years_experience?: number;
+    headline?: string;
+    education?: string[];
+    experience?: string[];
+    certifications?: string[];
+    skills?: string[];
+    organization_name?: string;
+    nba_branch?: string;
+    year_of_call?: number;
   }) {
     return apiRequest<any>('/api/professionals/me', {
       method: 'PUT',
