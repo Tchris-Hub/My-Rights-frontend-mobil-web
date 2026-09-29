@@ -33,6 +33,7 @@ import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { useJobs } from '../../contexts/JobContext';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
@@ -49,6 +50,7 @@ const SUGGESTIONS = [
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
     const { isAuthenticated } = useAuth();
+    const { startJob, finishJob, failJob } = useJobs();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const insets = useSafeAreaInsets();
@@ -62,6 +64,7 @@ export const ChatScreen: React.FC = () => {
     const [isMenuVisible, setIsMenuVisible] = useState(false);
     const [inputFocused, setInputFocused] = useState(false);
     const [attachment, setAttachment] = useState<{ name: string; mimeType: string; text: string; characterCount: number; truncated: boolean } | null>(null);
+    const [documentReviewMode, setDocumentReviewMode] = useState(Boolean(route.params?.documentReviewMode));
     const [isExtractingAttachment, setIsExtractingAttachment] = useState(false);
     const [chatQuotaRemaining, setChatQuotaRemaining] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
@@ -110,6 +113,10 @@ export const ChatScreen: React.FC = () => {
                 setChatQuotaRemaining(null);
             });
     }, [isAuthenticated]);
+
+    useEffect(() => {
+        setDocumentReviewMode(Boolean(route.params?.documentReviewMode));
+    }, [route.params?.documentReviewMode]);
 
     useEffect(() => {
         if (isAuthenticated) {
