@@ -1,3 +1,4 @@
+import { fetch as expoFetch } from 'expo/fetch';
 import { authClient } from './auth-client';
 import * as Crypto from 'expo-crypto';
 
@@ -65,7 +66,7 @@ export async function streamApiRequest(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
+  const response = await expoFetch(`${requireApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'omit',
     headers: await getHeaders({
