@@ -6,6 +6,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProfileHomeScreen } from '../screens/profile/ProfileHomeScreen';
+import { ProfessionalDashboardScreen } from '../screens/profile/ProfessionalDashboardScreen';
+import { useAuth } from '../contexts/AuthContext';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
 import { ChatHistoryScreen } from '../screens/profile/ChatHistoryScreen';
@@ -18,9 +20,12 @@ import type { ProfileStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
-export const ProfileNavigator: React.FC = () => (
+export const ProfileNavigator: React.FC = () => {
+  const { accountType } = useAuth();
+  const Home = accountType === 'legal_professional' ? ProfessionalDashboardScreen : ProfileHomeScreen;
+  return (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} />
+    <Stack.Screen name="ProfileHome" component={Home} />
     <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
     <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} options={{ title: 'Chat History' }} />
@@ -30,4 +35,5 @@ export const ProfileNavigator: React.FC = () => (
     <Stack.Screen name="PrivacyCenter" component={PrivacyCenterScreen} options={{ title: 'Privacy Center' }} />
     <Stack.Screen name="SupportCenter" component={SupportCenterScreen} options={{ title: 'Support Center' }} />
   </Stack.Navigator>
-);
+  );
+};
