@@ -24,6 +24,24 @@ async function getHeaders(extra?: Record<string, string>): Promise<Record<string
   return headers;
 }
 
+async function fetchWithAuthRetry(
+  url: string,
+  options: RequestInit,
+): Promise<Response> {
+  const response = await fetch(url, options);
+  if (response.status !== 401) return response;
+
+  // Better Auth refreshes the native session/cookie here. Retry the original
+  // request once using the refreshed cookie; never loop indefinitely.
+  await authClient.getSession();
+  const refreshedCookie = await authClient.getCookie();
+  const headers = new Headers(options.headers);
+  if (refreshedCookie) headers.set('Cookie', refreshedCookie);
+
+  return fetch(url, { ...options, headers });
+}
+
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   let payload: unknown = null;
@@ -46,7 +64,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(`${requireApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'omit',
     headers: await getHeaders({
@@ -55,9 +73,6 @@ export async function apiRequest<T>(
     }),
   });
 
-  if (response.status === 401) {
-    await authClient.getSession();
-  }
   return parseResponse<T>(response);
 }
 
@@ -65,7 +80,7 @@ export async function streamApiRequest(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(`${requireApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'omit',
     headers: await getHeaders({
@@ -74,10 +89,6 @@ export async function streamApiRequest(
       ...(options.headers as Record<string, string> | undefined),
     }),
   });
-
-  if (response.status === 401) {
-    await authClient.getSession();
-  }
 
   if (!response.ok) {
     return response;
@@ -102,7 +113,7 @@ export async function binaryApiRequest<T>(
       ? Uint8Array.from(body).buffer
       : body;
 
-  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
+  const response = await fetchWithAuthRetry(`${requireApiBaseUrl()}${path}`, {
     method: 'POST',
     credentials: 'omit',
     body: requestBody,
@@ -114,9 +125,6 @@ export async function binaryApiRequest<T>(
     }),
   });
 
-  if (response.status === 401) {
-    await authClient.getSession();
-  }
   return parseResponse<T>(response);
 }
 
