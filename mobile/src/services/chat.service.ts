@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest, streamApiRequest, createIdempotencyKey } from './api';
+import { apiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
 import { assertGroundedChat, type GroundingSource } from './ragPolicy';
 import type { ChatMessage, SourceCitation } from '../types';
@@ -18,6 +18,33 @@ type ChatResult = {
     citation_status?: string;
 };
 
+function assertChatResponse(result: ChatResult): void {
+    const answer = result.content.trim();
+    if (!answer) throw new Error('AI returned no usable response.');
+
+    const status = result.citation_status;
+    if (status !== 'verified_context' && status !== 'live_research' && status !== 'unverified') {
+        throw new Error('AI returned an invalid evidence status.');
+    }
+
+    const sources = Array.isArray(result.sources) ? result.sources : [];
+    const citations = answer.match(/\[S\d+\]/g) ?? [];
+    const allowed = new Set(sources.map((source) => source.id));
+
+    if (status === 'verified_context' || status === 'live_research') {
+        if (sources.length === 0) throw new Error('AI returned verified-status content without sources.');
+        if (citations.length === 0) throw new Error('AI answer did not include the required source citations.');
+        if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
+            throw new Error('AI answer contained an invalid source citation.');
+        }
+        return;
+    }
+
+    if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
+        throw new Error('AI answer contained an invalid source citation.');
+    }
+}
+
 export const chatService = {
     async createConversation(title: string): Promise<string> {
         const session = await apiRequest<{ id: string }>('/api/chat/sessions', {
@@ -31,121 +58,25 @@ export const chatService = {
         message: string,
         options: { conversationId?: string; persist?: boolean; attachmentText?: string },
     ): Promise<ChatResult> {
-        const shouldPersist = options.persist !== false;
-        const currentSessionId = shouldPersist
-            ? (options.conversationId ?? (await this.createConversation(message)))
-            : null;
-
-        const result = await apiRequest<ChatResult>('/api/ai/chat', {
+        const persist = options.persist !== false;
+        const response = await apiRequest<ChatResult>('/api/ai/chat', {
             method: 'POST',
             headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
-                conversation_id: currentSessionId,
+                conversation_id: options.conversationId ?? null,
                 message,
+                persist,
                 ...(options.attachmentText ? { attachment_text: options.attachmentText } : {}),
             }),
         });
 
-        if (!result?.content?.trim()) throw new Error('AI returned no usable response.');
-        assertGroundedChat(result.content, result.sources, result.citation_status);
-        return result;
+        if (!response?.content?.trim()) {
+            throw new Error('AI returned no usable response.');
+        }
+        assertChatResponse(response);
+        return response;
     },
 
-    async streamMessage(
-        message: string,
-        options: {
-            conversationId?: string;
-            persist?: boolean;
-            onChunk: (chunk: string) => void;
-            onComplete?: (meta: { sources?: GroundingSource[]; citation_status?: string }) => void;
-            attachmentText?: string;
-        },
-    ): Promise<string | null> {
-        const shouldPersist = options.persist !== false;
-        const currentSessionId = shouldPersist
-            ? (options.conversationId ?? (await this.createConversation(message)))
-            : null;
-
-        const response = await streamApiRequest('/api/ai/chat/stream', {
-            method: 'POST',
-            headers: { 'Idempotency-Key': createIdempotencyKey() },
-            body: JSON.stringify({
-                conversation_id: currentSessionId,
-                message,
-                ...(options.attachmentText ? { attachment_text: options.attachmentText } : {}),
-            }),
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            let messageText = 'AI request could not be completed.';
-            try {
-                const payload = JSON.parse(text);
-                if (typeof payload?.error === 'string') messageText = payload.error;
-            } catch {
-                // Keep the sanitized fallback.
-            }
-            throw new Error(messageText);
-        }
-
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let conversationId: string | null = currentSessionId;
-        let completed = false;
-        let bufferedContent = '';
-
-        const processEvent = (event: string) => {
-            for (const line of event.split(/\\r?\\n/)) {
-                if (!line.startsWith('data:')) continue;
-                const raw = line.slice(5).trim();
-                if (!raw) continue;
-                const payload = JSON.parse(raw) as {
-                    type?: 'delta' | 'done' | 'error';
-                    content?: string;
-                    conversation_id?: string | null;
-                    error?: string;
-                    sources?: GroundingSource[];
-                    citation_status?: string;
-                };
-                if (payload.type === 'delta' && typeof payload.content === 'string') {
-                    bufferedContent += payload.content;
-                } else if (payload.type === 'done') {
-                    conversationId = payload.conversation_id ?? null;
-                    assertGroundedChat(bufferedContent, payload.sources, payload.citation_status);
-                    options.onChunk(bufferedContent);
-                    options.onComplete?.({
-                        sources: payload.sources,
-                        citation_status: payload.citation_status,
-                    });
-                    completed = true;
-                } else if (payload.type === 'error') {
-                    throw new Error(payload.error || 'AI provider request failed.');
-                }
-            }
-        };
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                let separator = buffer.indexOf('\\n\\n');
-                while (separator >= 0) {
-                    processEvent(buffer.slice(0, separator));
-                    buffer = buffer.slice(separator + 2);
-                    separator = buffer.indexOf('\\n\\n');
-                }
-            }
-            buffer += decoder.decode();
-            if (buffer.trim()) processEvent(buffer);
-        } finally {
-            reader.releaseLock();
-        }
-
-        if (!completed) throw new Error('AI stream ended before completion.');
-        return conversationId;
-    },
 
     async escalateConversation(
         conversationId: string,
