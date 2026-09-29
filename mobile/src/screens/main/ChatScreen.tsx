@@ -304,13 +304,23 @@ export const ChatScreen: React.FC = () => {
 
     const pickDocument = async () => {
         try {
+            if (documentReviewMode) {
+                await pickFile();
+                return;
+            }
             Alert.alert(
-                "Add Attachment",
-                "Choose attachment type",
+                "Add to My Rights",
+                "Choose what you want to do with the attachment.",
                 [
                     { text: "Cancel", style: "cancel" },
-                    { text: "Photo Library", onPress: pickImage },
-                    { text: "Document", onPress: pickFile },
+                    { text: "Review document", onPress: () => { setDocumentReviewMode(true); void pickFile(); } },
+                    { text: "Attach to chat", onPress: () => {
+                        Alert.alert("Attachment type", "Choose a photo or document.", [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Photo Library", onPress: pickImage },
+                            { text: "Document", onPress: pickFile },
+                        ]);
+                    } },
                 ]
             );
         } catch (error) {
