@@ -8,12 +8,6 @@ function toSourceCitations(sources: GroundingSource[] | undefined): SourceCitati
     return sources.map((source) => ({ ...source, excerpt: source.excerpt ?? '' }));
 }
 
-type ChatResult = {
-    content: string;
-    conversation_id: string | null;
-    sources?: GroundingSource[];
-    citation_status?: string;
-};
 
 export const chatService = {
     async createConversation(title: string): Promise<string> {
@@ -27,9 +21,9 @@ export const chatService = {
     async sendMessage(
         message: string,
         options: { conversationId?: string; persist?: boolean; attachmentText?: string },
-    ): Promise<ChatResult> {
+    ): Promise<AiChatResponse> {
         const persist = options.persist !== false;
-        const response = await apiRequest<ChatResult>('/api/ai/chat', {
+        const response = await apiRequest<AiChatResponse>('/api/ai/chat', {
             method: 'POST',
             headers: { 'Idempotency-Key': createIdempotencyKey() },
             body: JSON.stringify({
