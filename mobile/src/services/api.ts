@@ -66,7 +66,7 @@ export async function streamApiRequest(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const response = await expoFetch(`${requireApiBaseUrl()}${path}`, {
+  const streamOptions: RequestInit & { reactNative?: { textStreaming: boolean } } = {
     ...options,
     credentials: 'omit',
     // React Native's native networking layer needs this flag to expose
@@ -77,7 +77,12 @@ export async function streamApiRequest(
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers as Record<string, string> | undefined),
     }),
-  } as RequestInit & { reactNative: { textStreaming: boolean } };
+  };
+
+  const response = await expoFetch(
+    `${requireApiBaseUrl()}${path}`,
+    streamOptions,
+  );
 
   if (response.status === 401) {
     await authClient.getSession();
