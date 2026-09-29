@@ -58,7 +58,7 @@ export const LegalAidMapScreen: React.FC = () => {
     const [selectedType, setSelectedType] = useState('All');
     const [viewMode, setViewMode] = useState<'centers' | 'experts' | 'firms'>('centers');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
-    const [mapError, setMapError] = useState(false);
+    const googleMapsConfigured = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim());
     
     // Data State
     const [centers, setCenters] = useState<Center[]>([]);
@@ -319,13 +319,7 @@ export const LegalAidMapScreen: React.FC = () => {
 
     const renderHeader = () => (
         <View style={styles.mapContainer}>
-            {mapError ? (
-                <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center' }]}>
-                    <Ionicons name="map-outline" size={48} color={colors.onSurfaceVariant} />
-                    <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, marginTop: 8 }]}>Map unavailable</Text>
-                    <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, fontSize: 11 }]}>Browse directories in the list below</Text>
-                </View>
-            ) : (
+            {googleMapsConfigured ? (
                 <MapView
                     style={styles.map}
                     initialRegion={initialRegion}
@@ -353,6 +347,14 @@ export const LegalAidMapScreen: React.FC = () => {
                         </Marker>
                     ))}
                 </MapView>
+            ) : (
+                <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }]}>
+                    <Ionicons name="map-outline" size={42} color={colors.onSurfaceVariant} />
+                    <Text style={[styles.emptyText, { color: colors.onSurface, marginTop: 8 }]}>Map view unavailable</Text>
+                    <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, fontSize: 12, marginTop: 4 }]}>
+                        Browse the verified legal-aid directory below.
+                    </Text>
+                </View>
             )}
         </View>
     );
