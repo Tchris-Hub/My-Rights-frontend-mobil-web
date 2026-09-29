@@ -32,6 +32,7 @@ export type ToolsStackParamList = {
     ConstitutionExplorer: undefined;
     LegalAidMap: undefined;
     ProfessionalEnquiry: { professionalId?: string; firmId?: string; professionalName: string; practiceArea?: string };
+    ProfessionalDetails: { professional: any };
     FirmDetails: { firm: any };
 };
 
