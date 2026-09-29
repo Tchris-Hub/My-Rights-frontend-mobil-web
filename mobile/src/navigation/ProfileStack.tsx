@@ -16,6 +16,7 @@ import { ProfessionalProfileScreen } from '../screens/profile/ProfessionalProfil
 import { SavedRightsScreen } from '../screens/profile/SavedRightsScreen';
 import { PrivacyCenterScreen } from '../screens/profile/PrivacyCenterScreen';
 import { SupportCenterScreen } from '../screens/profile/SupportCenterScreen';
+import { NotificationsScreen } from '../screens/profile/NotificationsScreen';
 import type { ProfileStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -34,6 +35,7 @@ export const ProfileNavigator: React.FC = () => {
     <Stack.Screen name="SavedRights" component={SavedRightsScreen} options={{ title: 'Saved Rights' }} />
     <Stack.Screen name="PrivacyCenter" component={PrivacyCenterScreen} options={{ title: 'Privacy Center' }} />
     <Stack.Screen name="SupportCenter" component={SupportCenterScreen} options={{ title: 'Support Center' }} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
   </Stack.Navigator>
   );
 };
