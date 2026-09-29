@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { legalService } from '../../services/legalService';
+import { notificationService } from '../../services/notification.service';
 import theme from '../../constants/theme';
 
 export const ProfessionalDashboardScreen: React.FC = () => {
@@ -14,16 +15,19 @@ export const ProfessionalDashboardScreen: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [enquiries, setEnquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [nextProfile, received] = await Promise.all([
+      const [nextProfile, received, unread] = await Promise.all([
         legalService.getOwnProfessionalProfile(),
         legalService.getReceivedEnquiries(),
+        notificationService.unreadCount(),
       ]);
       setProfile(nextProfile);
       setEnquiries(received);
+      setUnreadNotifications(unread);
     } finally {
       setLoading(false);
     }
@@ -52,9 +56,15 @@ export const ProfessionalDashboardScreen: React.FC = () => {
             <Text style={[styles.title, { color: colors.onSurface }]}>{user?.name?.split(' ')[0] || 'Professional'}</Text>
             <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>Manage your legal-services presence and client enquiries.</Text>
           </View>
+          <View style={styles.headerActions}>
+          <TouchableOpacity style={[styles.notificationButton, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.navigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={21} color={colors.onSurface} />
+            {unreadNotifications > 0 && <View style={[styles.badge, { backgroundColor: colors.error }]}><Text style={styles.badgeText}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text></View>}
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.settings, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="settings-outline" size={20} color={colors.onSurface} />
           </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.statusCard, { backgroundColor: colors.surfaceContainer }]}>
@@ -105,6 +115,10 @@ const styles = StyleSheet.create({
   eyebrow: { ...theme.typography.labelSm, fontWeight: '900', letterSpacing: 1.8 },
   title: { ...theme.typography.displayMd, fontSize: 38, fontWeight: '900', marginTop: 4 },
   subtitle: { ...theme.typography.bodyMd, lineHeight: 20, marginTop: 4, maxWidth: 300 },
+  headerActions: { flexDirection: 'row', gap: 8 },
+  notificationButton: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  badge: { position: 'absolute', right: -2, top: -3, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   settings: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   statusCard: { flexDirection: 'row', padding: 18, borderRadius: 20, gap: 12 },
   statusIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
