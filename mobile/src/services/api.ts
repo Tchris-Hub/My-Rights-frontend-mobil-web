@@ -61,35 +61,6 @@ export async function apiRequest<T>(
   return parseResponse<T>(response);
 }
 
-export async function streamApiRequest(
-  path: string,
-  options: RequestInit = {},
-): Promise<Response> {
-  const response = await fetch(`${requireApiBaseUrl()}${path}`, {
-    ...options,
-    credentials: 'omit',
-    headers: await getHeaders({
-      Accept: 'text/event-stream',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers as Record<string, string> | undefined),
-    }),
-  });
-
-  if (response.status === 401) {
-    await authClient.getSession();
-  }
-
-  if (!response.ok) {
-    return response;
-  }
-
-  if (!response.body) {
-    throw new Error('Streaming response is unavailable.');
-  }
-
-  return response;
-}
-
 export async function binaryApiRequest<T>(
   path: string,
   body: ArrayBuffer | Uint8Array,
