@@ -50,8 +50,10 @@ export default {
             'expo-splash-screen',
             'expo-status-bar',
             'expo-web-browser',
+            '@maplibre/maplibre-react-native',
         ],
         extra: {
+            mapTilerApiKey: process.env.MAPTILER_API_KEY,
             eas: {
                 projectId: '4cd8d457-fde8-43c2-bab7-b8a31df28fd4',
             },
