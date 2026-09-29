@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
+import { validateChatResponse, type GroundingSource } from './ragPolicy';
+import type { AiChatResponse, ChatMessage, SourceCitation } from '../types';
+
 type ChatSession = { id: string; title: string | null; created_at?: string; updated_at: string };
 
 function toSourceCitations(sources: GroundingSource[] | undefined): SourceCitation[] | undefined {
