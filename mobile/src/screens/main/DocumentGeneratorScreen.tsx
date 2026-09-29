@@ -115,41 +115,77 @@ export const DocumentGeneratorScreen: React.FC = () => {
         setIntakeData(initialData);
     };
 
-    const handleIntakeSubmit = () => {
+    const buildIntakeDetails = () => Object.entries(intakeData)
+        .map(([key, value]) => `${key}: ${value.trim()}`)
+        .filter((entry) => !entry.endsWith(':'))
+        .join('\\n');
+
+    const handleIntakeSubmit = async () => {
         if (!isAuthenticated) {
             Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
             return;
         }
+        if (!selectedTemplate) return;
+
+        const intakeDetails = buildIntakeDetails();
+        if (!intakeDetails) {
+            Alert.alert('More details needed', 'Please complete at least one primary detail before continuing.');
+            return;
+        }
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setStep('CONSULT');
-        setConsultMessages([{
-            id: createMessageId('system'),
-            role: 'assistant',
-            content: `I've received the basic details for your ${selectedTemplate?.title}. Would you like to add any specific custom clauses, such as special termination rights or unique liability conditions?`
-        }]);
+        setIsLoading(true);
+
+        try {
+            const firstQuestion = await documentService.consultDocument(
+                selectedTemplate.title,
+                intakeDetails,
+            );
+            setConsultMessages([{
+                id: createMessageId('assistant'),
+                role: 'assistant',
+                content: firstQuestion,
+            }]);
+        } catch (error: any) {
+            setStep('INTAKE');
+            Alert.alert('AI consultation failed', error?.message || 'Could not start the document consultation.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleConsultSubmit = async () => {
-        if (!userInput.trim()) return;
-        
+        const text = userInput.trim();
+        if (!text || !selectedTemplate) return;
+
         const newMessage: ConsultMessage = {
             id: createMessageId('user'),
             role: 'user',
-            content: userInput
+            content: text,
         };
-        
-        setConsultMessages(prev => [...prev, newMessage]);
+        const nextConversation = [...consultMessages, newMessage];
+
+        setConsultMessages(nextConversation);
         setUserInput('');
         setIsLoading(true);
 
-        // This step is an intake/editorial workflow, not an AI response.
-        // Never simulate a successful AI call when no backend request was made.
-        setConsultMessages(prev => [...prev, {
-            id: createMessageId('note'),
-            role: 'assistant',
-            content: 'Your additional requirements have been added to this draft session. You can review them before generating the document.'
-        }]);
-        setIsLoading(false);
+        try {
+            const response = await documentService.consultDocument(
+                selectedTemplate.title,
+                buildIntakeDetails(),
+                nextConversation,
+            );
+            setConsultMessages(prev => [...prev, {
+                id: createMessageId('assistant'),
+                role: 'assistant',
+                content: response,
+            }]);
+        } catch (error: any) {
+            Alert.alert('AI consultation failed', error?.message || 'Could not get a response from the AI.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleStartBuild = async () => {
@@ -313,51 +349,68 @@ export const DocumentGeneratorScreen: React.FC = () => {
                     )}
 
                     {step === 'CONSULT' && (
-                        <View style={{ flex: 1 }}>
-                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                        <KeyboardAvoidingView
+                            style={{ flex: 1 }}
+                            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                        >
+                            <ScrollView
+                                style={styles.chatScroll}
+                                contentContainerStyle={styles.consultScrollContent}
+                                keyboardShouldPersistTaps="handled"
+                                keyboardDismissMode="on-drag"
+                            >
                                 {consultMessages.map(msg => (
                                     <View key={msg.id} style={[
-                                        styles.chatBubble, 
+                                        styles.chatBubble,
                                         msg.role === 'user' ? styles.userBubble : [styles.aiBubble, { backgroundColor: colors.surfaceContainerHigh }]
                                     ]}>
                                         <Text style={[styles.chatText, { color: msg.role === 'user' ? '#FFF' : colors.onSurface }]}>{msg.content}</Text>
                                     </View>
-                                ) )}
-                                {isLoading && <ActivityIndicator color={colors.primary} style={{ alignSelf: 'center', marginTop: 10 }} />}
+                                ))}
+                                {isLoading && (
+                                    <ActivityIndicator color={colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4, marginLeft: 8 }} />
+                                )}
                             </ScrollView>
+
                             <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.inputBlur}>
-                                <View style={[styles.chatInputRow]}>
+                                <View style={styles.chatInputRow}>
                                     <TextInput
                                         style={[styles.chatInput, { backgroundColor: colors.surfaceContainerHighest, color: colors.onSurface }]}
-                                        placeholder="Add custom requirements..."
+                                        placeholder="Tell the AI what you want included..."
                                         placeholderTextColor={colors.onSurfaceVariant}
                                         value={userInput}
                                         onChangeText={setUserInput}
                                         multiline
+                                        textAlignVertical="top"
+                                        editable={!isLoading}
                                     />
-                                    <TouchableOpacity 
-                                        style={[styles.sendBtn, { backgroundColor: colors.primary }]}
+                                    <TouchableOpacity
+                                        disabled={isLoading || !userInput.trim()}
+                                        style={[styles.sendBtn, { backgroundColor: colors.primary, opacity: isLoading || !userInput.trim() ? 0.45 : 1 }]}
                                         onPress={handleConsultSubmit}
                                     >
                                         <Ionicons name="sparkles" size={20} color="#FFF" />
                                     </TouchableOpacity>
                                 </View>
+
                                 <View style={styles.consultActions}>
                                     {isAuthenticated && generationQuotaRemaining !== null && (
                                         <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
-                                            Free plan: {generationQuotaRemaining} document generation{generationQuotaRemaining === 1 ? '' : 's'} remaining today.
+                                            {generationQuotaRemaining} draft{generationQuotaRemaining === 1 ? '' : 's'} remaining today.
                                         </Text>
                                     )}
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
                                         onPress={handleStartBuild}
+                                        disabled={isLoading}
                                     >
-                                        <Text style={styles.finalActionText}>Architect Final Draft</Text>
+                                        <Text style={styles.finalActionText}>Generate Document</Text>
                                         <Ionicons name="arrow-forward" size={18} color="#FFF" />
                                     </TouchableOpacity>
                                 </View>
                             </BlurView>
-                        </View>
+                        </KeyboardAvoidingView>
                     )}
 
                     {step === 'BUILD' && (
@@ -549,8 +602,9 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
     inputBlur: {
-        padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        paddingHorizontal: 14,
+        paddingTop: 12,
+        paddingBottom: Platform.OS === 'ios' ? 18 : 12,
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         overflow: 'hidden',
@@ -562,11 +616,11 @@ const styles = StyleSheet.create({
     },
     chatInput: {
         flex: 1,
-        minHeight: 56,
-        maxHeight: 120,
-        borderRadius: 28,
-        paddingHorizontal: 24,
-        paddingVertical: 16,
+        minHeight: 52,
+        maxHeight: 96,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 13,
         fontSize: 15,
         fontWeight: '600',
     },
@@ -583,12 +637,16 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontSize: 12,
     },
+    consultScrollContent: {
+        padding: 18,
+        paddingBottom: 12,
+    },
     consultActions: {
-        marginTop: 16,
+        marginTop: 10,
     },
     finalActionBtn: {
-        height: 56,
-        borderRadius: 28,
+        height: 48,
+        borderRadius: 24,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -596,7 +654,7 @@ const styles = StyleSheet.create({
     },
     finalActionText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '900',
     },
     centerContainer: {
