@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
-import { assertGroundedChat, type GroundingSource } from './ragPolicy';
+type GroundingSource = {\n    id: string;\n    title: string;\n    section?: string;\n    excerpt?: string;\n    citation?: string;\n    source_url?: string;\n    issuing_authority?: string;\n    source_type?: string;\n    verified_at?: string;\n    effective_from?: string;\n    effective_to?: string;\n    retrieval_score?: number;\n};
 import type { ChatMessage, SourceCitation } from '../types';
 
 type ChatSession = { id: string; title: string | null; created_at?: string; updated_at: string };
@@ -113,18 +113,18 @@ export const chatService = {
             conversationId,
             messages: data.map((m) => {
                 const sources = Array.isArray(m.grounding_sources) ? m.grounding_sources : undefined;
-                const verified = m.role === 'assistant'
-                    && m.citation_status === 'verified_context'
+                const evidenceBacked = m.role === 'assistant'
+                    && (m.citation_status === 'verified_context' || m.citation_status === 'live_research')
                     && Boolean(sources?.length);
                 return {
                     id: m.id,
                     role: m.role,
-                    content: m.role === 'assistant' && !verified
-                        ? 'This earlier AI answer is not displayed because it was not stored with verifiable legal-source evidence.'
+                    content: m.role === 'assistant' && m.citation_status === 'unverified'
+                        ? 'This earlier AI answer is not displayed because it was stored without verifiable legal-source evidence.'
                         : m.content,
                     timestamp: new Date(m.created_at).getTime(),
-                    sources: verified ? toSourceCitations(sources) : undefined,
-                    isVerified: verified,
+                    sources: evidenceBacked ? toSourceCitations(sources) : undefined,
+                    isVerified: m.citation_status === 'verified_context',
                 };
             }),
         };
