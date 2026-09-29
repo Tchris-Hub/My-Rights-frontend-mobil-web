@@ -10,7 +10,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TextInput,
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
@@ -50,6 +49,13 @@ export const DocumentReviewScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
     const [documentText, setDocumentText] = useState('');
+    const [pendingDocument, setPendingDocument] = useState<{
+        kind: 'text' | 'image';
+        name: string;
+        uri?: string;
+        mimeType?: string;
+        size?: number;
+    } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<DocumentAnalysisResponse | null>(null);
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
@@ -74,7 +80,6 @@ export const DocumentReviewScreen: React.FC = () => {
     useEffect(() => {
         if (activeJob && activeJob.type === 'analysis' && activeJob.status === 'completed' && activeJob.result) {
             setResult(activeJob.result);
-            setDocumentText(activeJob.params?.text || '');
             clearJob();
         }
     }, [activeJob?.status]);
@@ -125,39 +130,51 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
-    const analyzeImageAsset = async (uri: string, mimeType: string, size?: number) => {
-        if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in before reviewing a document.');
+    const queueImageForReview = (uri: string, mimeType: string, size?: number, name = 'Image document') => {
+        setPendingDocument({ kind: 'image', name, uri, mimeType, size });
+        setDocumentText('');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    };
+
+    const reviewSelectedDocument = async () => {
+        if (!pendingDocument || isLoading) return;
+
+        if (pendingDocument.kind === 'text') {
+            await handleAnalyze(documentText);
             return;
         }
 
+        if (!pendingDocument.uri || !pendingDocument.mimeType) return;
+
         setIsLoading(true);
-        setLoadingPhase('Uploading Document...');
+        setLoadingPhase('Reviewing document...');
         const jobId = startJob({
             type: 'analysis',
             title: 'Analyzing Document',
-            progress: 'Uploading Document...',
-            params: { uri },
+            progress: 'Reviewing document...',
+            params: { uri: pendingDocument.uri, name: pendingDocument.name },
         });
 
         try {
-            setLoadingPhase('Analyzing document image...');
-            updateJob(jobId, { progress: 'Analyzing document image...' });
-
-            const analysis = await documentService.analyzeImage(uri, mimeType, size);
+            const analysis = await documentService.analyzeImage(
+                pendingDocument.uri,
+                pendingDocument.mimeType,
+                pendingDocument.size,
+            );
             finishJob(jobId, analysis);
-            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
+            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
             logger.error('Image analysis failed:', error);
             failJob(jobId, error?.message || 'Image analysis failed');
-            Alert.alert('Analysis Failed', error?.message || 'Could not analyze the selected image.');
+            Alert.alert('Document Review Failed', error?.message || 'Could not analyze the selected document.');
         } finally {
             setIsLoading(false);
             setLoadingPhase('');
         }
     };
+
 
     const handleScan = () => {
         Alert.alert(
@@ -187,7 +204,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
-                await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize);
+                queueImageForReview(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize, 'Captured document');
             }
         } catch (error: any) {
             logger.error('Camera capture failed:', error);
@@ -198,40 +215,55 @@ export const DocumentReviewScreen: React.FC = () => {
     const pickDocument = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/rtf', 'text/rtf', 'text/plain', 'image/*'],
+                type: [
+                    'application/pdf',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/rtf',
+                    'text/rtf',
+                    'text/plain',
+                    'image/*',
+                ],
                 copyToCacheDirectory: true,
             });
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
+
                 if ((asset.mimeType || '').startsWith('image/')) {
-                    await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
-                } else {
-                    setIsLoading(true);
-                    setLoadingPhase('Extracting document text...');
-                    const jobId = startJob({ type: 'analysis', title: 'Analyzing Document', progress: 'Extracting document text...', params: { uri: asset.uri } });
-                    try {
-                        const extracted = await documentService.extractText(asset.uri, asset.name, asset.mimeType || 'application/octet-stream', asset.size);
-                        setDocumentText(extracted.text);
-                        setLoadingPhase('Analyzing extracted text...');
-                        updateJob(jobId, { progress: 'Analyzing extracted text...' });
-                        const analysis = await documentService.analyzeDocument(extracted.text);
-                        finishJob(jobId, analysis);
-                        setResult(analysis);
-                        if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    } catch (error: any) {
-                        failJob(jobId, error?.message || 'Document extraction failed');
-                        Alert.alert('Document Review Failed', error?.message || 'Could not read this document.');
-                    } finally {
-                        setIsLoading(false);
-                        setLoadingPhase('');
-                    }
+                    queueImageForReview(
+                        asset.uri,
+                        asset.mimeType || 'image/jpeg',
+                        asset.size,
+                        asset.name || 'Image document',
+                    );
+                    return;
+                }
+
+                setIsLoading(true);
+                setLoadingPhase('Reading document...');
+                try {
+                    const extracted = await documentService.extractText(
+                        asset.uri,
+                        asset.name,
+                        asset.mimeType || 'application/octet-stream',
+                        asset.size,
+                    );
+                    setDocumentText(extracted.text);
+                    setPendingDocument({
+                        kind: 'text',
+                        name: asset.name || 'Document',
+                    });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (error: any) {
+                    Alert.alert('Document Upload Failed', error?.message || 'Could not read the selected document.');
+                } finally {
+                    setIsLoading(false);
+                    setLoadingPhase('');
                 }
             }
         } catch (error: any) {
-            logger.error('Image selection failed:', error);
-            Alert.alert('Selection Failed', 'Could not read the selected image.');
+            logger.error('Document selection failed:', error);
+            Alert.alert('Selection Failed', 'Could not select the document.');
         }
     };
 
@@ -266,25 +298,35 @@ export const DocumentReviewScreen: React.FC = () => {
                                 <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
                             </TouchableOpacity>
 
-                            <View style={styles.editorialInput}>
-                                <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE TEXT BELOW</Text>
-                                <TextInput
-                                    style={[styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
-                                    placeholder="Paste document text for general information and review..."
-                                    placeholderTextColor={colors.onSurfaceVariant + '80'}
-                                    value={documentText}
-                                    onChangeText={setDocumentText}
-                                    multiline
-                                />
-                            </View>
+                            {pendingDocument ? (
+                                <View style={[styles.documentAttached, { backgroundColor: colors.surfaceContainerLow }]}>
+                                    <View style={[styles.documentCheck, { backgroundColor: colors.primary + '14' }]}>
+                                        <Ionicons name="checkmark" size={22} color={colors.primary} />
+                                    </View>
+                                    <View style={styles.documentAttachedInfo}>
+                                        <Text style={[styles.documentAttachedTitle, { color: colors.onSurface }]}>Document added</Text>
+                                        <Text style={[styles.documentAttachedName, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+                                            {pendingDocument.name}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setPendingDocument(null);
+                                            setDocumentText('');
+                                        }}
+                                        accessibilityLabel="Remove attached document"
+                                    >
+                                        <Ionicons name="close-circle-outline" size={24} color={colors.onSurfaceVariant} />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : null}
 
                             <Button
                                 title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
-                                onPress={() => handleAnalyze()}
+                                onPress={reviewSelectedDocument}
                                 loading={isLoading}
-                                disabled={!documentText.trim() || isLoading || analyzeQuotaRemaining === 0}
+                                disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
-                                // No border on button per guideline
                             />
                             {isAuthenticated && analyzeQuotaRemaining !== null && (
                                 <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
@@ -462,6 +504,35 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 32,
         paddingBottom: 120,
+    },
+    documentAttached: {
+        minHeight: 72,
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        marginBottom: 12,
+    },
+    documentCheck: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    documentAttachedInfo: {
+        flex: 1,
+    },
+    documentAttachedTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    documentAttachedName: {
+        fontSize: 12,
+        marginTop: 3,
     },
     inputSection: {
         gap: 32,
