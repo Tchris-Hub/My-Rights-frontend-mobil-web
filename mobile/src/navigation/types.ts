@@ -9,6 +9,8 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type RootStackParamList = {
     Onboarding: undefined;
     Auth: NavigatorScreenParams<AuthStackParamList>;
+    AccountType: undefined;
+    PractitionerOnboarding: undefined;
     Chat: { initialMessage?: string; conversationId?: string } | undefined;
     Tools: NavigatorScreenParams<ToolsStackParamList>;
     Profile: NavigatorScreenParams<ProfileStackParamList>;
