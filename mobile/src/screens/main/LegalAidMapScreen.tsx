@@ -254,7 +254,7 @@ export const LegalAidMapScreen: React.FC = () => {
                                         <Text style={[styles.badgeText, { color: colors.primary }]}>Verified</Text>
                                     </View>}
                                 </View>
-                                <Text style={[styles.centerName, { color: colors.onSurface }]}>{lawyer.name}</Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('ProfessionalDetails', { professional: lawyer })}><Text style={[styles.centerName, { color: colors.onSurface }]}>{lawyer.name}</Text></TouchableOpacity>
                             </View>
                         </View>
                         <View style={styles.cardDetails}>
@@ -274,7 +274,7 @@ export const LegalAidMapScreen: React.FC = () => {
                                     <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>Send enquiry</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.actionBtnOutline, { backgroundColor: colors.surfaceContainerHighest }]} onPress={() => Alert.alert('Professional bio', lawyer.bio || 'Detailed professional profile pending verification.')}>
+                            <TouchableOpacity style={[styles.actionBtnOutline, { backgroundColor: colors.surfaceContainerHighest }]} onPress={() => navigation.navigate('ProfessionalDetails', { professional: lawyer })}>
                                 <Ionicons name="folder-open-outline" size={18} color={colors.primary} />
                                 <Text style={[styles.actionBtnText, { color: colors.primary }]}>View Bio</Text>
                             </TouchableOpacity>
