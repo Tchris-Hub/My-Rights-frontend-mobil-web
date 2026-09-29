@@ -22,31 +22,39 @@ export type ChatResponseContract = {
   citation_status?: ChatEvidenceStatus;
 };
 
+/**
+ * The backend is the authority for citation validity and evidence selection.
+ * The mobile client only validates the transport shape before rendering.
+ */
 export function validateChatResponse(result: ChatResponseContract): void {
-  const answer = result.content.trim();
-  if (!answer) throw new Error('AI returned no usable response.');
+  if (!result || typeof result !== 'object') {
+    throw new Error('AI returned an invalid response.');
+  }
 
-  const status = result.citation_status;
-  if (status !== 'verified_context' && status !== 'live_research' && status !== 'unverified') {
+  if (typeof result.content !== 'string' || !result.content.trim()) {
+    throw new Error('AI returned no usable response.');
+  }
+
+  if (
+    result.citation_status !== 'verified_context' &&
+    result.citation_status !== 'live_research' &&
+    result.citation_status !== 'unverified'
+  ) {
     throw new Error('AI returned an invalid evidence status.');
   }
 
-  const sources = Array.isArray(result.sources) ? result.sources : [];
-  const citations = answer.match(/\[S\d+\]/g) ?? [];
-  const allowed = new Set(sources.map((source) => source.id));
-
-  if (status === 'verified_context' || status === 'live_research') {
-    if (sources.length === 0) throw new Error('AI returned evidence-backed content without sources.');
-    if (citations.length === 0) throw new Error('AI answer did not include the required source citations.');
-    if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
-      throw new Error('AI answer contained an invalid source citation.');
-    }
-    return;
+  if (!('conversation_id' in result) || (result.conversation_id !== null && typeof result.conversation_id !== 'string')) {
+    throw new Error('AI returned an invalid conversation ID.');
   }
 
-  // Unverified answers are allowed for general/conceptual questions, but
-  // they must never contain citations that the server did not provide.
-  if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
-    throw new Error('AI answer contained an invalid source citation.');
+  if (result.sources !== undefined && !Array.isArray(result.sources)) {
+    throw new Error('AI returned an invalid source collection.');
+  }
+
+  if (
+    (result.citation_status === 'verified_context' || result.citation_status === 'live_research') &&
+    (!Array.isArray(result.sources) || result.sources.length === 0)
+  ) {
+    throw new Error('AI returned evidence-backed content without sources.');
   }
 }
