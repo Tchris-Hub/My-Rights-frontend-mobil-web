@@ -8,6 +8,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
+import { AccountTypeScreen } from '../screens/auth/AccountTypeScreen';
+import { PractitionerOnboardingScreen } from '../screens/auth/PractitionerOnboardingScreen';
 import { AuthStack } from './AuthStack';
 import { ChatScreen } from '../screens/main/ChatScreen';
 import { ToolsNavigator } from './ToolsStack';
@@ -26,7 +28,7 @@ interface RootNavigatorProps {
 }
 
 export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
-    const { isAuthenticated, isLoading, onboardingCompleted, isGuest, consentAccepted } = useAuth();
+    const { isAuthenticated, isLoading, onboardingCompleted, isGuest, consentAccepted, accountType } = useAuth();
     const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false);
     const [isInitialBoot, setIsInitialBoot] = useState(true);
 
@@ -60,7 +62,7 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
             <Stack.Navigator
                 key={routeMode}
                 screenOptions={{ headerShown: false }}
-                initialRouteName={routeMode === 'onboarding' ? 'Onboarding' : routeMode === 'main' ? 'Chat' : 'Auth'}
+                initialRouteName={routeMode === 'onboarding' ? 'Onboarding' : routeMode === 'main' ? 'Chat' : routeMode === 'account-type' ? 'AccountType' : 'Auth'}
             >
                 {!onboardingCompleted ? (
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -68,6 +70,11 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
                     <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (isAuthenticated && !consentAccepted) ? (
                     <Stack.Screen name="Auth" component={AuthStack} />
+                ) : (isAuthenticated && accountType === 'unset') ? (
+                    <>
+                        <Stack.Screen name="AccountType" component={AccountTypeScreen} />
+                        <Stack.Screen name="PractitionerOnboarding" component={PractitionerOnboardingScreen} />
+                    </>
                 ) : (
                     <>
                         <Stack.Screen name="Chat" component={ChatScreen} />
