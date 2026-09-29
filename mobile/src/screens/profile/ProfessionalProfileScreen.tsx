@@ -34,6 +34,20 @@ export const ProfessionalProfileScreen: React.FC = () => {
   const [languages, setLanguages] = useState('');
   const [availability, setAvailability] = useState('');
   const [feeBand, setFeeBand] = useState('');
+  const [publicPhone, setPublicPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [publicEmail, setPublicEmail] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [website, setWebsite] = useState('');
+  const [headline, setHeadline] = useState('');
+  const [yearsExperience, setYearsExperience] = useState('');
+  const [scn, setScn] = useState('');
+  const [barAssociation, setBarAssociation] = useState('Nigerian Bar Association');
+  const [nbaBranch, setNbaBranch] = useState('');
+  const [yearOfCall, setYearOfCall] = useState('');
+  const [jurisdiction, setJurisdiction] = useState('Nigeria');
+  const [organizationName, setOrganizationName] = useState('');
   const [verification, setVerification] = useState('unverified');
 
   useEffect(() => {
@@ -49,6 +63,20 @@ export const ProfessionalProfileScreen: React.FC = () => {
         setLanguages(Array.isArray(profile.languages) ? profile.languages.join(', ') : '');
         setAvailability(profile.availability || '');
         setFeeBand(profile.fee_band || '');
+        setPublicPhone(profile.public_phone || '');
+        setWhatsapp(profile.whatsapp || '');
+        setPublicEmail(profile.public_email || '');
+        setInstagram(profile.instagram || '');
+        setLinkedin(profile.linkedin || '');
+        setWebsite(profile.website || '');
+        setHeadline(profile.headline || '');
+        setYearsExperience(profile.years_experience != null ? String(profile.years_experience) : '');
+        setScn(profile.bar_admission_number || '');
+        setBarAssociation(profile.bar_association || 'Nigerian Bar Association');
+        setNbaBranch(profile.nba_branch || '');
+        setYearOfCall(profile.year_of_call != null ? String(profile.year_of_call) : '');
+        setJurisdiction(profile.jurisdiction || 'Nigeria');
+        setOrganizationName(profile.organization_name || '');
         setVerification(profile.verification_status || 'unverified');
       })
       .catch((error) => Alert.alert('Unable to load profile', error instanceof Error ? error.message : 'Please try again.'))
@@ -72,6 +100,20 @@ export const ProfessionalProfileScreen: React.FC = () => {
         languages: languages.split(',').map((x) => x.trim()).filter(Boolean),
         availability,
         fee_band: feeBand,
+        public_phone: publicPhone,
+        whatsapp,
+        public_email: publicEmail,
+        instagram,
+        linkedin,
+        website,
+        headline,
+        years_experience: Number(yearsExperience) || 0,
+        bar_admission_number: scn,
+        bar_association: barAssociation,
+        nba_branch: nbaBranch,
+        year_of_call: Number(yearOfCall) || undefined,
+        jurisdiction,
+        organization_name: organizationName,
       });
       setVerification(result.verification_status || 'unverified');
       Alert.alert('Profile saved', 'Material profile changes require verification again before the profile is presented as verified.');
@@ -137,6 +179,36 @@ export const ProfessionalProfileScreen: React.FC = () => {
                 style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]}
               />
             </View>
+          ))}
+
+          <Text style={[styles.label, { color: colors.onSurface }]}>Headline</Text>
+          <TextInput value={headline} onChangeText={setHeadline} placeholder="e.g. Family and commercial lawyer" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]} />
+
+          <Text style={[styles.label, { color: colors.onSurface }]}>Years of experience</Text>
+          <TextInput value={yearsExperience} onChangeText={setYearsExperience} keyboardType="number-pad" placeholder="e.g. 8" placeholderTextColor={colors.onSurfaceVariant} style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]} />
+
+          <Text style={[styles.label, { color: colors.onSurface }]}>Nigerian Bar details</Text>
+          {[
+            ['Supreme Court Number', scn, setScn, 'SCN'],
+            ['Year of Call', yearOfCall, setYearOfCall, 'e.g. 2018'],
+            ['NBA Branch', nbaBranch, setNbaBranch, 'e.g. Abuja Branch'],
+            ['Bar Association', barAssociation, setBarAssociation, 'Nigerian Bar Association'],
+            ['Jurisdiction', jurisdiction, setJurisdiction, 'Nigeria'],
+            ['Current firm / organisation', organizationName, setOrganizationName, 'Optional'],
+          ].map(([label, value, setter, placeholder]) => (
+            <View key={label as string}><Text style={[styles.label, { color: colors.onSurface }]}>{label as string}</Text><TextInput value={value as string} onChangeText={setter as any} placeholder={placeholder as string} placeholderTextColor={colors.onSurfaceVariant} style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]} /></View>
+          ))}
+
+          <Text style={[styles.label, { color: colors.onSurface }]}>Client-facing contact</Text>
+          {[
+            ['Public phone', publicPhone, setPublicPhone, '+234...'],
+            ['WhatsApp', whatsapp, setWhatsapp, '+234...'],
+            ['Public email', publicEmail, setPublicEmail, 'professional@example.com'],
+            ['Instagram', instagram, setInstagram, '@handle or URL'],
+            ['LinkedIn', linkedin, setLinkedin, 'Profile URL'],
+            ['Website', website, setWebsite, 'https://...'],
+          ].map(([label, value, setter, placeholder]) => (
+            <View key={label as string}><Text style={[styles.label, { color: colors.onSurface }]}>{label as string}</Text><TextInput value={value as string} onChangeText={setter as any} placeholder={placeholder as string} placeholderTextColor={colors.onSurfaceVariant} style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]} /></View>
           ))}
 
           <Text style={[styles.label, { color: colors.onSurface }]}>Bio</Text>
