@@ -69,12 +69,15 @@ export async function streamApiRequest(
   const response = await expoFetch(`${requireApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'omit',
+    // React Native's native networking layer needs this flag to expose
+    // incremental text chunks through response.body on Android/iOS.
+    reactNative: { textStreaming: true },
     headers: await getHeaders({
       Accept: 'text/event-stream',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers as Record<string, string> | undefined),
     }),
-  });
+  } as RequestInit & { reactNative: { textStreaming: boolean } };
 
   if (response.status === 401) {
     await authClient.getSession();
