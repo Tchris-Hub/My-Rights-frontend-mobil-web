@@ -193,7 +193,10 @@ export const DocumentReviewScreen: React.FC = () => {
         setSourceMenuVisible(false);
         try {
             const { scannedImages } = await DocumentScanner.scanDocument({ maxNumDocuments: 20 });
-            if (scannedImages?.length) await analyzeImageAsset(scannedImages[0], 'image/jpeg');
+            if (scannedImages?.length) {
+                setDocumentCount(1);
+                await analyzeImageAsset(scannedImages[0], 'image/jpeg');
+            }
         } catch (error: any) {
             logger.error('Document scan failed:', error);
             Alert.alert('Scan Failed', error?.message || 'Could not scan the document.');
@@ -217,6 +220,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
+                setDocumentCount(1);
                 await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize);
             }
         } catch (error: any) {
@@ -235,6 +239,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
+                setDocumentCount(1);
                 if ((asset.mimeType || '').startsWith('image/')) {
                     await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
                 } else {
