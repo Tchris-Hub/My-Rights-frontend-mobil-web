@@ -85,6 +85,53 @@ export const documentService = {
         return safePayload as DocumentAnalysisResponse;
     },
 
+    async consultDocument(
+        docType: string,
+        intakeDetails: string,
+        conversation: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+    ): Promise<string> {
+        const safeType = docType.trim().slice(0, 200);
+        const safeDetails = intakeDetails.trim().slice(0, MAX_GENERATION_INPUT_CHARS);
+        if (!safeType || !safeDetails) throw new Error('Document type and details are required.');
+
+        const transcript = conversation
+            .slice(-8)
+            .map((message) => `${message.role.toUpperCase()}: ${message.content.trim()}`)
+            .filter((line) => line.endsWith(':') === false)
+            .join('\\n');
+
+        const prompt = [
+            'You are the document-consultation assistant inside My Rights.',
+            `The user is preparing a Nigerian legal-information draft of type: ${safeType}.`,
+            'Review the supplied intake details and the conversation.',
+            'Ask ONE useful follow-up question at a time that will materially improve the eventual draft.',
+            'If the user has already supplied enough information for a particular point, do not ask for it again.',
+            'Do not produce a generic scripted acknowledgement.',
+            'Do not claim that a document has been created yet.',
+            'Keep the question concise and easy to answer on a phone.',
+            'Return only the next natural assistant response; do not use JSON, labels, or markdown headings.',
+            '',
+            'INTAKE DETAILS:',
+            safeDetails,
+            '',
+            'CONSULTATION:',
+            transcript || '(No previous consultation.)',
+        ].join('\\n');
+
+        const response = await apiRequest<{ content?: string }>('/api/ai/chat', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': createIdempotencyKey() },
+            body: JSON.stringify({
+                message: prompt,
+                persist: false,
+            }),
+        });
+
+        const content = response?.content?.trim();
+        if (!content) throw new Error('The AI consultation returned no response.');
+        return content;
+    },
+
     async generateDocument(docType: string, userDetails: string): Promise<DocumentGenerationResponse> {
         const safeType = docType.trim().slice(0, 200);
         const safeDetails = userDetails.trim();
