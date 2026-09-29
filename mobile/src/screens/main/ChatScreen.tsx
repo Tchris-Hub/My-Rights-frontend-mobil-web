@@ -25,6 +25,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import DocumentScanner from 'react-native-document-scanner-plugin';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
@@ -270,17 +271,84 @@ export const ChatScreen: React.FC = () => {
     const pickDocument = async () => {
         try {
             Alert.alert(
-                "Add Attachment",
-                "Choose attachment type",
+                "Add to chat",
+                "Choose what you want to attach",
                 [
-                    { text: "Cancel", style: "cancel" },
+                    { text: "Scan document", onPress: scanAttachment },
+                    { text: "Take a photo", onPress: takePhoto },
                     { text: "Photo Library", onPress: pickImage },
-                    { text: "Document", onPress: pickFile },
+                    { text: "Choose file", onPress: pickFile },
+                    { text: "Cancel", style: "cancel" },
                 ]
             );
         } catch (error) {
             logger.error('Error picking document:', error);
-            Alert.alert('Error', 'Failed to pick document');
+            Alert.alert('Error', 'Failed to open attachment options');
+        }
+    };
+
+    const scanAttachment = async () => {
+        try {
+            const { scannedImages } = await DocumentScanner.scanDocument({ maxNumDocuments: 1 });
+            if (scannedImages?.[0]) {
+                await extractImageAttachment(scannedImages[0], 'scanned-document.jpg', 'image/jpeg');
+            }
+        } catch (error) {
+            logger.error('Error scanning attachment:', error);
+            Alert.alert('Scan failed', error instanceof Error ? error.message : 'Could not scan the document.');
+        }
+    };
+
+    const takePhoto = async () => {
+        try {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permission.granted) {
+                Alert.alert('Permission needed', 'Camera access is required to take a document photo.');
+                return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.8,
+            });
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                await extractImageAttachment(
+                    asset.uri,
+                    asset.fileName || 'document-photo',
+                    asset.mimeType || 'image/jpeg',
+                    asset.fileSize,
+                );
+            }
+        } catch (error) {
+            logger.error('Error taking attachment photo:', error);
+            Alert.alert('Camera error', 'Failed to capture the document photo.');
+        }
+    };
+
+    const extractImageAttachment = async (uri: string, name: string, mimeType: string, size?: number) => {
+        if (typeof size === 'number' && size > 4 * 1024 * 1024) {
+            Alert.alert('File too large', 'Please capture or choose an image smaller than 4 MB.');
+            return;
+        }
+        setIsExtractingAttachment(true);
+        try {
+            const extracted = await documentService.extractImageText(uri, name, mimeType, size);
+            setAttachment({
+                name: sanitizeDocumentName(name),
+                mimeType,
+                text: extracted.text,
+                characterCount: extracted.character_count,
+                truncated: extracted.truncated,
+            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (extractionError) {
+            Alert.alert(
+                'Could not read image',
+                extractionError instanceof Error ? extractionError.message : 'The image could not be read.',
+            );
+        } finally {
+            setIsExtractingAttachment(false);
         }
     };
 
