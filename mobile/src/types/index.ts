@@ -12,6 +12,7 @@ export interface User {
     is_active: boolean;
     emailVerified: boolean;
     is_superuser: boolean;
+    account_type?: 'unset' | 'client' | 'legal_professional';
     createdAt: string;
 }
 
@@ -210,6 +211,24 @@ export interface ProfessionalMatch extends MarketplaceMatchReason {
     languages: string[];
     availability?: string | null;
     fee_band?: string | null;
+    public_phone?: string | null;
+    whatsapp?: string | null;
+    public_email?: string | null;
+    instagram?: string | null;
+    linkedin?: string | null;
+    website?: string | null;
+    bar_admission_number?: string | null;
+    bar_association?: string | null;
+    jurisdiction?: string | null;
+    years_experience?: number;
+    headline?: string | null;
+    education?: string[];
+    experience?: string[];
+    certifications?: string[];
+    skills?: string[];
+    organization_name?: string | null;
+    nba_branch?: string | null;
+    year_of_call?: number | null;
     verification_status: 'verified';
     verified_at?: string | null;
     firms: Array<{ id: string; name: string; location?: string | null; member_role?: string | null }>;
