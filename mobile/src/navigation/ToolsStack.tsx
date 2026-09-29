@@ -12,6 +12,7 @@ import { LegalAidMapScreen } from '../screens/main/LegalAidMapScreen';
 import { ToolsHomeScreen } from '../screens/main/ToolsHomeScreen';
 import { ProfessionalEnquiryScreen } from '../screens/main/ProfessionalEnquiryScreen';
 import { FirmDetailsScreen } from '../screens/main/FirmDetailsScreen';
+import { ProfessionalDetailsScreen } from '../screens/main/ProfessionalDetailsScreen';
 import type { ToolsStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ToolsStackParamList>();
@@ -43,6 +44,11 @@ export const ToolsNavigator: React.FC = () => {
                 name="LegalAidMap"
                 component={LegalAidMapScreen}
                 options={{ title: 'Legal Aid Near Me' }}
+            />
+            <Stack.Screen
+                name="ProfessionalDetails"
+                component={ProfessionalDetailsScreen}
+                options={{ title: 'Professional profile' }}
             />
             <Stack.Screen
                 name="ProfessionalEnquiry"
