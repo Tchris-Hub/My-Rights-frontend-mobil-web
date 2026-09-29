@@ -40,6 +40,16 @@ requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-google"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-guest"');
 requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-input"');
 requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-send"');
+requireText('src/services/chat.service.ts', "apiRequest<AiChatResponse>('/api/ai/chat'");
+requireText('src/services/chat.service.ts', "'Idempotency-Key': createIdempotencyKey()");
+requireText('src/services/chat.service.ts', 'validateChatResponse(response)');
+
+if (read('src/services/chat.service.ts').includes('streamMessage') || read('src/services/chat.service.ts').includes('processEvent')) {
+  failures.push('src/services/chat.service.ts still contains legacy provider-stream parsing.');
+}
+if (read('src/services/ragPolicy.ts').includes('citation.slice(1, -1)') || read('src/services/ragPolicy.ts').includes('match(/\\[S\\d+\\]/g)')) {
+  failures.push('src/services/ragPolicy.ts still owns citation namespace validation.');
+}
 requireText('src/screens/main/ConstitutionExplorerScreen.tsx', 'testID="constitution-search"');
 requireText('src/screens/main/ConstitutionExplorerScreen.tsx', 'testID="constitution-save-citation"');
 requireText('src/screens/main/ProfessionalEnquiryScreen.tsx', 'testID="enquiry-message"');
