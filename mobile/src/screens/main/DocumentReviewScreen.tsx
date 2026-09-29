@@ -4,14 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../../utils/logger';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
-    TextInput,
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
@@ -29,7 +27,6 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import DocumentScanner from 'react-native-document-scanner-plugin';
 
 import { Button } from '../../components/ui/Button';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
@@ -45,9 +42,6 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
-const REVIEW_HISTORY_KEY = '@myrights/document-review-history';
-
-type ReviewHistoryItem = { id: string; documentText: string; result: DocumentAnalysisResponse; createdAt: string; };
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -55,33 +49,19 @@ export const DocumentReviewScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
     const [documentText, setDocumentText] = useState('');
+    const [pendingDocument, setPendingDocument] = useState<{
+        kind: 'text' | 'image';
+        name: string;
+        uri?: string;
+        mimeType?: string;
+        size?: number;
+    } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<DocumentAnalysisResponse | null>(null);
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
     const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
-    const [sourceMenuVisible, setSourceMenuVisible] = useState(false);
-    const [historyVisible, setHistoryVisible] = useState(false);
-    const [reviewHistory, setReviewHistory] = useState<ReviewHistoryItem[]>([]);
-
-    useEffect(() => {
-        AsyncStorage.getItem(REVIEW_HISTORY_KEY)
-            .then((raw) => {
-                if (!raw) return;
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) setReviewHistory(parsed.slice(0, 10));
-            })
-            .catch((error) => logger.error('Failed to load document review history:', error));
-    }, []);
-
-    const saveReviewHistory = async (analysis: DocumentAnalysisResponse, text: string) => {
-        const item: ReviewHistoryItem = { id: `${Date.now()}`, documentText: text, result: analysis, createdAt: new Date().toISOString() };
-        const next = [item, ...reviewHistory].slice(0, 10);
-        setReviewHistory(next);
-        try { await AsyncStorage.setItem(REVIEW_HISTORY_KEY, JSON.stringify(next)); }
-        catch (error) { logger.error('Failed to save document review history:', error); }
-    };
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -100,7 +80,6 @@ export const DocumentReviewScreen: React.FC = () => {
     useEffect(() => {
         if (activeJob && activeJob.type === 'analysis' && activeJob.status === 'completed' && activeJob.result) {
             setResult(activeJob.result);
-            setDocumentText(activeJob.params?.text || '');
             clearJob();
         }
     }, [activeJob?.status]);
@@ -140,7 +119,6 @@ export const DocumentReviewScreen: React.FC = () => {
 
             finishJob(jobId, analysis);
             setResult(analysis);
-            await saveReviewHistory(analysis, targetText);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
@@ -152,56 +130,65 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
-    const analyzeImageAsset = async (uri: string, mimeType: string, size?: number) => {
-        if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in before reviewing a document.');
+    const queueImageForReview = (uri: string, mimeType: string, size?: number, name = 'Image document') => {
+        setPendingDocument({ kind: 'image', name, uri, mimeType, size });
+        setDocumentText('');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    };
+
+    const reviewSelectedDocument = async () => {
+        if (!pendingDocument || isLoading) return;
+
+        if (pendingDocument.kind === 'text') {
+            await handleAnalyze(documentText);
             return;
         }
 
+        if (!pendingDocument.uri || !pendingDocument.mimeType) return;
+
         setIsLoading(true);
-        setLoadingPhase('Uploading Document...');
+        setLoadingPhase('Reviewing document...');
         const jobId = startJob({
             type: 'analysis',
             title: 'Analyzing Document',
-            progress: 'Uploading Document...',
-            params: { uri },
+            progress: 'Reviewing document...',
+            params: { uri: pendingDocument.uri, name: pendingDocument.name },
         });
 
         try {
-            setLoadingPhase('Analyzing document image...');
-            updateJob(jobId, { progress: 'Analyzing document image...' });
-
-            const analysis = await documentService.analyzeImage(uri, mimeType, size);
+            const analysis = await documentService.analyzeImage(
+                pendingDocument.uri,
+                pendingDocument.mimeType,
+                pendingDocument.size,
+            );
             finishJob(jobId, analysis);
-            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
-            await saveReviewHistory(analysis, `[Image review: ${new Date().toISOString()}]`);
+            if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
             logger.error('Image analysis failed:', error);
             failJob(jobId, error?.message || 'Image analysis failed');
-            Alert.alert('Analysis Failed', error?.message || 'Could not analyze the selected image.');
+            Alert.alert('Document Review Failed', error?.message || 'Could not analyze the selected document.');
         } finally {
             setIsLoading(false);
             setLoadingPhase('');
         }
     };
 
-    const handleScan = () => setSourceMenuVisible(true);
 
-    const scanDocument = async () => {
-        setSourceMenuVisible(false);
-        try {
-            const { scannedImages } = await DocumentScanner.scanDocument({ maxNumDocuments: 20 });
-            if (scannedImages?.length) await analyzeImageAsset(scannedImages[0], 'image/jpeg');
-        } catch (error: any) {
-            logger.error('Document scan failed:', error);
-            Alert.alert('Scan Failed', error?.message || 'Could not scan the document.');
-        }
+    const handleScan = () => {
+        Alert.alert(
+            'Capture Document',
+            'Choose capture method:',
+            [
+                { text: 'Use Camera', onPress: startScan },
+                { text: 'Choose Image', onPress: pickDocument },
+                { text: 'Cancel', style: 'cancel' },
+            ]
+        );
     };
 
     const startScan = async () => {
-        setSourceMenuVisible(false);
         try {
             const permission = await ImagePicker.requestCameraPermissionsAsync();
             if (!permission.granted) {
@@ -217,7 +204,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
-                await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize);
+                queueImageForReview(asset.uri, asset.mimeType || 'image/jpeg', asset.fileSize, 'Captured document');
             }
         } catch (error: any) {
             logger.error('Camera capture failed:', error);
@@ -226,44 +213,57 @@ export const DocumentReviewScreen: React.FC = () => {
     };
 
     const pickDocument = async () => {
-        setSourceMenuVisible(false);
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/rtf', 'text/rtf', 'text/plain', 'image/*'],
+                type: [
+                    'application/pdf',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/rtf',
+                    'text/rtf',
+                    'text/plain',
+                    'image/*',
+                ],
                 copyToCacheDirectory: true,
             });
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
+
                 if ((asset.mimeType || '').startsWith('image/')) {
-                    await analyzeImageAsset(asset.uri, asset.mimeType || 'image/jpeg', asset.size);
-                } else {
-                    setIsLoading(true);
-                    setLoadingPhase('Extracting document text...');
-                    const jobId = startJob({ type: 'analysis', title: 'Analyzing Document', progress: 'Extracting document text...', params: { uri: asset.uri } });
-                    try {
-                        const extracted = await documentService.extractText(asset.uri, asset.name, asset.mimeType || 'application/octet-stream', asset.size);
-                        setDocumentText(extracted.text);
-                        setLoadingPhase('Analyzing extracted text...');
-                        updateJob(jobId, { progress: 'Analyzing extracted text...' });
-                        const analysis = await documentService.analyzeDocument(extracted.text);
-                        finishJob(jobId, analysis);
-                        setResult(analysis);
-                        await saveReviewHistory(analysis, extracted.text);
-                        if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    } catch (error: any) {
-                        failJob(jobId, error?.message || 'Document extraction failed');
-                        Alert.alert('Document Review Failed', error?.message || 'Could not read this document.');
-                    } finally {
-                        setIsLoading(false);
-                        setLoadingPhase('');
-                    }
+                    queueImageForReview(
+                        asset.uri,
+                        asset.mimeType || 'image/jpeg',
+                        asset.size,
+                        asset.name || 'Image document',
+                    );
+                    return;
+                }
+
+                setIsLoading(true);
+                setLoadingPhase('Reading document...');
+                try {
+                    const extracted = await documentService.extractText(
+                        asset.uri,
+                        asset.name,
+                        asset.mimeType || 'application/octet-stream',
+                        asset.size,
+                    );
+                    setDocumentText(extracted.text);
+                    setPendingDocument({
+                        kind: 'text',
+                        name: asset.name || 'Document',
+                    });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } catch (error: any) {
+                    Alert.alert('Document Upload Failed', error?.message || 'Could not read the selected document.');
+                } finally {
+                    setIsLoading(false);
+                    setLoadingPhase('');
                 }
             }
         } catch (error: any) {
-            logger.error('Image selection failed:', error);
-            Alert.alert('Selection Failed', 'Could not read the selected image.');
+            logger.error('Document selection failed:', error);
+            Alert.alert('Selection Failed', 'Could not select the document.');
         }
     };
 
@@ -292,45 +292,41 @@ export const DocumentReviewScreen: React.FC = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
-                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Choose how to add a document" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
-                                <Ionicons name="add-circle-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add a Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>Scan • Take a photo • Choose a file</Text>
+                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
+                                <Ionicons name="scan-outline" size={32} color={colors.primary} />
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity testID="document-review-history" accessibilityRole="button" style={[styles.historyButton, { backgroundColor: colors.surfaceContainerLow }]} onPress={() => setHistoryVisible(true)}>
-                                <Ionicons name="time-outline" size={20} color={colors.primary} />
-                                <View style={styles.historyButtonText}>
-                                    <Text style={[styles.historyTitle, { color: colors.onSurface }]}>Review History</Text>
-                                    <Text style={[styles.historySubtitle, { color: colors.onSurfaceVariant }]}>
-                                        {`${reviewHistory.length} saved review${reviewHistory.length === 1 ? '' : 's'}`}
-                                    </Text>
+                            {pendingDocument ? (
+                                <View style={[styles.documentAttached, { backgroundColor: colors.surfaceContainerLow }]}>
+                                    <View style={[styles.documentCheck, { backgroundColor: colors.primary + '14' }]}>
+                                        <Ionicons name="checkmark" size={22} color={colors.primary} />
+                                    </View>
+                                    <View style={styles.documentAttachedInfo}>
+                                        <Text style={[styles.documentAttachedTitle, { color: colors.onSurface }]}>Document added</Text>
+                                        <Text style={[styles.documentAttachedName, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+                                            {pendingDocument.name}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setPendingDocument(null);
+                                            setDocumentText('');
+                                        }}
+                                        accessibilityLabel="Remove attached document"
+                                    >
+                                        <Ionicons name="close-circle-outline" size={24} color={colors.onSurfaceVariant} />
+                                    </TouchableOpacity>
                                 </View>
-                                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
-                            </TouchableOpacity>
-
-                            <View style={styles.editorialInput}>
-                                <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE TEXT BELOW</Text>
-                                <TextInput
-                                    testID="document-review-text"
-                                    accessibilityLabel="Document text"
-                                    style={[styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
-                                    placeholder="Paste document text for general information and review..."
-                                    placeholderTextColor={colors.onSurfaceVariant + '80'}
-                                    value={documentText}
-                                    onChangeText={setDocumentText}
-                                    multiline
-                                />
-                            </View>
+                            ) : null}
 
                             <Button
-                                testID="document-review-submit"
                                 title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
-                                onPress={() => handleAnalyze()}
+                                onPress={reviewSelectedDocument}
                                 loading={isLoading}
-                                disabled={!documentText.trim() || isLoading || analyzeQuotaRemaining === 0}
+                                disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
-                                // No border on button per guideline
                             />
                             {isAuthenticated && analyzeQuotaRemaining !== null && (
                                 <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
@@ -383,58 +379,6 @@ export const DocumentReviewScreen: React.FC = () => {
                 </ScrollView>
             </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
-
-            <Modal animationType="slide" transparent visible={sourceMenuVisible} onRequestClose={() => setSourceMenuVisible(false)}>
-                <TouchableWithoutFeedback onPress={() => setSourceMenuVisible(false)}>
-                    <View style={styles.sheetOverlay}>
-                        <TouchableWithoutFeedback>
-                            <View style={[styles.sourceSheet, { backgroundColor: colors.surface }]}>
-                                <Text style={[styles.sheetTitle, { color: colors.onSurface }]}>Add a document</Text>
-                                <Text style={[styles.sheetSubtitle, { color: colors.onSurfaceVariant }]}>Choose how you want to provide it.</Text>
-                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={scanDocument}>
-                                    <Ionicons name="scan-outline" size={24} color={colors.primary} />
-                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Scan document</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>Detect and capture document pages</Text></View>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={startScan}>
-                                    <Ionicons name="camera-outline" size={24} color={colors.primary} />
-                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Take a photo</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>Capture a document image</Text></View>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={pickDocument}>
-                                    <Ionicons name="folder-open-outline" size={24} color={colors.primary} />
-                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Choose a file</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text></View>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.sheetCancel} onPress={() => setSourceMenuVisible(false)}><Text style={[styles.sheetCancelText, { color: colors.primary }]}>Cancel</Text></TouchableOpacity>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
-
-            <Modal animationType="slide" transparent visible={historyVisible} onRequestClose={() => setHistoryVisible(false)}>
-                <View style={styles.sheetOverlay}>
-                    <View style={[styles.historySheet, { backgroundColor: colors.surface }]}>
-                        <View style={styles.sheetHeader}>
-                            <View><Text style={[styles.sheetTitle, { color: colors.onSurface }]}>Review History</Text><Text style={[styles.sheetSubtitle, { color: colors.onSurfaceVariant }]}>Your recent document reviews</Text></View>
-                            <TouchableOpacity onPress={() => setHistoryVisible(false)}><Ionicons name="close" size={24} color={colors.onSurface} /></TouchableOpacity>
-                        </View>
-                        <ScrollView contentContainerStyle={styles.historyList}>
-                            {reviewHistory.length === 0 ? (
-                                <View style={styles.historyEmpty}><Ionicons name="document-text-outline" size={42} color={colors.onSurfaceVariant} /><Text style={[styles.historyEmptyTitle, { color: colors.onSurface }]}>No reviews yet</Text><Text style={[styles.historyEmptyText, { color: colors.onSurfaceVariant }]}>Reviews you complete will appear here.</Text></View>
-                            ) : reviewHistory.map((item) => (
-                                <TouchableOpacity key={item.id} style={[styles.historyItem, { backgroundColor: colors.surfaceContainerLow }]} onPress={() => { setResult(item.result); setDocumentText(item.documentText); setHistoryVisible(false); }}>
-                                    <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-                                    <View style={styles.historyItemInfo}>
-                                        <Text style={[styles.historyItemTitle, { color: colors.onSurface }]} numberOfLines={1}>{item.result.document_type}</Text>
-                                        <Text style={[styles.historyItemMeta, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{item.result.overall_verdict}</Text>
-                                        <Text style={[styles.historyItemDate, { color: colors.onSurfaceVariant }]}>{new Date(item.createdAt).toLocaleString()}</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
 
             {/* Analysis Detail Modal */}
             <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -561,6 +505,35 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
         paddingBottom: 120,
     },
+    documentAttached: {
+        minHeight: 72,
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 16,
+        marginBottom: 12,
+    },
+    documentCheck: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    documentAttachedInfo: {
+        flex: 1,
+    },
+    documentAttachedTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    documentAttachedName: {
+        fontSize: 12,
+        marginTop: 3,
+    },
     inputSection: {
         gap: 32,
     },
@@ -579,32 +552,6 @@ const styles = StyleSheet.create({
         ...theme.typography.labelSm,
         opacity: 0.6,
     },
-    historyButton: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 20, gap: 12 },
-    historyButtonText: { flex: 1 },
-    historyTitle: { ...theme.typography.titleMd, fontWeight: '800' },
-    historySubtitle: { ...theme.typography.caption, marginTop: 3 },
-    sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-    sourceSheet: { padding: 24, paddingBottom: 34, borderTopLeftRadius: 28, borderTopRightRadius: 28, gap: 12 },
-    historySheet: { height: '82%', padding: 24, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
-    sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-    sheetTitle: { ...theme.typography.titleLg, fontWeight: '900' },
-    sheetSubtitle: { ...theme.typography.bodyMd, marginTop: 4, opacity: 0.75 },
-    sourceOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, gap: 14 },
-    sourceOptionText: { flex: 1 },
-    sourceOptionTitle: { ...theme.typography.titleMd, fontWeight: '800' },
-    sourceOptionSub: { ...theme.typography.caption, marginTop: 3 },
-    sheetCancel: { alignItems: 'center', paddingVertical: 12 },
-    sheetCancelText: { ...theme.typography.titleMd, fontWeight: '800' },
-    historyList: { gap: 12, paddingBottom: 20 },
-    historyEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 },
-    historyEmptyTitle: { ...theme.typography.titleMd, fontWeight: '800' },
-    historyEmptyText: { ...theme.typography.bodyMd, textAlign: 'center' },
-    historyItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, gap: 12 },
-    historyItemInfo: { flex: 1 },
-    historyItemTitle: { ...theme.typography.titleMd, fontWeight: '800' },
-    historyItemMeta: { ...theme.typography.caption, marginTop: 3 },
-    historyItemDate: { ...theme.typography.caption, marginTop: 2, opacity: 0.7 },
-
     editorialInput: {
         gap: 12,
     },
