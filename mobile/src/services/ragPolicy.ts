@@ -13,25 +13,49 @@ export type GroundingSource = {
     retrieval_score?: number;
 };
 
-export function assertGroundedChat(
-    content: string,
-    sources: GroundingSource[] | undefined,
-    citationStatus: string | undefined,
-): GroundingSource[] {
-    const answer = content.trim();
-    if (citationStatus !== 'verified_context' || !sources?.length) {
-        throw new Error('This answer could not be verified against the available legal sources.');
+export type ChatEvidenceStatus = 'verified_context' | 'live_research' | 'unverified';
+
+export type ChatResponseContract = {
+    content: string;
+    conversation_id: string | null;
+    citation_status: ChatEvidenceStatus;
+    sources?: GroundingSource[];
+};
+
+/**
+ * The backend is authoritative for legal evidence and citation validity.
+ * Mobile validates only the canonical transport shape before rendering.
+ */
+export function validateChatResponse(result: ChatResponseContract): void {
+    if (!result || typeof result !== 'object') {
+        throw new Error('AI returned an invalid response.');
     }
 
-    const citations = answer.match(/\[S\d+\]/g) ?? [];
-    if (citations.length === 0) {
-        throw new Error('This answer did not include the required source citations.');
+    if (typeof result.content !== 'string' || !result.content.trim()) {
+        throw new Error('AI returned no usable response.');
     }
 
-    const allowed = new Set(sources.map((source) => source.id));
-    if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
-        throw new Error('This answer contained an invalid source citation.');
+    if (
+        result.citation_status !== 'verified_context' &&
+        result.citation_status !== 'live_research' &&
+        result.citation_status !== 'unverified'
+    ) {
+        throw new Error('AI returned an invalid evidence status.');
     }
 
-    return sources;
+    if (!('conversation_id' in result) ||
+        (result.conversation_id !== null && typeof result.conversation_id !== 'string')) {
+        throw new Error('AI returned an invalid conversation ID.');
+    }
+
+    if (result.sources !== undefined && !Array.isArray(result.sources)) {
+        throw new Error('AI returned an invalid source collection.');
+    }
+
+    if (
+        (result.citation_status === 'verified_context' || result.citation_status === 'live_research') &&
+        (!Array.isArray(result.sources) || result.sources.length === 0)
+    ) {
+        throw new Error('AI returned evidence-backed content without sources.');
+    }
 }
