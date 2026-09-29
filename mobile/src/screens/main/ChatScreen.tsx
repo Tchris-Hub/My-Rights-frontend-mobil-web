@@ -148,6 +148,17 @@ export const ChatScreen: React.FC = () => {
 
 
     const isSubmitting = useRef(false);
+
+    const refreshChatQuota = async () => {
+        try {
+            const quotas = await usageService.getAiQuota();
+            const quota = quotas.find((item) => item.feature === 'chat');
+            setChatQuotaRemaining(quota?.remaining ?? null);
+        } catch (error) {
+            logger.error('Failed to refresh AI quota:', error);
+        }
+    };
+
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim() || (attachment ? 'Please review the attached document.' : '');
         if (!messageText || isLoading || isSubmitting.current) return;
@@ -158,7 +169,6 @@ export const ChatScreen: React.FC = () => {
         }
 
         isSubmitting.current = true;
-
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
         const userMessage: ChatMessage = {
@@ -181,55 +191,37 @@ export const ChatScreen: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Authenticated streaming is the only legal-query path. Incognito is
-            // explicitly ephemeral: it suppresses database persistence.
-            if (isAuthenticated) {
-                let firstChunk = true;
-                const persistedConversationId = await chatService.streamMessage(messageText, {
-                    conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
-                    persist: !isIncognito,
-                    attachmentText: attachment?.text,
-                    onChunk: (chunk) => {
-                        setMessages((prev) =>
-                            prev.map((msg) => {
-                                if (msg.id !== loadingMessage.id) return msg;
-                                return {
-                                    ...msg,
-                                    content: firstChunk ? chunk : msg.content + chunk,
-                                    isLoading: false,
-                                };
-                            })
-                        );
-                        if (firstChunk) {
-                            firstChunk = false;
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }
-                    },
-                    onComplete: (meta) => {
-                        usageService.getAiQuota()
-                            .then((quotas) => {
-                                const quota = quotas.find((item) => item.feature === 'chat');
-                                setChatQuotaRemaining(quota?.remaining ?? null);
-                            })
-                            .catch((error) => logger.error('Failed to refresh AI quota:', error));
-                        setMessages((prev) =>
-                            prev.map((msg) =>
-                                msg.id === loadingMessage.id
-                                    ? {
-                                        ...msg,
-                                        sources: meta.sources?.map((source) => ({ ...source, excerpt: source.excerpt ?? '' })),
-                                        isVerified: meta.citation_status === 'verified_context',
-                                    }
-                                    : msg
-                            )
-                        );
-                    },
-                });
+            const result = await chatService.sendMessage(messageText, {
+                conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
+                persist: !isIncognito,
+                attachmentText: attachment?.text,
+            });
 
-                if (persistedConversationId && persistedConversationId !== conversationId) {
-                    setConversationId(persistedConversationId);
-                }
+            const sources = result.sources?.map((source) => ({
+                ...source,
+                excerpt: source.excerpt ?? '',
+            }));
+
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                        ? {
+                            ...msg,
+                            content: result.content,
+                            isLoading: false,
+                            sources,
+                            isVerified: result.citation_status === 'verified_context',
+                        }
+                        : msg
+                )
+            );
+
+            if (result.conversation_id && result.conversation_id !== conversationId) {
+                setConversationId(result.conversation_id);
             }
+
+            await refreshChatQuota();
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } catch (error) {
             logger.error('Chat error:', error);
             setMessages((prev) =>

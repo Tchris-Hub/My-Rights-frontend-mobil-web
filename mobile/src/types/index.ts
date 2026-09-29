@@ -32,6 +32,24 @@ export interface SourceCitation {
     retrieval_score?: number;
 }
 
+export type ChatCitationStatus = 'verified_context' | 'live_research' | 'unverified';
+
+export interface AiChatQuota {
+    feature: 'chat';
+    used: number;
+    limit: number;
+    remaining: number;
+}
+
+export interface AiChatResponse {
+    content: string;
+    conversation_id: string | null;
+    jurisdiction: 'Nigeria';
+    citation_status: ChatCitationStatus;
+    sources?: SourceCitation[];
+    quota: AiChatQuota;
+}
+
 export interface MessageResponse {
     id: string;
     conversation_id: string;

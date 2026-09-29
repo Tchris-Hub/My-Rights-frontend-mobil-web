@@ -28,6 +28,14 @@ const SENSITIVE_KEYS = [
  * Redact sensitive information from objects or strings
  */
 const redact = (data: any): any => {
+    if (data instanceof Error) {
+        return {
+            name: data.name,
+            message: data.message,
+            stack: __DEV__ ? data.stack : undefined,
+        };
+    }
+
     if (typeof data === 'string') {
         // Redact JWT-like strings (very basic heuristic)
         if (data.length > 100 && (data.includes('eyJ') || data.includes('.'))) {
