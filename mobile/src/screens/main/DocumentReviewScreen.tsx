@@ -11,16 +11,12 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TextInput,
     TouchableOpacity,
     Dimensions,
     ActivityIndicator,
     Image,
     Alert,
     Modal,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
     TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,6 +51,7 @@ export const DocumentReviewScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
     const [documentText, setDocumentText] = useState('');
+    const [documentCount, setDocumentCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<DocumentAnalysisResponse | null>(null);
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
@@ -101,6 +98,7 @@ export const DocumentReviewScreen: React.FC = () => {
         if (activeJob && activeJob.type === 'analysis' && activeJob.status === 'completed' && activeJob.result) {
             setResult(activeJob.result);
             setDocumentText(activeJob.params?.text || '');
+            setDocumentCount(activeJob.params?.text ? 1 : 0);
             clearJob();
         }
     }, [activeJob?.status]);
@@ -140,6 +138,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             finishJob(jobId, analysis);
             setResult(analysis);
+            setDocumentCount(1);
             await saveReviewHistory(analysis, targetText);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -175,6 +174,7 @@ export const DocumentReviewScreen: React.FC = () => {
             finishJob(jobId, analysis);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
+            setDocumentCount(1);
             await saveReviewHistory(analysis, `[Image review: ${new Date().toISOString()}]`);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
@@ -287,14 +287,13 @@ export const DocumentReviewScreen: React.FC = () => {
                 </View>
             </SafeAreaView>
 
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     {!result ? (
                         <View style={styles.inputSection}>
-                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Choose how to add a document" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
+                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Add documents" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
                                 <Ionicons name="add-circle-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add a Document</Text>
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add Documents</Text>
+                                <Text style={[styles.documentCount, { color: colors.primary }]}>{documentCount} document{documentCount === 1 ? '' : 's'} added</Text>
                                 <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>Scan • Take a photo • Choose a file</Text>
                             </TouchableOpacity>
 
@@ -308,27 +307,12 @@ export const DocumentReviewScreen: React.FC = () => {
                                 </View>
                                 <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
                             </TouchableOpacity>
-
-                            <View style={styles.editorialInput}>
-                                <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE TEXT BELOW</Text>
-                                <TextInput
-                                    testID="document-review-text"
-                                    accessibilityLabel="Document text"
-                                    style={[styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
-                                    placeholder="Paste document text for general information and review..."
-                                    placeholderTextColor={colors.onSurfaceVariant + '80'}
-                                    value={documentText}
-                                    onChangeText={setDocumentText}
-                                    multiline
-                                />
-                            </View>
-
                             <Button
                                 testID="document-review-submit"
                                 title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
                                 onPress={() => handleAnalyze()}
                                 loading={isLoading}
-                                disabled={!documentText.trim() || isLoading || analyzeQuotaRemaining === 0}
+                                disabled={documentCount === 0 || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
                                 // No border on button per guideline
                             />
@@ -381,8 +365,6 @@ export const DocumentReviewScreen: React.FC = () => {
                         </View>
                     )}
                 </ScrollView>
-            </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
 
             <Modal animationType="slide" transparent visible={sourceMenuVisible} onRequestClose={() => setSourceMenuVisible(false)}>
                 <TouchableWithoutFeedback onPress={() => setSourceMenuVisible(false)}>
@@ -579,6 +561,7 @@ const styles = StyleSheet.create({
         ...theme.typography.labelSm,
         opacity: 0.6,
     },
+    documentCount: { ...theme.typography.titleMd, fontWeight: '900', marginTop: 4 },
     historyButton: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 20, gap: 12 },
     historyButtonText: { flex: 1 },
     historyTitle: { ...theme.typography.titleMd, fontWeight: '800' },
