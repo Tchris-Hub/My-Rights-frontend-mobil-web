@@ -14,6 +14,12 @@ type Firm = {
   service_areas?: string[];
   languages?: string[];
   fee_band?: string | null;
+  public_phone?: string | null;
+  whatsapp?: string | null;
+  public_email?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
   verification_status?: string;
   professionals?: Array<{ id: string; display_name: string; role: string; practice_areas: string[] }>;
 };
@@ -51,6 +57,16 @@ export const FirmDetailsScreen: React.FC = () => {
           {firm.languages?.length ? <Info icon="language-outline" label="Languages" value={firm.languages.join(' • ')} colors={colors} /> : null}
           {firm.fee_band ? <Info icon="cash-outline" label="Fee band" value={firm.fee_band} colors={colors} /> : null}
         </View>
+        {(firm.public_phone || firm.whatsapp || firm.public_email || firm.instagram || firm.linkedin || firm.website) ? (
+          <View style={[styles.infoCard, { backgroundColor: colors.surfaceContainer }]}>
+            {firm.public_phone ? <Info icon="call-outline" label="Phone" value={firm.public_phone} colors={colors} /> : null}
+            {firm.whatsapp ? <Info icon="logo-whatsapp" label="WhatsApp" value={firm.whatsapp} colors={colors} /> : null}
+            {firm.public_email ? <Info icon="mail-outline" label="Email" value={firm.public_email} colors={colors} /> : null}
+            {firm.instagram ? <Info icon="logo-instagram" label="Instagram" value={firm.instagram} colors={colors} /> : null}
+            {firm.linkedin ? <Info icon="logo-linkedin" label="LinkedIn" value={firm.linkedin} colors={colors} /> : null}
+            {firm.website ? <Info icon="globe-outline" label="Website" value={firm.website} colors={colors} /> : null}
+          </View>
+        ) : null}
         {firm.professionals?.length ? (
           <View>
             <Text style={[styles.section, { color: colors.onSurface }]}>Verified professionals</Text>
