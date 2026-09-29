@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../../utils/logger';
 import {
     View,
@@ -28,6 +29,7 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import DocumentScanner from 'react-native-document-scanner-plugin';
 
 import { Button } from '../../components/ui/Button';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
@@ -43,6 +45,9 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
+const REVIEW_HISTORY_KEY = '@myrights/document-review-history';
+
+type ReviewHistoryItem = { id: string; documentText: string; result: DocumentAnalysisResponse; createdAt: string; };
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -56,6 +61,27 @@ export const DocumentReviewScreen: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
     const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
+    const [sourceMenuVisible, setSourceMenuVisible] = useState(false);
+    const [historyVisible, setHistoryVisible] = useState(false);
+    const [reviewHistory, setReviewHistory] = useState<ReviewHistoryItem[]>([]);
+
+    useEffect(() => {
+        AsyncStorage.getItem(REVIEW_HISTORY_KEY)
+            .then((raw) => {
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) setReviewHistory(parsed.slice(0, 10));
+            })
+            .catch((error) => logger.error('Failed to load document review history:', error));
+    }, []);
+
+    const saveReviewHistory = async (analysis: DocumentAnalysisResponse, text: string) => {
+        const item: ReviewHistoryItem = { id: `${Date.now()}`, documentText: text, result: analysis, createdAt: new Date().toISOString() };
+        const next = [item, ...reviewHistory].slice(0, 10);
+        setReviewHistory(next);
+        try { await AsyncStorage.setItem(REVIEW_HISTORY_KEY, JSON.stringify(next)); }
+        catch (error) { logger.error('Failed to save document review history:', error); }
+    };
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -114,6 +140,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             finishJob(jobId, analysis);
             setResult(analysis);
+            await saveReviewHistory(analysis, targetText);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
@@ -148,6 +175,7 @@ export const DocumentReviewScreen: React.FC = () => {
             finishJob(jobId, analysis);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             setResult(analysis);
+            await saveReviewHistory(analysis, `[Image review: ${new Date().toISOString()}]`);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
             logger.error('Image analysis failed:', error);
@@ -159,19 +187,21 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
-    const handleScan = () => {
-        Alert.alert(
-            'Capture Document',
-            'Choose capture method:',
-            [
-                { text: 'Use Camera', onPress: startScan },
-                { text: 'Choose Image', onPress: pickDocument },
-                { text: 'Cancel', style: 'cancel' },
-            ]
-        );
+    const handleScan = () => setSourceMenuVisible(true);
+
+    const scanDocument = async () => {
+        setSourceMenuVisible(false);
+        try {
+            const { scannedImages } = await DocumentScanner.scanDocument({ maxNumDocuments: 20 });
+            if (scannedImages?.length) await analyzeImageAsset(scannedImages[0], 'image/jpeg');
+        } catch (error: any) {
+            logger.error('Document scan failed:', error);
+            Alert.alert('Scan Failed', error?.message || 'Could not scan the document.');
+        }
     };
 
     const startScan = async () => {
+        setSourceMenuVisible(false);
         try {
             const permission = await ImagePicker.requestCameraPermissionsAsync();
             if (!permission.granted) {
@@ -196,6 +226,7 @@ export const DocumentReviewScreen: React.FC = () => {
     };
 
     const pickDocument = async () => {
+        setSourceMenuVisible(false);
         try {
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/rtf', 'text/rtf', 'text/plain', 'image/*'],
@@ -218,6 +249,7 @@ export const DocumentReviewScreen: React.FC = () => {
                         const analysis = await documentService.analyzeDocument(extracted.text);
                         finishJob(jobId, analysis);
                         setResult(analysis);
+                        await saveReviewHistory(analysis, extracted.text);
                         if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     } catch (error: any) {
@@ -260,10 +292,21 @@ export const DocumentReviewScreen: React.FC = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
-                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Upload or scan a document" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
-                                <Ionicons name="scan-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
+                            <TouchableOpacity testID="document-review-upload" accessibilityRole="button" accessibilityLabel="Choose how to add a document" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
+                                <Ionicons name="add-circle-outline" size={32} color={colors.primary} />
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add a Document</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>Scan • Take a photo • Choose a file</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity testID="document-review-history" accessibilityRole="button" style={[styles.historyButton, { backgroundColor: colors.surfaceContainerLow }]} onPress={() => setHistoryVisible(true)}>
+                                <Ionicons name="time-outline" size={20} color={colors.primary} />
+                                <View style={styles.historyButtonText}>
+                                    <Text style={[styles.historyTitle, { color: colors.onSurface }]}>Review History</Text>
+                                    <Text style={[styles.historySubtitle, { color: colors.onSurfaceVariant }]}>
+                                        {`${reviewHistory.length} saved review${reviewHistory.length === 1 ? '' : 's'}`}
+                                    </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
                             </TouchableOpacity>
 
                             <View style={styles.editorialInput}>
@@ -340,6 +383,58 @@ export const DocumentReviewScreen: React.FC = () => {
                 </ScrollView>
             </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
+
+            <Modal animationType="slide" transparent visible={sourceMenuVisible} onRequestClose={() => setSourceMenuVisible(false)}>
+                <TouchableWithoutFeedback onPress={() => setSourceMenuVisible(false)}>
+                    <View style={styles.sheetOverlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={[styles.sourceSheet, { backgroundColor: colors.surface }]}>
+                                <Text style={[styles.sheetTitle, { color: colors.onSurface }]}>Add a document</Text>
+                                <Text style={[styles.sheetSubtitle, { color: colors.onSurfaceVariant }]}>Choose how you want to provide it.</Text>
+                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={scanDocument}>
+                                    <Ionicons name="scan-outline" size={24} color={colors.primary} />
+                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Scan document</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>Detect and capture document pages</Text></View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={startScan}>
+                                    <Ionicons name="camera-outline" size={24} color={colors.primary} />
+                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Take a photo</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>Capture a document image</Text></View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.sourceOption, { backgroundColor: colors.surfaceContainerLow }]} onPress={pickDocument}>
+                                    <Ionicons name="folder-open-outline" size={24} color={colors.primary} />
+                                    <View style={styles.sourceOptionText}><Text style={[styles.sourceOptionTitle, { color: colors.onSurface }]}>Choose a file</Text><Text style={[styles.sourceOptionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text></View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.sheetCancel} onPress={() => setSourceMenuVisible(false)}><Text style={[styles.sheetCancelText, { color: colors.primary }]}>Cancel</Text></TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+
+            <Modal animationType="slide" transparent visible={historyVisible} onRequestClose={() => setHistoryVisible(false)}>
+                <View style={styles.sheetOverlay}>
+                    <View style={[styles.historySheet, { backgroundColor: colors.surface }]}>
+                        <View style={styles.sheetHeader}>
+                            <View><Text style={[styles.sheetTitle, { color: colors.onSurface }]}>Review History</Text><Text style={[styles.sheetSubtitle, { color: colors.onSurfaceVariant }]}>Your recent document reviews</Text></View>
+                            <TouchableOpacity onPress={() => setHistoryVisible(false)}><Ionicons name="close" size={24} color={colors.onSurface} /></TouchableOpacity>
+                        </View>
+                        <ScrollView contentContainerStyle={styles.historyList}>
+                            {reviewHistory.length === 0 ? (
+                                <View style={styles.historyEmpty}><Ionicons name="document-text-outline" size={42} color={colors.onSurfaceVariant} /><Text style={[styles.historyEmptyTitle, { color: colors.onSurface }]}>No reviews yet</Text><Text style={[styles.historyEmptyText, { color: colors.onSurfaceVariant }]}>Reviews you complete will appear here.</Text></View>
+                            ) : reviewHistory.map((item) => (
+                                <TouchableOpacity key={item.id} style={[styles.historyItem, { backgroundColor: colors.surfaceContainerLow }]} onPress={() => { setResult(item.result); setDocumentText(item.documentText); setHistoryVisible(false); }}>
+                                    <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                                    <View style={styles.historyItemInfo}>
+                                        <Text style={[styles.historyItemTitle, { color: colors.onSurface }]} numberOfLines={1}>{item.result.document_type}</Text>
+                                        <Text style={[styles.historyItemMeta, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{item.result.overall_verdict}</Text>
+                                        <Text style={[styles.historyItemDate, { color: colors.onSurfaceVariant }]}>{new Date(item.createdAt).toLocaleString()}</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Analysis Detail Modal */}
             <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -484,6 +579,32 @@ const styles = StyleSheet.create({
         ...theme.typography.labelSm,
         opacity: 0.6,
     },
+    historyButton: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 20, gap: 12 },
+    historyButtonText: { flex: 1 },
+    historyTitle: { ...theme.typography.titleMd, fontWeight: '800' },
+    historySubtitle: { ...theme.typography.caption, marginTop: 3 },
+    sheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+    sourceSheet: { padding: 24, paddingBottom: 34, borderTopLeftRadius: 28, borderTopRightRadius: 28, gap: 12 },
+    historySheet: { height: '82%', padding: 24, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+    sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+    sheetTitle: { ...theme.typography.titleLg, fontWeight: '900' },
+    sheetSubtitle: { ...theme.typography.bodyMd, marginTop: 4, opacity: 0.75 },
+    sourceOption: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, gap: 14 },
+    sourceOptionText: { flex: 1 },
+    sourceOptionTitle: { ...theme.typography.titleMd, fontWeight: '800' },
+    sourceOptionSub: { ...theme.typography.caption, marginTop: 3 },
+    sheetCancel: { alignItems: 'center', paddingVertical: 12 },
+    sheetCancelText: { ...theme.typography.titleMd, fontWeight: '800' },
+    historyList: { gap: 12, paddingBottom: 20 },
+    historyEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 },
+    historyEmptyTitle: { ...theme.typography.titleMd, fontWeight: '800' },
+    historyEmptyText: { ...theme.typography.bodyMd, textAlign: 'center' },
+    historyItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, gap: 12 },
+    historyItemInfo: { flex: 1 },
+    historyItemTitle: { ...theme.typography.titleMd, fontWeight: '800' },
+    historyItemMeta: { ...theme.typography.caption, marginTop: 3 },
+    historyItemDate: { ...theme.typography.caption, marginTop: 2, opacity: 0.7 },
+
     editorialInput: {
         gap: 12,
     },
