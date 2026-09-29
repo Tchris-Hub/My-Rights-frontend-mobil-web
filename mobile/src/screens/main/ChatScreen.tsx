@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { logger } from '../../utils/logger';
 import {
     View,
@@ -35,9 +35,7 @@ import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/d
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
-import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
-
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+import type { ChatMessage } from '../../types';
 
 const SUGGESTIONS = [
     { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
@@ -60,7 +58,6 @@ export const ChatScreen: React.FC = () => {
     const [showEscalateModal, setShowEscalateModal] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [isMenuVisible, setIsMenuVisible] = useState(false);
-    const [inputFocused, setInputFocused] = useState(false);
     const [attachment, setAttachment] = useState<{ name: string; mimeType: string; text: string; characterCount: number; truncated: boolean } | null>(null);
     const [isExtractingAttachment, setIsExtractingAttachment] = useState(false);
     const [chatQuotaRemaining, setChatQuotaRemaining] = useState<number | null>(null);
@@ -233,6 +230,14 @@ export const ChatScreen: React.FC = () => {
 
     const closeMenu = () => setIsMenuVisible(false);
 
+    const resetChatState = () => {
+        setMessages([]);
+        setConversationId(null);
+        setAttachment(null);
+        setInputText('');
+        setIsMenuVisible(false);
+    };
+
     const handleNewChat = () => {
         if (messages.length === 0) return;
 
@@ -246,9 +251,7 @@ export const ChatScreen: React.FC = () => {
                     style: "destructive",
                     onPress: async () => {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        setMessages([]);
-                        setConversationId(null);
-                        // Clear local cache
+                        resetChatState();
 
                     }
                 }
@@ -452,6 +455,7 @@ export const ChatScreen: React.FC = () => {
                                             onValueChange={(val: boolean) => {
                                                 closeMenu();
                                                 setIsIncognito(val);
+                                                resetChatState();
                                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                                 if (val) {
                                                     Alert.alert("Private Session", "Messages from this session are not added to your My Rights conversation history. The request is still processed by the AI service and may appear in service/security logs.");
@@ -541,7 +545,7 @@ export const ChatScreen: React.FC = () => {
                         style={{ flex: 1 }}
                         data={messages}
                         renderItem={({ item }) => (
-                            item.isLoading || isTranscribing ? (
+                            item.isLoading ? (
                                 <View style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
@@ -614,8 +618,6 @@ export const ChatScreen: React.FC = () => {
                                 multiline
                                 maxLength={10000}
                                 textAlignVertical="center"
-                                onFocus={() => setInputFocused(true)}
-                                onBlur={() => setInputFocused(false)}
                                 blurOnSubmit={false}
                                 autoCorrect
                                 returnKeyType="default"
