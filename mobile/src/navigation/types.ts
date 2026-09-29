@@ -47,6 +47,7 @@ export type ProfileStackParamList = {
     SavedRights: undefined;
     PrivacyCenter: undefined;
     SupportCenter: undefined;
+    Notifications: undefined;
     FirmDetails: { firm: any };
 };
 
