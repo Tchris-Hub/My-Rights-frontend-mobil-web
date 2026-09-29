@@ -1,9 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequest, createIdempotencyKey } from './api';
 import { STORAGE_KEYS } from '../constants/config';
-type GroundingSource = {\n    id: string;\n    title: string;\n    section?: string;\n    excerpt?: string;\n    citation?: string;\n    source_url?: string;\n    issuing_authority?: string;\n    source_type?: string;\n    verified_at?: string;\n    effective_from?: string;\n    effective_to?: string;\n    retrieval_score?: number;\n};
-import type { ChatMessage, SourceCitation } from '../types';
-
 type ChatSession = { id: string; title: string | null; created_at?: string; updated_at: string };
 
 function toSourceCitations(sources: GroundingSource[] | undefined): SourceCitation[] | undefined {
@@ -17,33 +14,6 @@ type ChatResult = {
     sources?: GroundingSource[];
     citation_status?: string;
 };
-
-function assertChatResponse(result: ChatResult): void {
-    const answer = result.content.trim();
-    if (!answer) throw new Error('AI returned no usable response.');
-
-    const status = result.citation_status;
-    if (status !== 'verified_context' && status !== 'live_research' && status !== 'unverified') {
-        throw new Error('AI returned an invalid evidence status.');
-    }
-
-    const sources = Array.isArray(result.sources) ? result.sources : [];
-    const citations = answer.match(/\[S\d+\]/g) ?? [];
-    const allowed = new Set(sources.map((source) => source.id));
-
-    if (status === 'verified_context' || status === 'live_research') {
-        if (sources.length === 0) throw new Error('AI returned verified-status content without sources.');
-        if (citations.length === 0) throw new Error('AI answer did not include the required source citations.');
-        if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
-            throw new Error('AI answer contained an invalid source citation.');
-        }
-        return;
-    }
-
-    if (citations.some((citation) => !allowed.has(citation.slice(1, -1)))) {
-        throw new Error('AI answer contained an invalid source citation.');
-    }
-}
 
 export const chatService = {
     async createConversation(title: string): Promise<string> {
@@ -73,7 +43,7 @@ export const chatService = {
         if (!response?.content?.trim()) {
             throw new Error('AI returned no usable response.');
         }
-        assertChatResponse(response);
+        validateChatResponse(response);
         return response;
     },
 
