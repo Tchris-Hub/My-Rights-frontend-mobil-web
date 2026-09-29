@@ -17,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import { Map, Camera, Marker } from '@maplibre/maplibre-react-native';
+import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -58,7 +59,8 @@ export const LegalAidMapScreen: React.FC = () => {
     const [selectedType, setSelectedType] = useState('All');
     const [viewMode, setViewMode] = useState<'centers' | 'experts' | 'firms'>('centers');
     const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
-    const googleMapsConfigured = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim());
+    const mapTilerApiKey = String(Constants.expoConfig?.extra?.mapTilerApiKey ?? '').trim();
+    const mapTilerConfigured = Boolean(mapTilerApiKey);
     
     // Data State
     const [centers, setCenters] = useState<Center[]>([]);
@@ -319,40 +321,44 @@ export const LegalAidMapScreen: React.FC = () => {
 
     const renderHeader = () => (
         <View style={styles.mapContainer}>
-            {googleMapsConfigured ? (
-                <MapView
+            {mapTilerConfigured ? (
+                <Map
                     style={styles.map}
-                    initialRegion={initialRegion}
-                    showsUserLocation
-                    showsMyLocationButton
-                    showsCompass
-                    userInterfaceStyle={isDark ? 'dark' : 'light'}
+                    mapStyle={`https://api.maptiler.com/maps/streets-v2/style.json?key=${encodeURIComponent(mapTilerApiKey)}`}
+                    compass
+                    attribution
+                    logo
                 >
+                    <Camera
+                        initialViewState={{
+                            center: [initialRegion.longitude, initialRegion.latitude],
+                            zoom: 6,
+                        }}
+                    />
                     {filteredCenters.map(center => (
                         <Marker
                             key={center.id}
-                            coordinate={{ latitude: center.latitude, longitude: center.longitude }}
-                            pinColor={center.type === 'Government' ? colors.primary : colors.success}
+                            lngLat={[center.longitude, center.latitude]}
+                            anchor="bottom"
+                            onPress={() => handleDirections(center.latitude, center.longitude, center.name)}
                         >
-                            <Callout onPress={() => handleDirections(center.latitude, center.longitude, center.name)}>
-                                <View style={styles.callout}>
-                                    <Text style={styles.calloutTitle}>{center.name}</Text>
-                                    <Text style={styles.calloutSub}>{center.address}</Text>
-                                    <View style={styles.calloutActionBadge}>
-                                        <Ionicons name="navigate" size={12} color="#FFF" />
-                                        <Text style={styles.calloutAction}>Directions</Text>
-                                    </View>
-                                </View>
-                            </Callout>
+                            <View
+                                style={[
+                                    styles.mapMarker,
+                                    { backgroundColor: center.type === 'Government' ? colors.primary : colors.success },
+                                ]}
+                            >
+                                <Ionicons name="location" size={18} color="#FFF" />
+                            </View>
                         </Marker>
                     ))}
-                </MapView>
+                </Map>
             ) : (
                 <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }]}>
                     <Ionicons name="map-outline" size={42} color={colors.onSurfaceVariant} />
                     <Text style={[styles.emptyText, { color: colors.onSurface, marginTop: 8 }]}>Map view unavailable</Text>
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, fontSize: 12, marginTop: 4 }]}>
-                        Browse the verified legal-aid directory below.
+                        Add MAPTILER_API_KEY to the mobile build environment to display the map. The verified legal-aid directory is still available below.
                     </Text>
                 </View>
             )}
@@ -706,6 +712,15 @@ const styles = StyleSheet.create({
     emptyText: {
         ...theme.typography.bodyMd,
         textAlign: 'center',
+    },
+    mapMarker: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#FFF',
     },
     callout: {
         width: 200,
