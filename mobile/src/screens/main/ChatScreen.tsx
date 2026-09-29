@@ -449,15 +449,17 @@ export const ChatScreen: React.FC = () => {
                             <View style={styles.statusRow}>
                                 <View style={[styles.onlineDot, isIncognito && { backgroundColor: colors.onSurfaceVariant }]} />
                                 <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
-                                    {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
+                                    {documentReviewMode ? 'Document Review' : (isIncognito ? 'Ghost Advisor' : 'Legal Agent')}
                                 </Text>
                             </View>
                             <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
-                                {isIncognito
-                                    ? 'Private Session'
-                                    : chatQuotaRemaining === null
-                                        ? 'Online • AI-generated information'
-                                        : `Online • ${chatQuotaRemaining} free questions left today`}
+                                {documentReviewMode
+                                    ? 'Review mode • upload a document, then send'
+                                    : isIncognito
+                                        ? 'Private Session'
+                                        : chatQuotaRemaining === null
+                                            ? 'Online • AI-generated information'
+                                            : `Online • ${chatQuotaRemaining} free questions left today`}
                             </Text>
                         </View>
 
@@ -656,7 +658,7 @@ export const ChatScreen: React.FC = () => {
                                 style={styles.inputLeftIcon}
                                 onPress={pickDocument}
                             >
-                                <Ionicons name="add" size={24} color={colors.onSurfaceVariant} />
+                                <Ionicons name={documentReviewMode ? "scan-outline" : "add"} size={24} color={documentReviewMode ? colors.secondary : colors.onSurfaceVariant} />
                             </TouchableOpacity>
 
                             <TextInput
