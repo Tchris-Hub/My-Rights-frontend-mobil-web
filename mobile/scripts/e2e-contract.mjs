@@ -28,7 +28,7 @@ requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-magic-link"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-google"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-guest"');
 requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-input"');
-requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-send"');
+requireText('src/screens/main/ChatScreen.tsx', 'testID="chat-send"');\nrequireText('src/screens/main/ChatScreen.tsx', 'chatService.sendMessage');\nrequireText('src/services/chat.service.ts', "'/api/ai/chat'");\nrequireText('src/services/chat.service.ts', 'validateChatResponse(response)');\n\nconst chatScreen = read('src/screens/main/ChatScreen.tsx');\nconst chatService = read('src/services/chat.service.ts');\nconst apiService = read('src/services/api.ts');\nfor (const [label, source] of [\n  ['ChatScreen', chatScreen],\n  ['chat.service', chatService],\n  ['api.ts', apiService],\n]) {\n  if (source.includes('streamMessage') || source.includes('streamApiRequest') || source.includes('/api/ai/chat/stream')) {\n    failures.push(`Legacy chat streaming transport remains in ${label}.`);\n  }\n}\n
 
 if (failures.length) {
   console.error('E2E contract check failed:');
