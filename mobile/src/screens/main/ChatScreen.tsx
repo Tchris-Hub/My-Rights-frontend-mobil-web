@@ -204,6 +204,7 @@ export const ChatScreen: React.FC = () => {
                 )
             );
 
+            setAttachment(null);
             setChatQuotaRemaining(response.quota?.remaining ?? null);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
