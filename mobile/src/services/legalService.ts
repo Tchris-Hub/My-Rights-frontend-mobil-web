@@ -3,6 +3,50 @@ import { Chapter, Section, Template, LegalAidCenter, Lawyer, ProfessionalMatch, 
 
 export { Chapter, Section, Template, LegalAidCenter as Center, Lawyer, ProfessionalMatch, FirmMatch };
 
+const FALLBACK_TEMPLATES: Template[] = [
+  {
+    id: 'nda',
+    title: 'Non-Disclosure Agreement',
+    category: 'Business',
+    description: 'A general confidentiality draft with clear placeholders for the parties, protected information and duration.',
+    content_template: 'NON-DISCLOSURE AGREEMENT\\n\\nDisclosing Party: {{disclosing_party}}\\nReceiving Party: {{receiving_party}}\\nPurpose: {{purpose}}\\nTerm: {{term}}',
+    fields: [
+      { key: 'disclosing_party', label: 'Disclosing party', placeholder: 'Name of person or organisation' },
+      { key: 'receiving_party', label: 'Receiving party', placeholder: 'Name of person or organisation' },
+      { key: 'purpose', label: 'Purpose', placeholder: 'Why the information will be shared' },
+      { key: 'term', label: 'Confidentiality period', placeholder: 'e.g. 2 years' },
+    ],
+  },
+  {
+    id: 'tenancy-agreement',
+    title: 'Residential Tenancy Agreement',
+    category: 'Property',
+    description: 'A structured residential tenancy draft covering the parties, property, rent and term.',
+    content_template: 'RESIDENTIAL TENANCY AGREEMENT\\n\\nLandlord: {{landlord}}\\nTenant: {{tenant}}\\nProperty: {{property}}\\nRent: {{rent}}\\nTerm: {{term}}',
+    fields: [
+      { key: 'landlord', label: 'Landlord name', placeholder: 'Full legal name' },
+      { key: 'tenant', label: 'Tenant name', placeholder: 'Full legal name' },
+      { key: 'property', label: 'Property address', placeholder: 'Full property address' },
+      { key: 'rent', label: 'Rent', placeholder: 'Amount and payment frequency' },
+      { key: 'term', label: 'Tenancy term', placeholder: 'Start date and duration' },
+    ],
+  },
+  {
+    id: 'demand-letter',
+    title: 'Demand Letter',
+    category: 'Dispute',
+    description: 'A structured demand-letter draft with placeholders for the parties, issue, amount and requested resolution.',
+    content_template: 'FORMAL DEMAND LETTER\\n\\nTo: {{recipient}}\\nFrom: {{sender}}\\nIssue: {{issue}}\\nAmount: {{amount}}\\nRequested resolution: {{resolution}}',
+    fields: [
+      { key: 'recipient', label: 'Recipient', placeholder: 'Name and address' },
+      { key: 'sender', label: 'Sender', placeholder: 'Your name and address' },
+      { key: 'issue', label: 'Issue', placeholder: 'What happened and when' },
+      { key: 'amount', label: 'Amount involved', placeholder: 'Amount, if applicable' },
+      { key: 'resolution', label: 'Requested resolution', placeholder: 'What you want the recipient to do' },
+    ],
+  },
+];
+
 export const legalService = {
   async getConstitution() {
     return apiRequest<Chapter[]>('/api/legal/constitution');
@@ -157,6 +201,7 @@ export const legalService = {
   },
 
   async getTemplates() {
-    return apiRequest<Template[]>('/api/legal/templates');
+    const templates = await apiRequest<Template[]>('/api/legal/templates');
+    return Array.isArray(templates) && templates.length > 0 ? templates : FALLBACK_TEMPLATES;
   },
 };
