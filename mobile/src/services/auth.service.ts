@@ -82,6 +82,18 @@ export const authService = {
         return authClient.getSession();
     },
 
+    async getAccountType(): Promise<'unset' | 'client' | 'legal_professional'> {
+        const result = await apiRequest<{ account_type: 'unset' | 'client' | 'legal_professional' }>('/api/account/type');
+        return result.account_type;
+    },
+
+    async setAccountType(account_type: 'client' | 'legal_professional'): Promise<void> {
+        await apiRequest('/api/account/type', {
+            method: 'PUT',
+            body: JSON.stringify({ account_type }),
+        });
+    },
+
     async recordCurrentConsent(): Promise<void> {
         await apiRequest('/api/consent', {
             method: 'POST',
