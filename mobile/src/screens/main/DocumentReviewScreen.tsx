@@ -324,7 +324,7 @@ export const DocumentReviewScreen: React.FC = () => {
                         </View>
                     ) : (
                         <View style={styles.resultsSection}>
-                            <TouchableOpacity style={styles.resetBtn} onPress={() => setResult(null)}>
+                            <TouchableOpacity style={styles.resetBtn} onPress={() => { setResult(null); setDocumentText(''); setDocumentCount(0); }}>
                                 <Ionicons name="refresh-outline" size={16} color={colors.primary} />
                                 <Text style={[styles.resetText, { color: colors.primary }]}>NEW REVIEW</Text>
                             </TouchableOpacity>
