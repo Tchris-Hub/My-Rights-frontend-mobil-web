@@ -65,6 +65,10 @@ export const ToolsHomeScreen: React.FC = () => {
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        if (tool.id === 'review') {
+            navigation.getParent()?.navigate('Chat', { documentReviewMode: true });
+            return;
+        }
         navigation.navigate(tool.route);
     };
 
