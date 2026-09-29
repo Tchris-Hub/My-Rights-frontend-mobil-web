@@ -164,6 +164,26 @@ export const ChatScreen: React.FC = () => {
             return;
         }
 
+        if (documentReviewMode && attachment) {
+            isSubmitting.current = true;
+            setIsLoading(true);
+            const jobId = startJob({ type: 'analysis', title: 'Reviewing Document', progress: 'Analyzing document...', params: { text: attachment.text } });
+            try {
+                const analysis = await documentService.analyzeDocument(attachment.text);
+                finishJob(jobId, analysis);
+                setAttachment(null);
+                setDocumentReviewMode(false);
+                navigation.navigate('Tools', { screen: 'DocumentReview' });
+            } catch (error) {
+                failJob(jobId, error instanceof Error ? error.message : 'Document review failed.');
+                Alert.alert('Document Review Failed', error instanceof Error ? error.message : 'Could not review this document.');
+            } finally {
+                setIsLoading(false);
+                isSubmitting.current = false;
+            }
+            return;
+        }
+
         isSubmitting.current = true;
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
