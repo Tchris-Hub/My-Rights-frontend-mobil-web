@@ -158,7 +158,6 @@ export const ChatScreen: React.FC = () => {
         }
 
         isSubmitting.current = true;
-
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
         const userMessage: ChatMessage = {
@@ -181,55 +180,35 @@ export const ChatScreen: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Authenticated streaming is the only legal-query path. Incognito is
-            // explicitly ephemeral: it suppresses database persistence.
-            if (isAuthenticated) {
-                let firstChunk = true;
-                const persistedConversationId = await chatService.streamMessage(messageText, {
-                    conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
-                    persist: !isIncognito,
-                    attachmentText: attachment?.text,
-                    onChunk: (chunk) => {
-                        setMessages((prev) =>
-                            prev.map((msg) => {
-                                if (msg.id !== loadingMessage.id) return msg;
-                                return {
-                                    ...msg,
-                                    content: firstChunk ? chunk : msg.content + chunk,
-                                    isLoading: false,
-                                };
-                            })
-                        );
-                        if (firstChunk) {
-                            firstChunk = false;
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }
-                    },
-                    onComplete: (meta) => {
-                        usageService.getAiQuota()
-                            .then((quotas) => {
-                                const quota = quotas.find((item) => item.feature === 'chat');
-                                setChatQuotaRemaining(quota?.remaining ?? null);
-                            })
-                            .catch((error) => logger.error('Failed to refresh AI quota:', error));
-                        setMessages((prev) =>
-                            prev.map((msg) =>
-                                msg.id === loadingMessage.id
-                                    ? {
-                                        ...msg,
-                                        sources: meta.sources?.map((source) => ({ ...source, excerpt: source.excerpt ?? '' })),
-                                        isVerified: meta.citation_status === 'verified_context',
-                                    }
-                                    : msg
-                            )
-                        );
-                    },
-                });
+            const response = await chatService.sendMessage(messageText, {
+                conversationId: !isIncognito ? (conversationId ?? undefined) : undefined,
+                persist: !isIncognito,
+                attachmentText: attachment?.text,
+            });
 
-                if (persistedConversationId && persistedConversationId !== conversationId) {
-                    setConversationId(persistedConversationId);
-                }
+            if (response.conversation_id && response.conversation_id !== conversationId) {
+                setConversationId(response.conversation_id);
             }
+
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                        ? {
+                            ...msg,
+                            content: response.content,
+                            isLoading: false,
+                            sources: response.sources?.map((source) => ({
+                                ...source,
+                                excerpt: source.excerpt ?? '',
+                            })),
+                            isVerified: response.citation_status === 'verified_context',
+                        }
+                        : msg
+                )
+            );
+
+            setChatQuotaRemaining(response.quota?.remaining ?? null);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
             logger.error('Chat error:', error);
             setMessages((prev) =>
@@ -237,7 +216,9 @@ export const ChatScreen: React.FC = () => {
                     msg.id === loadingMessage.id
                         ? {
                             ...msg,
-                            content: 'Sorry, I encountered an error. Please try again.',
+                            content: error instanceof Error && error.message
+                                ? error.message
+                                : 'Sorry, I encountered an error. Please try again.',
                             isLoading: false,
                             error: 'Failed to get response',
                         }
