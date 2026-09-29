@@ -32,6 +32,8 @@ interface AuthContextType {
     isGuest: boolean;
     continueAsGuest: () => Promise<void>;
     signInWithGoogle: () => Promise<void>;
+    accountType: 'unset' | 'client' | 'legal_professional';
+    setAccountType: (accountType: 'client' | 'legal_professional') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [onboardingCompleted, setOnboardingCompleted] = useState(false);
     const [isGuest, setIsGuest] = useState(false);
     const [consentAccepted, setConsentAccepted] = useState(false);
+    const [accountType, setAccountTypeState] = useState<'unset' | 'client' | 'legal_professional'>('unset');
 
     const isLoading = authState === 'initializing' || authState === 'authenticating' || authState === 'session-expired';
     const isAuthenticated = authState === 'authenticated' && user !== null;
@@ -77,6 +80,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (mounted) {
                     setUser(null);
                     setConsentAccepted(false);
+                    setAccountTypeState('unset');
                     setIsGuest(guest);
                     setAuthState(guest ? 'unauthenticated' : 'unauthenticated');
                 }
@@ -95,6 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
 
                 const hasConsent = await authService.hasCurrentConsent();
+                const currentAccountType = await authService.getAccountType();
                 const pending = await localDataService.getPendingConsent();
 
                 if (!hasConsent && pending) {
@@ -107,6 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setIsGuest(false);
                 await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
                 setConsentAccepted(finalConsent);
+                setAccountTypeState(currentAccountType);
                 setAuthState('authenticated');
             } catch (err) {
                 logger.error('Failed to synchronize authenticated state:', err);
@@ -144,6 +150,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await localDataService.clearUserScopedData();
             setUser(null);
             setConsentAccepted(false);
+            setAccountTypeState('unset');
             setIsGuest(false);
             setAuthState('unauthenticated');
         } catch (err: any) {
@@ -180,6 +187,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const clearError = () => setError(null);
+
+    const setAccountType = async (nextAccountType: 'client' | 'legal_professional') => {
+        await authService.setAccountType(nextAccountType);
+        setAccountTypeState(nextAccountType);
+    };
 
     const completeOnboarding = async () => {
         await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
@@ -226,6 +238,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsGuest(false);
             await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
             setConsentAccepted(hasConsent || Boolean(pending));
+            setAccountTypeState(await authService.getAccountType());
             setAuthState('authenticated');
         } catch (err: any) {
             setAuthState('unauthenticated');
@@ -251,6 +264,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isGuest,
         continueAsGuest,
         signInWithGoogle,
+        accountType,
+        setAccountType,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
