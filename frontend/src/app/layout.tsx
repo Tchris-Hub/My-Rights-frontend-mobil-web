@@ -9,8 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "My Rights - Digital Legal Advisor",
-  description: "Your Digital Legal Companion. Know Your Rights.",
+  title: "MY RIGHTS — Understand Your Rights. Prepare With Clarity.",
+  description:
+    "MY RIGHTS is a Nigeria-focused digital legal-information companion that helps people understand legal questions, review documents, and prepare for the next step.",
 };
 
 export default function RootLayout({
@@ -20,9 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} antialiased bg-background text-foreground`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         <SplashScreen />
         {children}
       </body>
