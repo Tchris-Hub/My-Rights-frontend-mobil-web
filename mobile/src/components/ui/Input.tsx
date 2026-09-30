@@ -154,13 +154,13 @@ const InputComponent: React.FC<InputProps> = ({
                         rightIcon && styles.inputWithRightIcon,
                     ]}
                     placeholderTextColor={colors.onSurfaceVariant}
-                    placeholder={label && !isFocused && !value ? undefined : textInputProps.placeholder}
                     value={value}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     selectionColor={colors.primary}
                     accessibilityLabel={textInputProps.accessibilityLabel ?? label}
                     {...textInputProps}
+                    placeholder={label && !isFocused && !value ? undefined : textInputProps.placeholder}
                 />
 
                 {rightIcon && (
