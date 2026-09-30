@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -35,6 +35,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
+import type { DocumentGenerationMissingInformation } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -72,6 +73,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userInput, setUserInput] = useState('');
     const [generationQuotaRemaining, setGenerationQuotaRemaining] = useState<number | null>(null);
+    const [missingInformation, setMissingInformation] = useState<DocumentGenerationMissingInformation[]>([]);
+    const [missingValues, setMissingValues] = useState<Record<string, string>>({});
 
     useEffect(() => {
         loadTemplates();
@@ -152,22 +155,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
         setIsLoading(false);
     };
 
-    const handleStartBuild = async () => {
-        if (!selectedTemplate) {
-            Alert.alert('Template required', 'Select a document template before generating a draft.');
-            return;
-        }
-
-        if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
-            return;
-        }
-        if (generationQuotaRemaining === 0) {
-            Alert.alert('Daily limit reached', 'Your free document-generation limit has been reached. You can generate another draft tomorrow.');
-            return;
-        }
-
-        const details = Object.entries(intakeData)
+    const buildGenerationInput = (extra: Record<string, string> = {}) => {
+        const details = Object.entries({ ...intakeData, ...extra })
             .map(([key, value]) => `${key}: ${value.trim()}`)
             .filter((entry) => !entry.endsWith(':'))
             .join('\\n');
@@ -176,9 +165,25 @@ export const DocumentGeneratorScreen: React.FC = () => {
             .map((message) => message.content.trim())
             .filter(Boolean)
             .join('\\n');
-        const generationInput = [details, customRequirements ? `Additional requirements:\\n${customRequirements}` : '']
+        return [details, customRequirements ? `Additional requirements:\\n${customRequirements}` : '']
             .filter(Boolean)
             .join('\\n\\n');
+    };
+
+    const handleStartBuild = async (extraInformation: Record<string, string> = {}) => {
+        if (!selectedTemplate) {
+            Alert.alert('Document required', 'Select a document before generating it.');
+            return;
+        }
+
+        if (!isAuthenticated) {
+            Alert.alert('Sign in required', 'Sign in before generating a legal document.');
+            return;
+        }
+        if (generationQuotaRemaining === 0) {
+            Alert.alert('Daily limit reached', 'Your free document-generation limit has been reached. You can generate another document tomorrow.');
+            return;
+        }
 
         setStep('BUILD');
         setIsLoading(true);
@@ -187,29 +192,78 @@ export const DocumentGeneratorScreen: React.FC = () => {
         try {
             const response = await documentService.generateDocument(
                 selectedTemplate.title,
-                generationInput.slice(0, 12000),
+                buildGenerationInput(extraInformation).slice(0, 12000),
             );
-            if (!response?.content?.trim()) {
-                throw new Error('No draft was returned.');
-            }
-            setDraftContent(response.content.trim());
+
             if (response.quota) setGenerationQuotaRemaining(response.quota.remaining);
+
+            if (response.status === 'needs_information') {
+                const nextValues: Record<string, string> = {};
+                response.missing_information.forEach((field) => {
+                    nextValues[field.key] = missingValues[field.key] || '';
+                });
+                setMissingInformation(response.missing_information);
+                setMissingValues(nextValues);
+                setStep('MISSING_INFO');
+                return;
+            }
+
+            setMissingInformation([]);
+            setMissingValues({});
+            setDraftContent(response.content.trim());
             setStep('PREVIEW');
         } catch (error: any) {
             setStep('CONSULT');
-            Alert.alert('Drafting failed', error?.message || 'Could not generate the draft. Please try again.');
+            Alert.alert('Drafting failed', error?.message || 'Could not generate the document. Please try again.');
         } finally {
             setIsLoading(false);
         }
     };
 
+    const normalizeDraftForPdf = (content: string) => {
+        const lines = content
+            .replace(/\\*\\*/g, '')
+            .replace(/^#{1,6}\\s*/gm, '')
+            .replace(/^[-*]\\s+/gm, '')
+            .split(/\\r?\\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        if (lines.length === 0) return '<p>No document content.</p>';
+
+        return lines.map((line, index) => {
+            const isTitle = index === 0;
+            const isNumberedHeading = /^\\d+[.)]\\s+/.test(line);
+            const isUpperHeading = line.length <= 90 && line === line.toUpperCase() && /[A-Z]/.test(line);
+            if (isTitle) return `<h1>${escapeHtml(line)}</h1>`;
+            if (isNumberedHeading || isUpperHeading) return `<h2>${escapeHtml(line)}</h2>`;
+            return `<p>${escapeHtml(line)}</p>`;
+        }).join('');
+    };
+
     const handleExportPDF = async () => {
         try {
-            const safeHtml = `<html><body style="font-family: serif; padding: 32px; line-height: 1.6;"><h2>${escapeHtml(selectedTemplate?.title || 'Document Draft')}</h2><p>${escapeHtml(draftContent)}</p><hr/><p style="font-size: 11px;">AI-generated draft for general information. Verify applicable Nigerian law, facts and formalities with a qualified legal professional before signing or relying on this document.</p></body></html>`;
+            const safeHtml = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"/><style>
+                @page { margin: 56px 54px; }
+                body { font-family: Georgia, serif; color: #1b1b1b; line-height: 1.55; font-size: 13px; }
+                h1 { text-align: center; font-size: 22px; margin: 0 0 28px; letter-spacing: .5px; }
+                h2 { font-size: 14px; margin: 20px 0 8px; }
+                p { margin: 0 0 10px; }
+                .warning { margin-top: 28px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 10px; color: #555; }
+            </style></head><body>
+                ${normalizeDraftForPdf(draftContent)}
+                <div class="warning">AI-generated legal-information draft. Verify applicable Nigerian law, facts and formalities with a qualified legal professional before signing or relying on it.</div>
+            </body></html>`;
+
             const { uri } = await Print.printToFileAsync({ html: safeHtml });
-            await Sharing.shareAsync(uri);
+            const filename = `${(selectedTemplate?.title || 'My Rights Document').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()}-${Date.now()}.pdf`;
+            const savedFile = new File(Paths.document, filename);
+            new File(uri).copy(savedFile);
+            await Sharing.shareAsync(savedFile.uri, { mimeType: 'application/pdf', dialogTitle: 'Share My Rights document' });
+            Alert.alert('Document saved', 'A copy of this PDF has been saved inside My Rights on this device.');
         } catch (error) {
-            Alert.alert('Export Error', 'Could not generate PDF.');
+            logger.error('PDF export failed:', error);
+            Alert.alert('Export Error', 'Could not generate or save the PDF.');
         }
     };
 
@@ -367,6 +421,43 @@ export const DocumentGeneratorScreen: React.FC = () => {
                         </View>
                     )}
 
+                    {step === 'MISSING_INFO' && selectedTemplate && (
+                        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                            <ScrollView contentContainerStyle={styles.intakeScroll} keyboardShouldPersistTaps="handled">
+                                <View style={styles.asymmetricHeader}>
+                                    <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.sectionHeader, { color: colors.onSurface, fontSize: 22 }]}>A few details are still needed</Text>
+                                        <Text style={[styles.missingIntro, { color: colors.onSurfaceVariant }]}>
+                                            My Rights will use these details to produce the completed document instead of leaving fill-in-the-blank fields.
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.formContainer}>
+                                    {missingInformation.map((field) => (
+                                        <View key={field.key} style={styles.inputGroup}>
+                                            <Text style={[styles.inputLabel, { color: colors.primary }]}>{field.label}</Text>
+                                            <Text style={[styles.missingReason, { color: colors.onSurfaceVariant }]}>{field.reason}</Text>
+                                            <TextInput
+                                                style={[styles.input, { backgroundColor: colors.surfaceContainerLow, color: colors.onSurface }]}
+                                                placeholder={field.label}
+                                                placeholderTextColor={colors.onSurfaceVariant + '60'}
+                                                value={missingValues[field.key] || ''}
+                                                onChangeText={(value) => setMissingValues((current) => ({ ...current, [field.key]: value }))}
+                                            />
+                                        </View>
+                                    ))}
+                                </View>
+                                <Button
+                                    title="Complete Document"
+                                    onPress={() => handleStartBuild(missingValues)}
+                                    disabled={missingInformation.some((field) => !missingValues[field.key]?.trim())}
+                                    style={styles.submitBtn}
+                                />
+                            </ScrollView>
+                        </KeyboardAvoidingView>
+                    )}
+
                     {step === 'BUILD' && (
                         <View style={styles.centerContainer}>
                             <ActivityIndicator size="large" color={colors.primary} />
@@ -508,6 +599,17 @@ const styles = StyleSheet.create({
     },
     formContainer: {
         gap: 20,
+    },
+    missingIntro: {
+        marginTop: 8,
+        fontSize: 13,
+        lineHeight: 20,
+    },
+    missingReason: {
+        fontSize: 12,
+        lineHeight: 18,
+        marginTop: -4,
+        marginBottom: 2,
     },
     inputGroup: {
         gap: 10,
