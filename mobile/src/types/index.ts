@@ -131,9 +131,17 @@ export interface DocumentAnalysisResponse {
     };
 }
 
+export interface DocumentGenerationMissingInformation {
+    key: string;
+    label: string;
+    reason: string;
+}
+
 export interface DocumentGenerationResponse {
     content: string;
     doc_type: string;
+    status: 'complete' | 'needs_information';
+    missing_information: DocumentGenerationMissingInformation[];
     warning: string;
     quota?: {
         feature: 'document_generate';
