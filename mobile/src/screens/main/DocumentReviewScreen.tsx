@@ -176,13 +176,14 @@ export const DocumentReviewScreen: React.FC = () => {
     };
 
 
-    const handleScan = () => {
+    const handleAddDocument = () => {
         Alert.alert(
-            'Capture Document',
-            'Choose capture method:',
+            'Add Document',
+            'Choose how you want to add your document:',
             [
-                { text: 'Use Camera', onPress: startScan },
-                { text: 'Choose Image', onPress: pickDocument },
+                { text: 'Scan Document', onPress: startScan },
+                { text: 'Upload Image', onPress: pickImage },
+                { text: 'Upload File', onPress: pickFile },
                 { text: 'Cancel', style: 'cancel' },
             ]
         );
@@ -212,16 +213,39 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
-    const pickDocument = async () => {
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                quality: 0.8,
+                allowsEditing: false,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                queueImageForReview(
+                    asset.uri,
+                    asset.mimeType || 'image/jpeg',
+                    asset.fileSize,
+                    asset.fileName || 'Image document',
+                );
+            }
+        } catch (error: any) {
+            logger.error('Image selection failed:', error);
+            Alert.alert('Image Upload Failed', 'Could not select the image.');
+        }
+    };
+
+    const pickFile = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
                 type: [
                     'application/pdf',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/msword',
                     'application/rtf',
                     'text/rtf',
                     'text/plain',
-                    'image/*',
                 ],
                 copyToCacheDirectory: true,
             });
@@ -292,10 +316,10 @@ export const DocumentReviewScreen: React.FC = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
-                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
+                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleAddDocument}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
+                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add Document</Text>
+                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>Scan a document, upload an image, or upload a file</Text>
                             </TouchableOpacity>
 
                             {pendingDocument ? (
