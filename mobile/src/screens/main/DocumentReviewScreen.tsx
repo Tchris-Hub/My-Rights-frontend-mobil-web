@@ -39,6 +39,7 @@ import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
 
 import { useJobs } from '../../contexts/JobContext';
 import { useNavigation } from '@react-navigation/native';
+import { localDataService, type LocalDocumentReview } from '../../services/localData.service';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
@@ -62,6 +63,13 @@ export const DocumentReviewScreen: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState<string>('');
     const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
+    const [reviewHistory, setReviewHistory] = useState<LocalDocumentReview[]>([]);
+
+    useEffect(() => {
+        localDataService.getDocumentReviewHistory()
+            .then(setReviewHistory)
+            .catch((error) => logger.error('Failed to load local document review history:', error));
+    }, []);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -83,6 +91,17 @@ export const DocumentReviewScreen: React.FC = () => {
             clearJob();
         }
     }, [activeJob?.status]);
+
+    const saveReviewLocally = async (analysis: DocumentAnalysisResponse) => {
+        const review: LocalDocumentReview = {
+            id: `review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            document_name: pendingDocument?.name || 'Document review',
+            reviewed_at: new Date().toISOString(),
+            analysis,
+        };
+        await localDataService.saveDocumentReview(review);
+        setReviewHistory((current) => [review, ...current.filter((item) => item.id !== review.id)].slice(0, 20));
+    };
 
     const handleAnalyze = async (text?: string) => {
         const targetText = text || documentText;
@@ -119,6 +138,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             finishJob(jobId, analysis);
             setResult(analysis);
+            await saveReviewLocally(analysis);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
@@ -163,6 +183,7 @@ export const DocumentReviewScreen: React.FC = () => {
             );
             finishJob(jobId, analysis);
             setResult(analysis);
+            await saveReviewLocally(analysis);
             if (analysis.quota) setAnalyzeQuotaRemaining(analysis.quota.remaining);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error: any) {
@@ -316,6 +337,46 @@ export const DocumentReviewScreen: React.FC = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
+                            {reviewHistory.length > 0 && (
+                                <View style={styles.historySection}>
+                                    <View style={styles.historyHeader}>
+                                        <View>
+                                            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Recent Reviews</Text>
+                                            <Text style={[styles.historySubtext, { color: colors.onSurfaceVariant }]}>
+                                                Stored only on this device
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
+                                    </View>
+                                    {reviewHistory.map((review) => (
+                                        <TouchableOpacity
+                                            key={review.id}
+                                            style={[styles.historyCard, { backgroundColor: colors.surfaceContainerLow }]}
+                                            onPress={() => {
+                                                setResult(review.analysis);
+                                                setPendingDocument(null);
+                                                setDocumentText('');
+                                            }}
+                                        >
+                                            <View style={[styles.historyIcon, { backgroundColor: colors.primary + '14' }]}>
+                                                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+                                            </View>
+                                            <View style={styles.historyInfo}>
+                                                <Text style={[styles.historyTitle, { color: colors.onSurface }]} numberOfLines={1}>
+                                                    {review.document_name}
+                                                </Text>
+                                                <Text style={[styles.historyDate, { color: colors.onSurfaceVariant }]}>
+                                                    {new Date(review.reviewed_at).toLocaleString()}
+                                                </Text>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+
+                            <View style={styles.addDocumentSection}>
+                                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>New Review</Text>
                             <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleAddDocument}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
                                 <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add Document</Text>
@@ -357,6 +418,7 @@ export const DocumentReviewScreen: React.FC = () => {
                                     Free plan: {analyzeQuotaRemaining} document review{analyzeQuotaRemaining === 1 ? '' : 's'} remaining today.
                                 </Text>
                             )}
+                            </View>
                         </View>
                     ) : (
                         <View style={styles.resultsSection}>
@@ -560,6 +622,50 @@ const styles = StyleSheet.create({
     },
     inputSection: {
         gap: 32,
+    },
+    addDocumentSection: {
+        gap: 16,
+    },
+    historySection: {
+        gap: 12,
+        marginBottom: 8,
+    },
+    historyHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
+    historySubtext: {
+        fontSize: 12,
+        marginTop: 3,
+    },
+    historyCard: {
+        minHeight: 68,
+        borderRadius: 20,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    historyIcon: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    historyInfo: {
+        flex: 1,
+    },
+    historyTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+    },
+    historyDate: {
+        fontSize: 11,
+        marginTop: 4,
     },
     scanAction: {
         padding: 40,
