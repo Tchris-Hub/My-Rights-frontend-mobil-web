@@ -12,21 +12,15 @@ import { logger } from '../utils/logger';
 export const useVoiceInput = (onTranscription: (text: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
-    const recordingRef = useRef<ReturnType<typeof useAudioRecorder> | null>(null);
 
     const onTranscriptionRef = useRef(onTranscription);
     onTranscriptionRef.current = onTranscription;
 
+    // useAudioRecorder owns the native recorder lifecycle and disposes it when
+    // the component unmounts. Do not call native methods from an effect cleanup:
+    // React can run that cleanup after Expo Audio has already released the
+    // shared native recorder object.
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-    recordingRef.current = audioRecorder;
-
-    useEffect(() => {
-        return () => {
-            if (audioRecorder.getStatus().isRecording) {
-                audioRecorder.stop().catch(() => undefined);
-            }
-        };
-    }, [audioRecorder]);
 
     const startRecording = useCallback(async () => {
         try {
@@ -53,7 +47,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
     }, [audioRecorder]);
 
     const stopRecording = useCallback(async () => {
-        if (!audioRecorder.getStatus().isRecording) return;
+        if (!isRecording) return;
 
         setIsRecording(false);
         setIsTranscribing(true);
@@ -83,7 +77,7 @@ export const useVoiceInput = (onTranscription: (text: string) => void) => {
         } finally {
             setIsTranscribing(false);
         }
-    }, [audioRecorder]);
+    }, [audioRecorder, isRecording]);
 
     const toggleRecording = useCallback(() => {
         if (isRecording) {
