@@ -39,7 +39,7 @@ import type { DocumentGenerationMissingInformation } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
+type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'MISSING_INFO' | 'PREVIEW' | 'FINALIZE';
 
 interface ConsultMessage {
     id: string;
