@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import {
     View,
     TextInput,
@@ -43,6 +43,14 @@ const InputComponent: React.FC<InputProps> = ({
     
     // 0 = active placeholder, 1 = floating label
     const labelAnimation = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+    useEffect(() => {
+        Animated.timing(labelAnimation, {
+            toValue: value ? 1 : 0,
+            duration: theme.animations.fast,
+            useNativeDriver: true,
+        }).start();
+    }, [value, labelAnimation]);
 
     const handleFocus = (e: any) => {
         setIsFocused(true);
@@ -146,6 +154,7 @@ const InputComponent: React.FC<InputProps> = ({
                         rightIcon && styles.inputWithRightIcon,
                     ]}
                     placeholderTextColor={colors.onSurfaceVariant}
+                    placeholder={label && !isFocused && !value ? undefined : textInputProps.placeholder}
                     value={value}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
