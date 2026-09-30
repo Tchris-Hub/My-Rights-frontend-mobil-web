@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
     CHAT_HISTORY: 'myrights_chat_history',
     IS_GUEST: 'myrights_is_guest',
     PENDING_CONSENT: 'myrights_pending_consent',
+    DOCUMENT_REVIEW_HISTORY: 'myrights_document_review_history',
 };
 
 export const APP_CONFIG = {
