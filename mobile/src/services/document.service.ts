@@ -101,7 +101,19 @@ export const documentService = {
             }),
         });
 
-        if (!result.content?.trim()) throw new Error('The document generator returned no usable draft.');
+        if (
+            !result ||
+            (result.status !== 'complete' && result.status !== 'needs_information') ||
+            !Array.isArray(result.missing_information)
+        ) {
+            throw new Error('The document generator returned an invalid response.');
+        }
+        if (result.status === 'complete' && !result.content?.trim()) {
+            throw new Error('The completed document is empty.');
+        }
+        if (result.status === 'needs_information' && (result.content?.trim() || result.missing_information.length === 0)) {
+            throw new Error('The document generator returned an invalid missing-information response.');
+        }
         return result;
     },
 
