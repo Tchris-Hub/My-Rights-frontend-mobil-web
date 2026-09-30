@@ -25,7 +25,6 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import DocumentScanner from 'react-native-document-scanner-plugin';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
@@ -289,6 +288,10 @@ export const ChatScreen: React.FC = () => {
 
     const scanAttachment = async () => {
         try {
+            // The scanner is a custom native module and is not bundled into Expo Go.
+            // Load it only when the user requests scanning so unsupported runtimes
+            // can still launch and use the rest of the application.
+            const { default: DocumentScanner } = await import('react-native-document-scanner-plugin');
             const { scannedImages } = await DocumentScanner.scanDocument({ maxNumDocuments: 1 });
             if (scannedImages?.[0]) {
                 await extractImageAttachment(scannedImages[0], 'scanned-document.jpg', 'image/jpeg');
