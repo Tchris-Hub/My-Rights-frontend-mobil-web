@@ -120,7 +120,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
     const handleIntakeSubmit = () => {
         if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in before generating a legal document draft.');
+            Alert.alert('Sign in required', 'Sign in before generating a legal document.');
             return;
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -214,7 +214,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
             setStep('PREVIEW');
         } catch (error: any) {
             setStep('CONSULT');
-            Alert.alert('Drafting failed', error?.message || 'Could not generate the document. Please try again.');
+            Alert.alert('Document generation failed', error?.message || 'Could not generate the document. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -275,9 +275,9 @@ export const DocumentGeneratorScreen: React.FC = () => {
             <View>
                 <Text style={[styles.title, { color: colors.onSurface }]}>Document Architect</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    {step === 'SELECT' ? 'Choose your legal blueprint' : 
-                     step === 'INTAKE' ? 'Input critical details' : 
-                     step === 'CONSULT' ? 'AI-assisted drafting' : 'Draft preview — review before use'}
+                    {step === 'SELECT' ? 'Choose a document type' : 
+                     step === 'INTAKE' ? 'Enter the document details' : 
+                     step === 'CONSULT' ? 'Add optional requirements' : 'Completed document — review before use'}
                 </Text>
             </View>
         </View>
@@ -413,7 +413,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
                                         onPress={handleStartBuild}
                                     >
-                                        <Text style={styles.finalActionText}>Architect Final Draft</Text>
+                                        <Text style={styles.finalActionText}>Generate Final Document</Text>
                                         <Ionicons name="arrow-forward" size={18} color="#FFF" />
                                     </TouchableOpacity>
                                 </View>
@@ -478,13 +478,13 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                     onPress={handleExportPDF}
                                 >
                                     <Ionicons name="download-outline" size={20} color="#FFF" />
-                                    <Text style={styles.actionBtnTextMain}>Export PDF</Text>
+                                    <Text style={styles.actionBtnTextMain}>Save & Share PDF</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
                                     style={[styles.actionBtnOutline, { borderColor: colors.outline }]}
                                     onPress={() => setStep('CONSULT')}
                                 >
-                                    <Text style={[styles.actionBtnTextOutline, { color: colors.onSurface }]}>Refine Draft</Text>
+                                    <Text style={[styles.actionBtnTextOutline, { color: colors.onSurface }]}>Refine Details</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
