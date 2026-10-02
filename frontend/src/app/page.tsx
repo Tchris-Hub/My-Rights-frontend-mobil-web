@@ -528,7 +528,7 @@ export default function HomePage() {
                 className="mx-auto h-20 w-20 rounded-[22px] shadow-xl"
               />
               <a
-                href="https://github.com/Tchris-Hub/My-Rights-frontend-mobil-web/releases/latest/download/my-rights.apk"
+                href="https://github.com/Tchris-Hub/My-Rights-frontend-mobil-web/releases/download/v1.0.0/my-rights.apk"
                 className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-white px-7 py-4 font-semibold text-[#047857] transition hover:-translate-y-1"
               >
                 Download APK
