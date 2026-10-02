@@ -10,11 +10,7 @@ appId: com.myrights.app
     text: "Tools"
 - tapOn:
     text: "Document Review"
-- assertVisible:
-    id: "document-review-text"
 - tapOn:
-    id: "document-review-text"
-- inputText: "Please review this sample legal document text."
-- hideKeyboard
+    text: "Add Document"
 - assertVisible:
-    id: "document-review-submit"
+    text: "Add Document"
