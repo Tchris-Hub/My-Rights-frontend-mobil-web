@@ -29,7 +29,6 @@ import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
 
