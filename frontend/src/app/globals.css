@@ -1,29 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --primary: #10211d;
-  --primary-foreground: #ffffff;
-  --secondary: #e4c879;
-  --secondary-foreground: #10211d;
-  --background: #f7f8f6;
-  --foreground: #10211d;
-  --muted: #edf0ed;
-  --muted-foreground: #64716c;
-  --accent: #e8eee9;
-  --accent-foreground: #10211d;
+  --background: #F8F8F6;
+  --foreground: #002244;
+  --navy: #002244;
+  --gold: #D4AF37;
+  --paper: #F8F8F6;
+  --mist: #F1F3F5;
 }
 
 @theme inline {
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -39,15 +27,18 @@ body {
 }
 
 ::selection {
-  background: #e4c879;
-  color: #10211d;
+  background: var(--gold);
+  color: var(--navy);
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
