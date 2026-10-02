@@ -29,7 +29,7 @@ interface ConversationSummary {
 
 export const ChatHistoryScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { horizontalPadding, narrow } = useResponsive();
+    const { narrow } = useResponsive();
     const navigation = useNavigation<any>();
     const [conversations, setConversations] = useState<ConversationSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
