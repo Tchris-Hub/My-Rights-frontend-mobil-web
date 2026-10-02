@@ -22,6 +22,7 @@ import { APP_CONFIG } from '../../constants/config';
 
 export const SettingsScreen: React.FC = () => {
     const { colors, isDark, toggleTheme } = useTheme();
+    const { width, narrow } = useResponsive();
     const { logout } = useAuth();
     const navigation = useNavigation<any>();
 
