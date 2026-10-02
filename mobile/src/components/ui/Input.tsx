@@ -116,6 +116,7 @@ const InputComponent: React.FC<InputProps> = ({
                     <Animated.Text
                         style={[
                             styles.label,
+                            leftIcon && styles.labelWithLeftIcon,
                             labelStyle,
                             { 
                                 color: error 
@@ -210,6 +211,9 @@ const styles = StyleSheet.create({
         left: theme.spacing.md,
         ...theme.typography.labelMd,
         fontWeight: '600',
+    },
+    labelWithLeftIcon: {
+        left: theme.spacing.md + 28,
     },
     inputContainer: {
         flexDirection: 'row',
