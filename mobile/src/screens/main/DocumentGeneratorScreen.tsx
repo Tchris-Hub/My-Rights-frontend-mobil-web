@@ -57,7 +57,7 @@ const escapeHtml = (value: string): string => value
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, horizontalPadding, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH } = useResponsive();
     const { activeJob, startJob, updateJob, finishJob, failJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
