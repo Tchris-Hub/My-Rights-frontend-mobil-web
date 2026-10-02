@@ -10,6 +10,7 @@ import {
   FileText,
   Gavel,
   Landmark,
+  Building2,
   MessageSquare,
   ShieldCheck,
   Sparkles,
@@ -359,6 +360,79 @@ export default function HomePage() {
                   <span className="font-medium text-white/85">{item}</span>
                 </div>
               ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="bg-[#F8F9FA] px-6 py-24 lg:px-10 lg:py-36">
+        <div className="mx-auto max-w-7xl">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#047857]">When information is not enough</p>
+            <h2 className="mt-5 max-w-4xl font-[family-name:var(--font-jakarta)] text-4xl font-bold tracking-[-0.045em] text-[#0B1326] sm:text-5xl">
+              Sometimes the next step is a person.
+            </h2>
+            <p className="mt-7 max-w-3xl text-lg leading-8 text-[#44474E]">
+              Not every legal problem should end with an AI answer. MY RIGHTS helps you move from
+              understanding your situation to finding appropriate human support when your matter
+              needs professional attention.
+            </p>
+          </Reveal>
+
+          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: "Practicing lawyers",
+                copy: "Find verified legal professionals who can help you take the next step when your matter needs a lawyer.",
+                icon: Gavel,
+              },
+              {
+                title: "Law firms",
+                copy: "Connect with firms that can handle matters requiring deeper legal work or formal representation.",
+                icon: Building2,
+              },
+              {
+                title: "NGOs & legal aid",
+                copy: "Where appropriate, discover organisations that may be able to assist with eligible matters or take a case forward.",
+                icon: Landmark,
+              },
+              {
+                title: "Direct enquiries",
+                copy: "Move beyond information and send an enquiry to the verified professional or organisation relevant to your matter.",
+                icon: Users,
+              },
+            ].map(({ title, copy, icon: Icon }, index) => (
+              <Reveal key={title} delay={index * 0.06}>
+                <div className="h-full rounded-[20px] border border-[#C4C7CF]/70 bg-white p-7 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#ECFDF5] text-[#047857]">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mt-7 font-[family-name:var(--font-jakarta)] text-xl font-bold text-[#0B1326]">
+                    {title}
+                  </h3>
+                  <p className="mt-3 leading-7 text-[#44474E]">{copy}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.12}>
+            <div className="mt-10 flex flex-col justify-between gap-6 rounded-[24px] border border-[#047857]/15 bg-[#ECFDF5] p-7 sm:flex-row sm:items-center sm:p-9">
+              <div>
+                <p className="font-[family-name:var(--font-jakarta)] text-2xl font-bold tracking-[-0.025em] text-[#0B1326]">
+                  Understand first. Get human help when you need it.
+                </p>
+                <p className="mt-2 max-w-2xl leading-7 text-[#44474E]">
+                  MY RIGHTS is designed to help you recognise when a qualified person or organisation
+                  should step in.
+                </p>
+              </div>
+              <a
+                href="#download"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#047857] px-6 py-3.5 font-semibold text-white transition hover:bg-[#036749]"
+              >
+                Find out how it works <ArrowRight className="h-4 w-4" />
+              </a>
             </div>
           </Reveal>
         </div>
