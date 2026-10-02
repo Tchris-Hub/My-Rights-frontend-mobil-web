@@ -8,7 +8,6 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -20,13 +19,14 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useResponsive } from '../../utils/responsive';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow, contentWidth } = useResponsive();
     const { requestMagicLink, signInWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
 
     useFocusEffect(
@@ -83,16 +83,16 @@ export const LoginScreen: React.FC = () => {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.contentWrapper}>
+                    <View style={[styles.contentWrapper, { maxWidth: contentWidth }]}>
                         <View style={styles.header}>
                             <View style={[styles.iconContainer, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name="shield-checkmark" size={32} color={colors.primary} />
                             </View>
-                            <Text style={[styles.title, { color: colors.primary }]}>My Rights</Text>
+                            <Text style={[styles.title, { color: colors.primary, fontSize: narrow ? 30 : 36 }]}>My Rights</Text>
                             <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                                 Secure access without passwords
                             </Text>
@@ -186,8 +186,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '-15%',
         right: '-25%',
-        width: 600,
-        height: 600,
+        width: 320,
+        height: 320,
         borderRadius: 300,
         opacity: 0.6,
         transform: [{ scale: 1.2 }],
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 24,
+        padding: 16,
     },
     contentWrapper: { width: '100%', maxWidth: 480 },
     header: { alignItems: 'center', marginBottom: 40 },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     },
     card: {
         borderRadius: 24,
-        padding: 32,
+        padding: 24,
         shadowOffset: { width: 0, height: 20 },
         shadowOpacity: 0.4,
         shadowRadius: 40,
