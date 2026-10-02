@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
 import { authClient } from '../services/auth-client';
 import { authService } from '../services/auth.service';
 import { localDataService } from '../services/localData.service';
@@ -51,6 +52,74 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         void AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED)
             .then((value) => setOnboardingCompleted(value === 'true'));
+    }, []);
+
+    // Magic-link verification happens in the browser before Better Auth redirects
+    // back into the native app. React Navigation sees the deep link, but that alone
+    // does not guarantee that the auth session state has been rehydrated. Explicitly
+    // refresh the Better Auth session when the app receives a native auth deep link.
+    useEffect(() => {
+        let mounted = true;
+        let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+        const hydrateAfterAuthDeepLink = async (url: string | null) => {
+            if (!url || !url.startsWith('myrights://')) return;
+
+            const refresh = async (attempt: number): Promise<void> => {
+                if (!mounted) return;
+
+                try {
+                    const session = await authClient.getSession();
+                    if (session.data?.user) {
+                        const profile = await authService.getCurrentUser();
+                        if (profile && mounted) {
+                            const hasConsent = await authService.hasCurrentConsent();
+                            const pending = await localDataService.getPendingConsent();
+
+                            if (!hasConsent && pending) {
+                                await authService.recordCurrentConsent();
+                                await localDataService.clearPendingConsent();
+                            }
+
+                            setUser(profile);
+                            setIsGuest(false);
+                            await AsyncStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+                            setConsentAccepted(hasConsent || Boolean(pending));
+                            setError(null);
+                            setAuthState('authenticated');
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    logger.error('Failed to hydrate session after auth deep link:', err);
+                }
+
+                // The browser may finish handing the session cookie back just after
+                // the native deep link fires. Retry briefly instead of sending the
+                // user back to the login screen on a timing race.
+                if (attempt < 3 && mounted) {
+                    retryTimer = setTimeout(() => {
+                        void refresh(attempt + 1);
+                    }, 300 * (attempt + 1));
+                }
+            };
+
+            setAuthState('authenticating');
+            setError(null);
+            await refresh(0);
+        };
+
+        const subscription = Linking.addEventListener('url', ({ url }) => {
+            void hydrateAfterAuthDeepLink(url);
+        });
+
+        void Linking.getInitialURL().then((url) => hydrateAfterAuthDeepLink(url));
+
+        return () => {
+            mounted = false;
+            subscription.remove();
+            if (retryTimer) clearTimeout(retryTimer);
+        };
     }, []);
 
     useEffect(() => {
