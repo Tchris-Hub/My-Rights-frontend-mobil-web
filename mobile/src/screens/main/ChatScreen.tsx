@@ -25,7 +25,6 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
@@ -444,11 +443,6 @@ export const ChatScreen: React.FC = () => {
         }
     };
 
-    const { isRecording, isTranscribing, toggleRecording } = useVoiceInput((text) => {
-        setInputText(prev => (prev ? prev + ' ' : '') + text);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    });
-
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
             {/* Background Decoration (Blobs) */}
@@ -623,11 +617,11 @@ export const ChatScreen: React.FC = () => {
                         style={{ flex: 1 }}
                         data={messages}
                         renderItem={({ item }) => (
-                            item.isLoading || isTranscribing ? (
+                            item.isLoading ? (
                                 <View style={styles.loadingBubble}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
-                                        {isTranscribing ? "Transcribing voice..." : "Drafting response..."}
+                                        {"Drafting response..."}
                                     </Text>
                                 </View>
                             ) : <MessageBubble message={item} />
@@ -689,7 +683,7 @@ export const ChatScreen: React.FC = () => {
                                 testID="chat-input"
                                 accessibilityLabel="Message AI"
                                 style={[styles.input, { color: colors.onSurface }]}
-                                placeholder={isRecording ? "Listening..." : "Message AI..."}
+                                placeholder="Message AI..."
                                 placeholderTextColor={colors.onSurfaceVariant}
                                 value={inputText}
                                 onChangeText={setInputText}
@@ -703,16 +697,6 @@ export const ChatScreen: React.FC = () => {
                                 returnKeyType="default"
                             />
 
-                            <TouchableOpacity
-                                onPress={toggleRecording}
-                                style={[styles.inputRightIcon, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 16 }]}
-                            >
-                                <Ionicons
-                                    name={isRecording ? 'mic' : 'mic-outline'}
-                                    size={20}
-                                    color={isRecording ? theme.colors.error : colors.onSurfaceVariant}
-                                />
-                            </TouchableOpacity>
                             {inputText.length > 8000 && (
                                 <Text style={[styles.charCounter, { color: inputText.length > 9500 ? '#EF4444' : colors.onSurfaceVariant }]}>
                                     {inputText.length}/10000
