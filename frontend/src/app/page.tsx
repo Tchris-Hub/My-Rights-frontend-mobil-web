@@ -330,7 +330,7 @@ export default function HomePage() {
           <Reveal>
             <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
               <img
-                src="/app-assets/designed-around-people.webp"
+                src="/app-assets/designed-around-people.jpg"
                 alt="Nigerian community receiving legal information and support"
                 className="block h-auto w-full"
               />
