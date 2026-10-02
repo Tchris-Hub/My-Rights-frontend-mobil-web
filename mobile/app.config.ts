@@ -13,7 +13,6 @@ export default {
             bundleIdentifier: 'com.myrights.app',
             infoPlist: {
                 NSCameraUsageDescription: 'My Rights uses the camera only when you choose to scan or capture a document.',
-                NSMicrophoneUsageDescription: 'My Rights uses the microphone only when you choose voice input.',
                 NSLocationWhenInUseUsageDescription: 'My Rights uses your location only when you choose to find nearby legal-aid resources.',
                 NSPhotoLibraryUsageDescription: 'My Rights accesses photos only when you choose an image for document review.',
             },
@@ -21,7 +20,6 @@ export default {
         android: {
             permissions: [
                 'CAMERA',
-                'RECORD_AUDIO',
                 'ACCESS_COARSE_LOCATION',
                 'ACCESS_FINE_LOCATION',
             ],
@@ -44,7 +42,6 @@ export default {
         plugins: [
             'react-native-document-scanner-plugin',
             'expo-font',
-            'expo-audio',
             'expo-secure-store',
             'expo-sharing',
             'expo-splash-screen',
