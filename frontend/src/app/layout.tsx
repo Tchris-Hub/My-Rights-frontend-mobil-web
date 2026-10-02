@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SplashScreen } from "@/components/common/SplashScreen";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -11,7 +10,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "MY RIGHTS — Understand Your Rights. Prepare With Clarity.",
   description:
-    "MY RIGHTS is a Nigeria-focused digital legal-information companion that helps people understand legal questions, review documents, and prepare for the next step.",
+    "MY RIGHTS is a Nigeria-focused mobile legal-information application that helps people understand legal questions, review documents, and prepare for the next step.",
 };
 
 export default function RootLayout({
@@ -21,10 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased`}>
-        <SplashScreen />
-        {children}
-      </body>
+      <body className={inter.variable}>{children}</body>
     </html>
   );
 }
