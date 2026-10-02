@@ -11,7 +11,6 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Dimensions,
     ActivityIndicator,
     Image,
     Alert,
@@ -33,6 +32,7 @@ import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
@@ -41,7 +41,6 @@ import { useJobs } from '../../contexts/JobContext';
 import { useNavigation } from '@react-navigation/native';
 import { localDataService, type LocalDocumentReview } from '../../services/localData.service';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const DocumentReviewScreen: React.FC = () => {
@@ -556,7 +555,7 @@ const styles = StyleSheet.create({
         zIndex: 100,
     },
     headerContent: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 24,
         flexDirection: 'row',
@@ -718,7 +717,7 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     riskHero: {
-        padding: 32,
+        padding: 24,
         borderRadius: 32,
         gap: 20,
     },
