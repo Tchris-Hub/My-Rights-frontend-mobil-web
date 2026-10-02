@@ -18,6 +18,7 @@ export default {
             },
         },
         android: {
+            name: 'My Rights',
             permissions: [
                 'CAMERA',
                 'ACCESS_COARSE_LOCATION',
