@@ -60,7 +60,7 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useResponsive();
     const navigation = useNavigation<any>();
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
