@@ -330,8 +330,8 @@ export default function HomePage() {
           <Reveal>
             <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/5 p-3">
               <img
-                src={`${ONBOARDING}/classroom_bg.png`}
-                alt="MY RIGHTS onboarding background"
+                src="/app-assets/community-legal-support.webp"
+                alt="Nigerian community legal support with MY RIGHTS"
                 className="aspect-[4/3] w-full rounded-[18px] object-cover"
               />
             </div>
