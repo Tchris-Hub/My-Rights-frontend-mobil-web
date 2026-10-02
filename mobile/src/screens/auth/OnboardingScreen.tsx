@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -146,7 +145,7 @@ export const OnboardingScreen: React.FC = () => {
             />
 
             {/* Bottom Interaction Layer */}
-            <BlurView intensity={24} tint="light" style={[styles.bottomContainer, { backgroundColor: 'rgba(255, 255, 255, 0.7)' }]}>
+            <View pointerEvents="box-none" style={styles.bottomContainer}>
                 <SafeAreaView edges={['bottom']} style={styles.footerRow}>
                     
                     {/* Progress indicators */}
@@ -185,7 +184,7 @@ export const OnboardingScreen: React.FC = () => {
                     </TouchableOpacity>
 
                 </SafeAreaView>
-            </BlurView>
+            </View>
 
             {/* Background elements */}
             <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
@@ -228,7 +227,7 @@ const styles = StyleSheet.create({
     slide: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 160, // Leave room for absolute footer
+        paddingBottom: 220, // Keep copy clear of the floating footer
     },
     imageContainer: {
         position: 'absolute',
@@ -294,8 +293,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         width: '100%',
-        paddingTop: 32,
-        paddingBottom: 40,
+        paddingTop: 24,
+        paddingBottom: 20,
         paddingHorizontal: 48, // Match slide margins
         zIndex: 30,
         borderTopWidth: 0, // NO-LINE RULE
