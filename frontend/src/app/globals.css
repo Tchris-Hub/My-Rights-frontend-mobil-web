@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F8F8F6;
-  --foreground: #002244;
-  --navy: #002244;
-  --gold: #D4AF37;
-  --paper: #F8F8F6;
-  --mist: #F1F3F5;
+  --background: #ffffff;
+  --foreground: #191C1E;
+  --emerald: #047857;
+  --emerald-soft: #ECFDF5;
+  --slate: #0B1326;
+  --gold: #E9C349;
+  --surface: #F8F9FA;
+  --outline: #C4C7CF;
 }
 
 @theme inline {
@@ -28,7 +30,7 @@ body {
 
 ::selection {
   background: var(--gold);
-  color: var(--navy);
+  color: var(--slate);
 }
 
 @media (prefers-reduced-motion: reduce) {
