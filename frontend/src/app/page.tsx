@@ -16,9 +16,8 @@ import {
   Users,
 } from "lucide-react";
 
-const APP_ASSET =
-  "https://raw.githubusercontent.com/7-labs-corp/My-Rights-frontend-mobil-web/main/mobile/assets";
-const ONBOARDING = `${APP_ASSET}/onboarding`;
+const APP_ASSET = "/app-assets";
+const ONBOARDING = APP_ASSET;
 
 const sections = [
   {
