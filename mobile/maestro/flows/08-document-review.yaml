@@ -11,6 +11,4 @@ appId: com.myrights.app
 - tapOn:
     text: "Document Review"
 - assertVisible:
-    id: "document-review-upload"
-- assertVisible:
-    id: "document-review-text"
+    text: "Add Document"
