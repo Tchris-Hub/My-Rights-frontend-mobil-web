@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, StatusBar, Image, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, StatusBar, Image, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
     useAnimatedStyle,
@@ -16,7 +16,6 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SplashScreenProps {
     onAnimationFinish?: () => void;
@@ -203,8 +202,8 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     logoBlur: {
-        width: 180,
-        height: 180,
+        width: narrow ? 140 : 180,
+        height: narrow ? 140 : 180,
         borderRadius: 45,
         padding: 4,
         overflow: 'hidden',
