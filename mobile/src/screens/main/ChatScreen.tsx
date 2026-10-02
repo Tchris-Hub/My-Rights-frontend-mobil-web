@@ -587,7 +587,7 @@ export const ChatScreen: React.FC = () => {
                 {/* Suggestions List */}
                 {messages.length === 0 && (
                     <View style={styles.suggestionsContainer}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.suggestionsScroll, { paddingHorizontal: horizontalPadding }]}>
                             {SUGGESTIONS.map((s, i) => (
                                 <TouchableOpacity
                                     key={i}
