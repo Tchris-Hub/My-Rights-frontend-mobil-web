@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     RefreshControl,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { chatService } from '../../services/chat.service';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
@@ -29,6 +29,7 @@ interface ConversationSummary {
 
 export const ChatHistoryScreen: React.FC = () => {
     const { colors } = useTheme();
+    const { horizontalPadding, narrow } = useResponsive();
     const navigation = useNavigation<any>();
     const [conversations, setConversations] = useState<ConversationSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +140,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingTop: 24,
         paddingBottom: 16,
         gap: 16,
