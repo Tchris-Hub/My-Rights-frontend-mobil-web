@@ -48,6 +48,7 @@ const SUGGESTIONS = [
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { horizontalPadding, narrow } = useResponsive();
     const { isAuthenticated } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
