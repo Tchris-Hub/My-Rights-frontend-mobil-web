@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { SplashScreen } from "@/components/common/SplashScreen";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "My Rights - Digital Legal Advisor",
-  description: "Your Digital Legal Companion. Know Your Rights.",
+  title: "MY RIGHTS — Understand Your Rights. Prepare With Clarity.",
+  description:
+    "MY RIGHTS is a Nigeria-focused mobile legal-information application that helps people understand legal questions, review documents, and prepare for the next step.",
 };
 
 export default function RootLayout({
@@ -20,12 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} antialiased bg-background text-foreground`}
-      >
-        <SplashScreen />
-        {children}
-      </body>
+      <body className={`${inter.variable} ${jakarta.variable}`}>{children}</body>
     </html>
   );
 }
