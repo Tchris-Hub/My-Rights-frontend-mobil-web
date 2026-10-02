@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsive } from '../../utils/responsive';
 
 
 interface SplashScreenProps {
