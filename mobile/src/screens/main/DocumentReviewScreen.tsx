@@ -45,6 +45,7 @@ const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow } = useResponsive();
     const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
