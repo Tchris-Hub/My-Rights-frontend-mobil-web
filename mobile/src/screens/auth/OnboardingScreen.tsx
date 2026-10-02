@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    Dimensions,
     FlatList,
     TouchableOpacity,
     Image,
@@ -15,8 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useResponsive } from '../../utils/responsive';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 interface OnboardingSlide {
@@ -57,6 +56,7 @@ const slides: OnboardingSlide[] = [
 
 export const OnboardingScreen: React.FC = () => {
     const { colors } = useTheme();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentWidth, narrow, scale } = useResponsive();
     const { completeOnboarding } = useAuth();
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -86,18 +86,18 @@ export const OnboardingScreen: React.FC = () => {
                 />
             </View>
 
-            <View style={styles.contentContainer}>
+            <View style={[styles.contentContainer, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth }]}>
                 <View style={[styles.badgeContainer, { backgroundColor: colors.secondaryContainer + '1A', borderColor: colors.secondaryContainer + '33' }]}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.secondary} style={styles.badgeIcon} />
                     <Text style={[styles.badgeText, { color: colors.secondary }]}>{item.badge}</Text>
                 </View>
 
-                <Text style={[styles.title, { color: colors.secondary }]}>
+                <Text style={[styles.title, { color: colors.secondary, fontSize: narrow ? 44 : 52, lineHeight: narrow ? 48 : 56 }]}>
                     {item.title}
                     <Text style={[styles.highlight, { color: colors.primary }]}>{item.highlight}</Text>
                 </Text>
 
-                <Text style={[styles.description, { color: colors.onSurfaceVariant }]}>
+                <Text style={[styles.description, { color: colors.onSurfaceVariant, maxWidth: Math.min(320, contentWidth - 12), fontSize: narrow ? 16 : 18, lineHeight: narrow ? 24 : 28 }]}>
                     {item.description}
                 </Text>
             </View>
@@ -145,7 +145,7 @@ export const OnboardingScreen: React.FC = () => {
             />
 
             {/* Bottom Interaction Layer */}
-            <View pointerEvents="box-none" style={styles.bottomContainer}>
+            <View pointerEvents="box-none" style={[styles.bottomContainer, { paddingHorizontal: horizontalPadding }]}>
                 <SafeAreaView edges={['bottom']} style={styles.footerRow}>
                     
                     {/* Progress indicators */}
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 32,
+        paddingHorizontal: 16,
         paddingTop: 24,
         zIndex: 50,
     },
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
         opacity: 0.4, // Grayscale effect fallback
     },
     contentContainer: {
-        paddingHorizontal: 48, // Wide 3rem Hero margins
+        paddingHorizontal: 16, // overridden by responsive screen padding
         zIndex: 20,
         maxWidth: 600,
     },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingTop: 24,
         paddingBottom: 20,
-        paddingHorizontal: 48, // Match slide margins
+        paddingHorizontal: 16, // overridden by responsive screen padding
         zIndex: 30,
         borderTopWidth: 0, // NO-LINE RULE
     },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingHorizontal: 40,
+        paddingHorizontal: 20,
         paddingVertical: 16,
         borderRadius: 12,
     },
@@ -337,8 +337,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '25%',
         right: -80,
-        width: 500,
-        height: 500,
+        width: 320,
+        height: 320,
         borderRadius: 250,
         zIndex: 0,
         transform: [{ scale: 1.5 }],
@@ -347,8 +347,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: -80,
         left: -80,
-        width: 400,
-        height: 400,
+        width: 280,
+        height: 280,
         borderRadius: 200,
         zIndex: 0,
         transform: [{ scale: 1.5 }],
