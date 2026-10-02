@@ -410,7 +410,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         testID="document-generator-build"
                                         accessibilityRole="button"
                                         style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
-                                        onPress={handleStartBuild}
+                                        onPress={() => handleStartBuild()}
                                     >
                                         <Text style={styles.finalActionText}>Generate Final Document</Text>
                                         <Ionicons name="arrow-forward" size={18} color="#FFF" />
