@@ -20,6 +20,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     TouchableWithoutFeedback,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -377,11 +378,40 @@ export const DocumentReviewScreen: React.FC = () => {
 
                             <View style={styles.addDocumentSection}>
                                 <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>New Review</Text>
-                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleAddDocument}>
+                            <TouchableOpacity testID="document-review-upload" style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleAddDocument}>
                                 <Ionicons name="scan-outline" size={32} color={colors.primary} />
                                 <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Add Document</Text>
                                 <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>Scan a document, upload an image, or upload a file</Text>
                             </TouchableOpacity>
+
+                            <View style={styles.editorialInput}>
+                                <Text style={[styles.inputLabel, { color: colors.onSurfaceVariant }]}>OR PASTE DOCUMENT TEXT</Text>
+                                <TextInput
+                                    testID="document-review-text"
+                                    value={documentText}
+                                    onChangeText={(value) => {
+                                        setDocumentText(value);
+                                        if (value.trim()) {
+                                            setPendingDocument({
+                                                kind: 'text',
+                                                name: 'Pasted document text',
+                                            });
+                                        } else if (pendingDocument?.kind === 'text') {
+                                            setPendingDocument(null);
+                                        }
+                                    }}
+                                    placeholder="Paste or type the legal document text you want reviewed..."
+                                    placeholderTextColor={colors.onSurfaceVariant}
+                                    multiline
+                                    textAlignVertical="top"
+                                    style={[styles.textArea, {
+                                        color: colors.onSurface,
+                                        backgroundColor: colors.surfaceContainerHigh,
+                                    }]}
+                                    editable={!isLoading}
+                                    returnKeyType="default"
+                                />
+                            </View>
 
                             {pendingDocument ? (
                                 <View style={[styles.documentAttached, { backgroundColor: colors.surfaceContainerLow }]}>
@@ -412,6 +442,7 @@ export const DocumentReviewScreen: React.FC = () => {
                                 loading={isLoading}
                                 disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
+                                testID="document-review-submit"
                             />
                             {isAuthenticated && analyzeQuotaRemaining !== null && (
                                 <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
