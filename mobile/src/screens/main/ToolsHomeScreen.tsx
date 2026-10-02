@@ -11,7 +11,6 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,8 +19,8 @@ import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../utils/responsive';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 const TOOLS = [
@@ -61,6 +60,7 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow } = useResponsive();
     const navigation = useNavigation<any>();
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         zIndex: 100,
     },
     headerContent: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 12,
         flexDirection: 'row',
