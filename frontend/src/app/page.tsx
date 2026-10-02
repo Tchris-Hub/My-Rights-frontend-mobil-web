@@ -328,11 +328,11 @@ export default function HomePage() {
       <section className="bg-[#0B1326] px-6 py-24 text-white lg:px-10 lg:py-36">
         <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[.8fr_1.2fr]">
           <Reveal>
-            <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/5 p-3">
+            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
               <img
                 src="/app-assets/community-legal-support.webp"
                 alt="Nigerian community legal support with MY RIGHTS"
-                className="aspect-[4/3] w-full rounded-[18px] object-cover"
+                className="block h-auto w-full"
               />
             </div>
           </Reveal>
