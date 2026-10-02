@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Dimensions,
     Platform,
     Linking,
     ActivityIndicator,
@@ -24,6 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsive } from '../../utils/responsive';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -43,7 +43,6 @@ type Firm = {
     match_reasons?: string[];
 };
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CLASSROOM_BG = require('../../../assets/images/classroom_bg.png');
 
 type SectionData = {
@@ -53,6 +52,7 @@ type SectionData = {
 
 export const LegalAidMapScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow } = useResponsive();
     const navigation = useNavigation<any>();
     
     // UI State
@@ -393,7 +393,7 @@ export const LegalAidMapScreen: React.FC = () => {
             </View>
 
             {/* Discovery Mode Toggle */}
-            <View style={styles.navToggleContainer}>
+            <View style={[styles.navToggleContainer, { paddingHorizontal: horizontalPadding }]}>
                 <View style={[styles.navToggle, { backgroundColor: colors.surfaceContainer }]}>
                     <TouchableOpacity
                         testID="legal-aid-centers"
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
         zIndex: 100,
     },
     headerContent: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 16,
         flexDirection: 'row',
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     },
     mapContainer: {
         height: 300,
-        marginHorizontal: 32,
+        marginHorizontal: 16,
         borderRadius: 32,
         overflow: 'hidden',
         marginTop: 12,
