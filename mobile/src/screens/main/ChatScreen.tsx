@@ -33,6 +33,7 @@ import { usageService } from '../../services/usage.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage, AuthenticatedChatResponse, PublicChatResponse } from '../../types';
 
@@ -792,7 +793,7 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingBottom: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
+        paddingHorizontal: 16,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
