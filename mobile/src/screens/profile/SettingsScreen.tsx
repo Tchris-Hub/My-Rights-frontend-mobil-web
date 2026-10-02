@@ -7,19 +7,18 @@ import {
     Switch,
     TouchableOpacity,
     Alert,
-    Dimensions,
     Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { APP_CONFIG } from '../../constants/config';
 
-const { width } = Dimensions.get('window');
 
 export const SettingsScreen: React.FC = () => {
     const { colors, isDark, toggleTheme } = useTheme();
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     content: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingBottom: 40,
     },
     section: {
@@ -258,7 +257,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 12,
         paddingVertical: 16,
-        paddingHorizontal: 32,
+        paddingHorizontal: 16,
         borderRadius: theme.borderRadius.xl,
         width: '100%',
         justifyContent: 'center',
