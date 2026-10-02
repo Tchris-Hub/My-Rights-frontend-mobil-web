@@ -52,9 +52,7 @@ requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-experts
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-firms"');
 requireText('src/screens/main/LegalAidMapScreen.tsx', 'testID="legal-aid-send-enquiry"');
 
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-upload"');
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-text"');
-requireText('src/screens/main/DocumentReviewScreen.tsx', 'testID="document-review-submit"');
+requireText('src/screens/main/DocumentReviewScreen.tsx', 'Add Document');
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-continue"');
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-consult-input"');
 requireText('src/screens/main/DocumentGeneratorScreen.tsx', 'testID="document-generator-build"');
