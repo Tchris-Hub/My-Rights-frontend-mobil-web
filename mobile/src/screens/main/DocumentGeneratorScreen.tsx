@@ -7,7 +7,6 @@ import {
     ScrollView,
     TextInput,
     TouchableOpacity,
-    Dimensions,
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
@@ -27,6 +26,7 @@ import { Button } from '../../components/ui/Button';
 import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
@@ -36,7 +36,6 @@ import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
 import type { DocumentGenerationMissingInformation } from '../../types';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'MISSING_INFO' | 'PREVIEW' | 'FINALIZE';
 
@@ -505,7 +504,7 @@ const styles = StyleSheet.create({
         opacity: 0.12,
     },
     header: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 24,
     },
