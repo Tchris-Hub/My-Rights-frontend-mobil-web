@@ -682,6 +682,8 @@ const styles = StyleSheet.create({
     detailText: {
         ...theme.typography.bodyMd,
         fontSize: 14,
+        flex: 1,
+        minWidth: 0,
     },
     cardActions: {
         flexDirection: 'row',
