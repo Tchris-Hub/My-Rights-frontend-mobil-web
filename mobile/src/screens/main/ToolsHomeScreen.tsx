@@ -60,8 +60,11 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, compact } = useResponsive();
     const navigation = useNavigation<any>();
+
+    const columns = getColumns(220, 16);
+    const isTwoColumn = columns === 2;
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -70,17 +73,16 @@ export const ToolsHomeScreen: React.FC = () => {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            {/* Background Decoration (Lincoln College Watermark) */}
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Image 
+                <Image
                     source={CLASSROOM_BG}
-                    style={styles.globalBackground}
+                    style={[styles.globalBackground, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}
                 />
                 <View style={[styles.gradientOverlay, { backgroundColor: colors.surface + '80' }]} />
             </View>
 
             <SafeAreaView edges={['top']} style={styles.header}>
-                <View style={styles.headerContent}>
+                <View style={[styles.headerContent, { paddingHorizontal: horizontalPadding }]}>
                     <TouchableOpacity
                         style={[styles.backButton, { backgroundColor: colors.surfaceContainerHigh }]}
                         onPress={() => navigation.goBack()}
@@ -95,19 +97,37 @@ export const ToolsHomeScreen: React.FC = () => {
                 </View>
             </SafeAreaView>
 
-            <ScrollView 
-                contentContainerStyle={styles.scrollContent} 
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.heroSection}>
+                <View style={[
+                    styles.heroSection,
+                    {
+                        paddingHorizontal: horizontalPadding,
+                        maxWidth: contentMaxWidth,
+                        alignSelf: contentMaxWidth ? 'center' : undefined,
+                        width: '100%',
+                    },
+                ]}>
                     <Text style={[styles.heroPreTitle, { color: colors.primary }]}>Institutional Access</Text>
-                    <Text style={[styles.heroTitle, { color: colors.onSurface }]}>THE HUB</Text>
+                    <Text style={[styles.heroTitle, { color: colors.onSurface }, compact && styles.heroTitleCompact]}>
+                        THE HUB
+                    </Text>
                     <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant }]}>
                         Legal information, document tools, and pathways to human legal help.
                     </Text>
                 </View>
 
-                <View style={styles.grid}>
+                <View style={[
+                    styles.grid,
+                    {
+                        paddingHorizontal: horizontalPadding,
+                        maxWidth: contentMaxWidth,
+                        alignSelf: contentMaxWidth ? 'center' : undefined,
+                        width: '100%',
+                    },
+                ]}>
                     {TOOLS.map((tool, index) => (
                         <TouchableOpacity
                             testID={`tool-${tool.id}`}
@@ -115,11 +135,14 @@ export const ToolsHomeScreen: React.FC = () => {
                             accessibilityLabel={tool.title}
                             key={tool.id}
                             style={[
-                                styles.toolCard, 
-                                { 
-                                    backgroundColor: index % 2 === 0 ? colors.surfaceContainerLow : colors.surfaceContainerHigh,
-                                    marginTop: index % 2 === 1 ? 40 : 0 // Deep Asymmetric stagger
-                                }
+                                styles.toolCard,
+                                {
+                                    backgroundColor: index % 2 === 0
+                                        ? colors.surfaceContainerLow
+                                        : colors.surfaceContainerHigh,
+                                    width: isTwoColumn ? '48%' : '100%',
+                                    marginTop: isTwoColumn && index % 2 === 1 ? 40 : 0,
+                                },
                             ]}
                             onPress={() => handleToolPress(tool)}
                             activeOpacity={0.9}
@@ -128,10 +151,15 @@ export const ToolsHomeScreen: React.FC = () => {
                                 <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
                                     <Ionicons name={tool.icon as any} size={28} color={tool.color} />
                                 </View>
-                                <Ionicons name="arrow-up-outline" size={20} color={colors.onSurfaceVariant} style={{ transform: [{ rotate: '45deg' }] }} />
+                                <Ionicons
+                                    name="arrow-up-outline"
+                                    size={20}
+                                    color={colors.onSurfaceVariant}
+                                    style={{ transform: [{ rotate: '45deg' }] }}
+                                />
                             </View>
-                            
-                            <View style={styles.toolInfo}>
+
+                            <View style={[styles.toolInfo, compact && styles.toolInfoCompact]}>
                                 <Text style={[styles.toolTitle, { color: colors.onSurface }]}>{tool.title}</Text>
                                 <Text style={[styles.toolSubtitle, { color: colors.onSurfaceVariant }]}>{tool.subtitle}</Text>
                             </View>
@@ -139,8 +167,16 @@ export const ToolsHomeScreen: React.FC = () => {
                     ))}
                 </View>
 
-                {/* Promotional Tip - Evidence Locker Style */}
-                <View style={[styles.promoBox, { backgroundColor: colors.surfaceContainerHighest || colors.surfaceContainerHigh }]}>
+                <View style={[
+                    styles.promoBox,
+                    {
+                        backgroundColor: colors.surfaceContainerHighest || colors.surfaceContainerHigh,
+                        marginHorizontal: horizontalPadding,
+                        maxWidth: contentMaxWidth,
+                        alignSelf: contentMaxWidth ? 'center' : undefined,
+                        width: contentMaxWidth ? '100%' : undefined,
+                    },
+                ]}>
                     <BlurView intensity={20} style={StyleSheet.absoluteFill} />
                     <View style={styles.promoTextContent}>
                         <View style={styles.promoHeader}>
@@ -168,7 +204,6 @@ const styles = StyleSheet.create({
         zIndex: 100,
     },
     headerContent: {
-        paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 12,
         flexDirection: 'row',
@@ -204,7 +239,6 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     heroSection: {
-        paddingHorizontal: 24,
         marginTop: 20,
         marginBottom: 40,
     },
@@ -222,25 +256,29 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: -3,
     },
+    heroTitleCompact: {
+        fontSize: 46,
+        lineHeight: 50,
+        letterSpacing: -2,
+    },
     heroSubtitle: {
         ...theme.typography.bodyLg,
         marginTop: 12,
         opacity: 0.7,
-        maxWidth: '80%',
+        maxWidth: 520,
     },
     scrollContent: {
-        paddingBottom: 120, 
+        paddingBottom: 120,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: 24,
         justifyContent: 'space-between',
+        rowGap: 16,
     },
     toolCard: {
-        width: '47%',
         padding: 24,
-        borderRadius: 32, 
+        borderRadius: 32,
         justifyContent: 'space-between',
         minHeight: 220,
     },
@@ -259,6 +297,9 @@ const styles = StyleSheet.create({
     toolInfo: {
         marginTop: 32,
     },
+    toolInfoCompact: {
+        marginTop: 24,
+    },
     toolTitle: {
         ...theme.typography.titleLg,
         fontSize: 20,
@@ -273,7 +314,6 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     promoBox: {
-        marginHorizontal: 24,
         marginTop: 60,
         padding: 32,
         borderRadius: 36,
@@ -305,10 +345,7 @@ const styles = StyleSheet.create({
     },
     globalBackground: {
         position: 'absolute',
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
         resizeMode: 'cover',
         opacity: 0.08,
     },
 });
-
