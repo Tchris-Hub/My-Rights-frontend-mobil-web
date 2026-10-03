@@ -57,7 +57,7 @@ const escapeHtml = (value: string): string => value
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH } = useResponsive();
+    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, narrow } = useResponsive();
     const { activeJob, startJob, updateJob, finishJob, failJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
@@ -370,7 +370,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
                     {step === 'CONSULT' && (
                         <View style={{ flex: 1 }}>
-                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                            <ScrollView style={styles.chatScroll} contentContainerStyle={{ paddingHorizontal: horizontalPadding, paddingVertical: 24, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                                 {consultMessages.map(msg => (
                                     <View key={msg.id} style={[
                                         styles.chatBubble, 
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...theme.typography.displaySm,
-        fontSize: 32,
+        fontSize: narrow ? 28 : 32,
         fontWeight: '900',
         letterSpacing: -1,
     },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
         minHeight: 56,
         maxHeight: 120,
         borderRadius: 28,
-        paddingHorizontal: 24,
+        paddingHorizontal: 0,
         paddingVertical: 16,
         fontSize: 15,
         fontWeight: '600',
