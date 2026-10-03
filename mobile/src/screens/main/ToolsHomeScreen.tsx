@@ -60,7 +60,7 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, compact, fluid } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, fluid } = useResponsive();
     const navigation = useNavigation<any>();
 
     const columns = getColumns(220, 16);
@@ -168,7 +168,7 @@ export const ToolsHomeScreen: React.FC = () => {
                                 />
                             </View>
 
-                            <View style={[styles.toolInfo, compact && styles.toolInfoCompact]}>
+                            <View style={styles.toolInfo}>
                                 <Text style={[styles.toolTitle, { color: colors.onSurface, fontSize: cardTitleSize, lineHeight: Math.round(cardTitleSize * 1.15) }]}>{tool.title}</Text>
                                 <Text style={[styles.toolSubtitle, { color: colors.onSurfaceVariant, fontSize: cardSubtitleSize, lineHeight: Math.round(cardSubtitleSize * 1.45) }]}>{tool.subtitle}</Text>
                             </View>
@@ -263,8 +263,6 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: -2.2,
     },
-    heroTitleCompact: {
-        
     heroSubtitle: {
         ...theme.typography.bodyLg,
         marginTop: 12,
