@@ -28,7 +28,8 @@ export const ProfileHomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
-    const { horizontalPadding, contentWidth, narrow } = useResponsive();
+    const { horizontalPadding, contentWidth, fluid } = useResponsive();
+    const profileNameSize = fluid(32, 40, 320, 600);
     const [stats, setStats] = useState({ consultations: 0, enquiries: 0, saved_rights: 0 });
 
     useEffect(() => {
@@ -296,7 +297,8 @@ const styles = StyleSheet.create({
     },
     name: {
         fontFamily: theme.typography.fontFamily.headline,
-        fontSize: narrow ? 32 : 40,
+        fontSize: profileNameSize,
+        lineHeight: Math.round(profileNameSize * 1.2),
         fontWeight: '700',
         letterSpacing: -1.2,
         lineHeight: 48,
