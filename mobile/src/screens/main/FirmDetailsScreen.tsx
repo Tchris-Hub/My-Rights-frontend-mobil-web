@@ -4,6 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 
 type Firm = {
   id: string;
@@ -22,17 +23,18 @@ export const FirmDetailsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors } = useTheme();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const firm = route.params.firm as Firm;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.onSurface }]}>Firm details</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}>
         <View style={[styles.hero, { backgroundColor: colors.surfaceContainer }]}>
           <View style={[styles.icon, { backgroundColor: colors.primary + '15' }]}>
             <Ionicons name="business" size={30} color={colors.primary} />
