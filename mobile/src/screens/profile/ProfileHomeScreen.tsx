@@ -22,11 +22,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import Animated, { ZoomIn, FadeInUp } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { accountService } from '../../services/account.service';
+import { useResponsive } from '../../utils/responsive';
 
 export const ProfileHomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
+    const { horizontalPadding, contentWidth, narrow } = useResponsive();
     const [stats, setStats] = useState({ consultations: 0, enquiries: 0, saved_rights: 0 });
 
     useEffect(() => {
@@ -47,7 +49,7 @@ export const ProfileHomeScreen: React.FC = () => {
             </View>
 
             <ScrollView 
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View 
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
     },
     name: {
         fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 40,
+        fontSize: narrow ? 32 : 40,
         fontWeight: '700',
         letterSpacing: -1.2,
         lineHeight: 48,
