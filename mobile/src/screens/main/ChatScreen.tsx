@@ -440,7 +440,7 @@ export const ChatScreen: React.FC = () => {
                         <View style={styles.headerCentered}>
                             <View style={styles.statusRow}>
                                 <View style={[styles.onlineDot, isIncognito && { backgroundColor: colors.onSurfaceVariant }]} />
-                                <Text style={[styles.headerTitle, { color: colors.onSurface, fontSize: fluid(16, 18, 320, 600) }]}>
+                                <Text style={[styles.headerTitle, { color: colors.onSurface, fontSize: fluid(15, 17, 320, 600) }]}>
                                     {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
                                 </Text>
                             </View>
@@ -488,7 +488,7 @@ export const ChatScreen: React.FC = () => {
                                 >
                                     <View style={styles.menuItemLabelWrap}>
                                         <Ionicons name="refresh-circle" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface, fontSize: fluid(13, 14, 320, 600) }]}>Start New Chat</Text>
+                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface, fontSize: fluid(12.5, 13.5, 320, 600) }]}>Start New Chat</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
                                 </TouchableOpacity>
@@ -583,8 +583,8 @@ export const ChatScreen: React.FC = () => {
                                     styles.emptyTitle,
                                     {
                                         color: colors.onSurface,
-                                        fontSize: fluid(24, 32, 320, 600),
-                                        lineHeight: fluid(29, 38, 320, 600),
+                                        fontSize: fluid(20, 27, 320, 600),
+                                        lineHeight: fluid(25, 33, 320, 600),
                                     },
                                 ]}
                             >
@@ -595,8 +595,8 @@ export const ChatScreen: React.FC = () => {
                                     styles.emptySubtitle,
                                     {
                                         color: colors.onSurfaceVariant,
-                                        fontSize: fluid(13, 16, 320, 600),
-                                        lineHeight: fluid(19, 24, 320, 600),
+                                        fontSize: fluid(12, 14.5, 320, 600),
+                                        lineHeight: fluid(17, 21, 320, 600),
                                     },
                                 ]}
                             >
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: theme.typography.fontFamily.headline,
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '600',
         letterSpacing: -0.36,
     },
     keyboardView: {
