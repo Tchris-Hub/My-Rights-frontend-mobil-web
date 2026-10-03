@@ -116,16 +116,16 @@ export const typography = {
     },
     titleLg: {
         fontFamily: 'PlusJakartaSans_600SemiBold',
-        fontSize: moderateScale(20),
-        lineHeight: moderateScale(28),
-        letterSpacing: -0.48,
+        fontSize: moderateScale(18),
+        lineHeight: moderateScale(26),
+        letterSpacing: -0.368,
         color: colors.onSurface,
     },
     titleMd: {
         fontFamily: 'PlusJakartaSans_600SemiBold',
-        fontSize: moderateScale(20),
-        lineHeight: moderateScale(28),
-        letterSpacing: -0.4,
+        fontSize: moderateScale(18),
+        lineHeight: moderateScale(26),
+        letterSpacing: -0.36,
         color: colors.onSurface,
     },
 
