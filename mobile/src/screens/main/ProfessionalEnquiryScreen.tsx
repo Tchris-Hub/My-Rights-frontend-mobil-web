@@ -19,6 +19,7 @@ import type { ToolsStackParamList } from '../../navigation/types';
 import { legalService } from '../../services/legalService';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 
 type Route = RouteProp<ToolsStackParamList, 'ProfessionalEnquiry'>;
 
@@ -26,6 +27,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<Route>();
   const { colors } = useTheme();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,7 +67,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.surfaceContainer }]}
             onPress={() => navigation.goBack()}
@@ -80,7 +82,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
