@@ -272,8 +272,8 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
             </TouchableOpacity>
             <View>
-                <Text style={[styles.title, { color: colors.onSurface, fontSize: compact ? fluid(23, 32, 320, 600) : 32, lineHeight: compact ? Math.round(fluid(28, 38, 320, 600)) : 38 }]}>Document Architect</Text>
-                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+                <Text style={[styles.title, { color: colors.onSurface, fontSize: compact ? fluid(21, 32, 320, 600) : 32, lineHeight: compact ? Math.round(fluid(25, 38, 320, 600)) : 38 }]}>Document Architect</Text>
+                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant, fontSize: compact ? fluid(10, 12, 320, 600) : 12, letterSpacing: compact ? fluid(1.5, 2, 320, 600) : 2 }]} numberOfLines={1}>
                     {step === 'SELECT' ? 'Choose a document type' : 
                      step === 'INTAKE' ? 'Enter the document details' : 
                      step === 'CONSULT' ? 'Add optional requirements' : 'Completed document — review before use'}
@@ -332,16 +332,16 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         }, { backgroundColor: colors.primary + '10' }]}>
                                             <Ionicons name="document-text" size={compact ? fluid(20, 28, 320, 600) : 28} color={colors.primary} />
                                         </View>
-                                        <View style={[styles.templateInfo, compact && { marginLeft: fluid(10, 16, 320, 600), marginRight: fluid(4, 8, 320, 600), minWidth: 0 }]}>
+                                        <View style={[styles.templateInfo, compact && { marginLeft: fluid(10, 16, 320, 600), marginRight: fluid(4, 8, 320, 600), minWidth: 0, flex: 1 }]}>
                                             <Text style={[styles.templateTitle, compact && {
-                                                fontSize: fluid(14.5, 18, 320, 600),
-                                                lineHeight: fluid(18, 21, 320, 600),
+                                                fontSize: fluid(15.5, 18, 320, 600),
+                                                lineHeight: fluid(19, 21, 320, 600),
                                                 fontWeight: '900',
                                                 letterSpacing: -0.2,
                                             }, { color: colors.onSurface }]} numberOfLines={2} ellipsizeMode="tail">{t.title}</Text>
                                             <Text style={[styles.templateDesc, compact && {
-                                                fontSize: fluid(10, 12, 320, 600),
-                                                lineHeight: fluid(13, 16, 320, 600),
+                                                fontSize: fluid(10.5, 12, 320, 600),
+                                                lineHeight: fluid(13.5, 16, 320, 600),
                                                 marginTop: fluid(2, 4, 320, 600),
                                             }, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
                                         </View>
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: 16,
         paddingTop: 12,
-        paddingBottom: 24,
+        paddingBottom: fluid(20, 24, 320, 600),
     },
     backBtn: {
         width: 48,
