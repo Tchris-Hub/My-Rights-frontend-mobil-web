@@ -471,7 +471,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                     <Text style={[styles.previewText, { color: colors.onSurface }]}>{draftContent.replace(/<[^>]*>?/gm, '')}</Text>
                                 </View>
                             </ScrollView>
-                            <View style={styles.previewActions}>
+                            <View style={[styles.previewActions, narrow && styles.previewActionsNarrow]}>
                                 <TouchableOpacity 
                                     style={[styles.actionBtnPrimary, { backgroundColor: colors.primary }]}
                                     onPress={handleExportPDF}
@@ -746,8 +746,13 @@ const styles = StyleSheet.create({
         paddingBottom: Platform.OS === 'ios' ? 40 : 20,
         gap: 16,
     },
+    previewActionsNarrow: {
+        flexDirection: 'column',
+        gap: 12,
+    },
     actionBtnPrimary: {
         flex: 2,
+        width: '100%',
         height: 64,
         borderRadius: 32,
         flexDirection: 'row',
@@ -757,6 +762,7 @@ const styles = StyleSheet.create({
     },
     actionBtnOutline: {
         flex: 1,
+        width: '100%',
         height: 64,
         borderRadius: 32,
         borderWidth: 2,
