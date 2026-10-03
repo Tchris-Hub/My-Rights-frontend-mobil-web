@@ -26,7 +26,7 @@ const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow, contentWidth } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow, contentWidth, fluid } = useResponsive();
     const { requestMagicLink, signInWithGoogle, isLoading, error, clearError, continueAsGuest } = useAuth();
 
     useFocusEffect(
@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
     },
     globalBackground: {
         position: 'absolute',
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
+        width: '100%',
+        height: '100%',
         resizeMode: 'cover',
         opacity: 0.15,
     },
