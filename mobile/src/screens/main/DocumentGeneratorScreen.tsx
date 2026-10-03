@@ -303,7 +303,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
             ) : (
                 <View style={styles.workflowContainer}>
                     {step === 'SELECT' && (
-                        <ScrollView contentContainerStyle={styles.templatesList} showsVerticalScrollIndicator={false}>
+                        <ScrollView contentContainerStyle={[styles.templatesList, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]} showsVerticalScrollIndicator={false}>
                             {templates.map((t, idx) => (
                                 <Animated.View key={t.id} entering={FadeInRight.delay(idx * 100)}>
                                     <TouchableOpacity 
@@ -338,7 +338,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
 
                     {step === 'INTAKE' && selectedTemplate && (
                         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-                            <ScrollView contentContainerStyle={styles.intakeScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                            <ScrollView contentContainerStyle={[styles.intakeScroll, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                                 <View style={styles.asymmetricHeader}>
                                     <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
                                     <Text style={[styles.sectionHeader, { color: colors.onSurface }]}>Primary Details</Text>
@@ -536,8 +536,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     templatesList: {
-        padding: 24,
+        paddingHorizontal: 0,
         paddingTop: 0,
+        paddingBottom: 24,
     },
     templateCard: {
         flexDirection: 'row',
@@ -578,7 +579,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     intakeScroll: {
-        padding: 24,
+        paddingHorizontal: 0,
+        paddingVertical: 24,
     },
     asymmetricHeader: {
         flexDirection: 'row',
