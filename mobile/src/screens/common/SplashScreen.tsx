@@ -37,7 +37,9 @@ const FUNNY_SUBTITLES = [
 ];
 
 export const CustomSplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish, isAppReady = false }) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
+    const { narrow, fluid } = useResponsive();
+    const splashTitleSize = fluid(34, 42, 320, 600);
     const [isAnimationDone, setIsAnimationDone] = useState(false);
     const [randomSubtitle, setRandomSubtitle] = useState('');
 
@@ -158,7 +160,7 @@ export const CustomSplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFin
 
                     <View style={styles.textGroup}>
                         <Animated.View style={titleStyle}>
-                            <Text style={styles.title}>
+                            <Text style={[styles.title, { fontSize: splashTitleSize, lineHeight: Math.round(splashTitleSize * 1.15) }]}>
                                 My <Text style={{ color: '#D4AF37' }}>Rights</Text>
                             </Text>
                         </Animated.View>
