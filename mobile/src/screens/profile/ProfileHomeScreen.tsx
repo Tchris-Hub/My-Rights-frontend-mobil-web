@@ -29,7 +29,16 @@ export const ProfileHomeScreen: React.FC = () => {
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
     const { horizontalPadding, contentWidth, fluid, narrow } = useResponsive();
-    const profileNameSize = fluid(32, 40, 320, 600);
+    const profileNameSize = fluid(28, 40, 320, 600);
+    const avatarSize = fluid(56, 64, 320, 600);
+    const settingsSize = fluid(40, 44, 320, 600);
+    const statPadding = fluid(14, 20, 320, 600);
+    const statRadius = fluid(20, 24, 320, 600);
+    const menuItemPadding = fluid(12, 16, 320, 600);
+    const menuGap = fluid(10, 16, 320, 600);
+    const iconSize = fluid(40, 44, 320, 600);
+    const menuTitleSize = fluid(14, 15, 320, 600);
+    const menuSubSize = fluid(10.5, 11.5, 320, 600);
     const [stats, setStats] = useState({ consultations: 0, enquiries: 0, saved_rights: 0 });
 
     useEffect(() => {
@@ -58,14 +67,14 @@ export const ProfileHomeScreen: React.FC = () => {
                     style={styles.header}
                 >
                     <View style={styles.headerTop}>
-                        <View style={[styles.avatarWrapper, { backgroundColor: colors.surfaceContainerHighest }]}>
-                            <Ionicons name="person" size={32} color={colors.primary} />
+                        <View style={[styles.avatarWrapper, { backgroundColor: colors.surfaceContainerHighest, width: avatarSize, height: avatarSize, borderRadius: avatarSize * 0.375 }]}>
+                            <Ionicons name="person" size={fluid(28, 32, 320, 600)} color={colors.primary} />
                         </View>
                         <TouchableOpacity 
-                            style={[styles.settingsButton, { backgroundColor: colors.surfaceContainerHigh }]}
+                            style={[styles.settingsButton, { backgroundColor: colors.surfaceContainerHigh, width: settingsSize, height: settingsSize, borderRadius: fluid(12, 14, 320, 600) }]}
                             onPress={() => navigation.navigate('Settings')}
                         >
-                            <Ionicons name="settings-sharp" size={20} color={colors.onSurface} />
+                            <Ionicons name="settings-sharp" size={fluid(18, 20, 320, 600)} color={colors.onSurface} />
                         </TouchableOpacity>
                     </View>
 
@@ -88,7 +97,7 @@ export const ProfileHomeScreen: React.FC = () => {
                     entering={FadeInUp.delay(200).duration(600).springify()}
                     style={styles.statsContainer}
                 >
-                    <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
+                    <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow, padding: statPadding, borderRadius: statRadius }]}>
                         <Text style={[styles.statValue, { color: colors.onSurface }]}>{stats.consultations}</Text>
                         <Text
                             style={[styles.statLabel, { color: colors.onSurfaceVariant }]}
@@ -118,7 +127,7 @@ export const ProfileHomeScreen: React.FC = () => {
                     
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
-                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow, { padding: menuItemPadding, gap: menuGap }]}
                             onPress={() => {
                                 if (isGuest) {
                                     Alert.alert(
@@ -134,12 +143,12 @@ export const ProfileHomeScreen: React.FC = () => {
                                 }
                             }}
                         >
-                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '15' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '15', width: iconSize, height: iconSize, borderRadius: fluid(12, 14, 320, 600) }]}>
                                 <Ionicons name="chatbubbles" size={20} color={colors.primary} />
                             </View>
                             <View style={styles.menuTextContent}>
                                 <Text
-                                    style={[styles.menuTitle, { color: colors.onSurface }]}
+                                    style={[styles.menuTitle, { color: colors.onSurface, fontSize: menuTitleSize, lineHeight: Math.round(menuTitleSize * 1.35) }]}
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                     maxFontSizeMultiplier={1.2}
@@ -147,7 +156,7 @@ export const ProfileHomeScreen: React.FC = () => {
                                     Consultation History
                                 </Text>
                                 <Text
-                                    style={[styles.menuSub, { color: colors.onSurfaceVariant }]}
+                                    style={[styles.menuSub, { color: colors.onSurfaceVariant, fontSize: menuSubSize, lineHeight: Math.round(menuSubSize * 1.4) }]}
                                     numberOfLines={2}
                                     maxFontSizeMultiplier={1.2}
                                 >
@@ -196,7 +205,7 @@ export const ProfileHomeScreen: React.FC = () => {
                                 if (!isGuest) navigation.navigate('ProfessionalProfile');
                             }}
                         >
-                            <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.secondary + '15', width: iconSize, height: iconSize, borderRadius: fluid(12, 14, 320, 600) }]}>
                                 <Ionicons name="briefcase-outline" size={20} color={colors.secondary} />
                             </View>
                             <View style={styles.menuTextContent}>
@@ -246,7 +255,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant, marginTop: 32 }]}>Application</Text>
+                    <Text style={[styles.sectionHeader, { color: colors.onSurfaceVariant, marginTop: fluid(24, 32, 320, 600) }]}>Application</Text>
 
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
@@ -254,11 +263,11 @@ export const ProfileHomeScreen: React.FC = () => {
                             onPress={() => navigation.navigate('PrivacyCenter')}
                             accessibilityRole="button"
                         >
-                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '10' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.primary + '10', width: iconSize, height: iconSize, borderRadius: fluid(12, 14, 320, 600) }]}>
                                 <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
                             </View>
                             <Text
-                            style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}
+                            style={[styles.menuTitle, { color: colors.onSurface, flex: 1, fontSize: menuTitleSize, lineHeight: Math.round(menuTitleSize * 1.35) }]}
                             numberOfLines={1}
                             ellipsizeMode="tail"
                             maxFontSizeMultiplier={1.2}
@@ -275,7 +284,7 @@ export const ProfileHomeScreen: React.FC = () => {
                             onPress={() => navigation.navigate('Settings')}
                             accessibilityRole="button"
                         >
-                            <View style={[styles.iconBox, { backgroundColor: colors.onSurfaceVariant + '15' }]}>
+                            <View style={[styles.iconBox, { backgroundColor: colors.onSurfaceVariant + '15', width: iconSize, height: iconSize, borderRadius: fluid(12, 14, 320, 600) }]}>
                                 <Ionicons name="information-circle" size={20} color={colors.onSurface} />
                             </View>
                             <Text
