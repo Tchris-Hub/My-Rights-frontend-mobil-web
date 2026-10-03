@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
     },
     heroPreTitle: {
         ...theme.typography.labelSm,
-        fontWeight: '900',
+        fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 2,
         marginBottom: 8,
     },
     heroTitle: {
         ...theme.typography.displayLg,
-        fontWeight: '900',
+        fontWeight: '600',
         letterSpacing: -2.2,
     },
     heroSubtitle: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
         ...theme.typography.titleLg,
         fontSize: 18,
         lineHeight: 22,
-        fontWeight: '900',
+        fontWeight: '600',
         marginBottom: 8,
     },
     toolSubtitle: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     },
     promoTitle: {
         ...theme.typography.labelLg,
-        fontWeight: '900',
+        fontWeight: '600',
         letterSpacing: 2,
     },
     promoText: {
