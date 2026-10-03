@@ -7,9 +7,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { TermsModal } from '../../components/modals/TermsModal';
 import { Button } from '../../components/ui/Button';
 import { APP_CONFIG } from '../../constants/config';
+import { useResponsive } from '../../utils/responsive';
 
 export const ConsentScreen: React.FC = () => {
     const { colors } = useTheme();
+    const { horizontalPadding, contentWidth } = useResponsive();
     const { acceptCurrentConsent, isLoading, error } = useAuth();
     const [accepted, setAccepted] = useState(false);
     const [modalType, setModalType] = useState<'terms' | 'privacy'>('terms');
@@ -22,7 +24,7 @@ export const ConsentScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}>
                 <Ionicons name="shield-checkmark" size={56} color={colors.primary} />
                 <Text style={[styles.title, { color: colors.onSurface }]}>One more step</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
@@ -81,7 +83,7 @@ export const ConsentScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+    content: { flexGrow: 1, justifyContent: 'center', padding: 0, paddingBottom: 40 },
     title: { fontSize: 30, fontWeight: '800', marginTop: 24, marginBottom: 12 },
     subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 24 },
     legalRow: { paddingVertical: 10 },
