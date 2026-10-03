@@ -447,7 +447,7 @@ export const ChatScreen: React.FC = () => {
                         </View>
 
                         <TouchableOpacity
-                            style={styles.headerIconButton}
+                            style={[styles.headerIconButton, { width: fluid(36, 40, 320, 600), height: fluid(36, 40, 320, 600) }]}
                             onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 setIsMenuVisible(prev => !prev);
