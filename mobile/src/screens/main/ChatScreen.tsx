@@ -131,16 +131,6 @@ export const ChatScreen: React.FC = () => {
 
     const isSubmitting = useRef(false);
 
-    const refreshChatQuota = async () => {
-        try {
-            const quotas = await usageService.getAiQuota();
-            const quota = quotas.find((item) => item.feature === 'chat');
-            setChatQuotaRemaining(quota?.remaining ?? null);
-        } catch (error) {
-            logger.error('Failed to refresh AI quota:', error);
-        }
-    };
-
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim() || (attachment ? 'Please review the attached document.' : '');
         if (!messageText || isLoading || isSubmitting.current) return;
@@ -830,13 +820,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         letterSpacing: -0.36,
-    },
-    headerStatus: {
-        fontSize: 10,
-        fontFamily: theme.typography.fontFamily.bodyBold,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 2,
     },
     keyboardView: {
         flex: 1,
