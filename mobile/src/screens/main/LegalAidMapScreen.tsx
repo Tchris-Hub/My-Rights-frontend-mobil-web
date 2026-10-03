@@ -52,7 +52,7 @@ type SectionData = {
 
 export const LegalAidMapScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentWidth, narrow } = useResponsive();
     const navigation = useNavigation<any>();
     
     // UI State
@@ -356,7 +356,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     ))}
                 </Map>
             ) : (
-                <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }]}>
+                <View style={[styles.map, { backgroundColor: colors.surfaceContainer, alignItems: 'center', justifyContent: 'center', paddingHorizontal: horizontalPadding }]}>
                     <Ionicons name="map-outline" size={42} color={colors.onSurfaceVariant} />
                     <Text style={[styles.emptyText, { color: colors.onSurface, marginTop: 8 }]}>Map view unavailable</Text>
                     <Text style={[styles.emptyText, { color: colors.onSurfaceVariant, fontSize: 12, marginTop: 4 }]}>
@@ -439,7 +439,7 @@ export const LegalAidMapScreen: React.FC = () => {
 
             {/* Filters Wrapper */}
             <View style={styles.filtersWrapper}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filtersScroll, { paddingHorizontal: horizontalPadding }]}>
                     {(viewMode === 'centers'
                         ? ['All', 'Government', 'NGO', 'Legal Center']
                         : ['All', 'Criminal Law', 'Family Law', 'Property Law', 'Human Rights', 'Corporate']
@@ -552,11 +552,11 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     navToggleContainer: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         marginBottom: 16,
     },
     navToggleWrapper: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         marginBottom: 16,
     },
     navToggle: {
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     filtersScroll: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         gap: 10,
     },
     filterBtn: {
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     sectionHeaderBox: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         paddingVertical: 16,
     },
     sectionTitle: {
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     centerCard: {
-        marginHorizontal: 32,
+        marginHorizontal: 0,
         marginBottom: 16,
         padding: 24,
         borderRadius: 24,
