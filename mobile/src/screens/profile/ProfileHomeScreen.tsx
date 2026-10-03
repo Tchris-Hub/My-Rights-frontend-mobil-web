@@ -29,7 +29,7 @@ export const ProfileHomeScreen: React.FC = () => {
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
     const { horizontalPadding, contentWidth, fluid, narrow } = useResponsive();
-    const profileNameSize = fluid(28, 40, 320, 600);
+    const profileNameSize = fluid(24, 30, 320, 600);
     const avatarSize = fluid(56, 64, 320, 600);
     const settingsSize = fluid(40, 44, 320, 600);
     const statPadding = fluid(14, 20, 320, 600);
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
         fontFamily: theme.typography.fontFamily.headline,
         fontSize: 40,
         lineHeight: 48,
-        fontWeight: '700',
+        fontWeight: '600',
         letterSpacing: -1.2,
 
     },

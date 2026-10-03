@@ -69,11 +69,11 @@ export const ToolsHomeScreen: React.FC = () => {
     // cramped pseudo-tablets.
     const isTwoColumn = !compact && columns >= 2;
 
-    const heroTitleSize = fluid(26, 54, 320, 600);
+    const heroTitleSize = fluid(24, 32, 320, 600);
     const heroTitleLineHeight = Math.round(heroTitleSize * 1.08);
     const heroSubtitleSize = fluid(13, 16, 320, 600);
-    const cardTitleSize = fluid(15, 22, 320, 600);
-    const cardSubtitleSize = fluid(11.5, 15, 320, 600);
+    const cardTitleSize = fluid(14.5, 19, 320, 600);
+    const cardSubtitleSize = fluid(11, 13.5, 320, 600);
     const cardPadding = fluid(14, 24, 320, 600);
     const cardMinHeight = fluid(156, 220, 320, 600);
     const cardIconSize = fluid(44, 56, 320, 600);
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     },
     statusText: {
         ...theme.typography.labelSm,
-        fontWeight: '900',
+        fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
     },
     heroPreTitle: {
         ...theme.typography.labelSm,
-        fontWeight: '900',
+        fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 2,
         marginBottom: 8,
     },
     heroTitle: {
         ...theme.typography.displayLg,
-        fontWeight: '900',
+        fontWeight: '600',
         letterSpacing: -2.2,
     },
     heroSubtitle: {
@@ -337,15 +337,15 @@ const styles = StyleSheet.create({
     },
     toolTitle: {
         ...theme.typography.titleLg,
-        fontSize: 20,
-        lineHeight: 24,
-        fontWeight: '900',
+        fontSize: 18,
+        lineHeight: 22,
+        fontWeight: '600',
         marginBottom: 8,
     },
     toolSubtitle: {
         ...theme.typography.bodyMd,
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 12,
+        lineHeight: 17,
         opacity: 0.8,
     },
     promoBox: {
@@ -370,13 +370,13 @@ const styles = StyleSheet.create({
     },
     promoTitle: {
         ...theme.typography.labelLg,
-        fontWeight: '900',
+        fontWeight: '600',
         letterSpacing: 2,
     },
     promoText: {
         ...theme.typography.bodyLg,
         lineHeight: 26,
-        fontSize: 16,
+        fontSize: 14,
     },
     globalBackground: {
         position: 'absolute',

@@ -71,7 +71,7 @@ export const colors = {
 // Precise styling for Fonts - Requires Inter & PlusJakartaSans 
 export const typography = {
     fontFamily: {
-        headline: 'PlusJakartaSans_700Bold',
+        headline: 'PlusJakartaSans_600SemiBold',
         headlineMedium: 'PlusJakartaSans_600SemiBold',
         body: 'Inter_400Regular',
         bodyMedium: 'Inter_500Medium',
@@ -87,45 +87,45 @@ export const typography = {
 
     // Outfit/PlusJakartaSans - "The Statement" tight spacing
     displayLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(32),
-        lineHeight: moderateScale(40),
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: moderateScale(28),
+        lineHeight: moderateScale(36),
         letterSpacing: -0.64, // -0.02em mandate
         color: colors.onSurface,
     },
     displayMd: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(28),
-        lineHeight: moderateScale(36),
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: moderateScale(24),
+        lineHeight: moderateScale(32),
         letterSpacing: -0.56,
         color: colors.onSurface,
     },
     displaySm: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(24),
-        lineHeight: moderateScale(32),
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: moderateScale(22),
+        lineHeight: moderateScale(28),
         letterSpacing: -0.48,
         color: colors.onSurface,
     },
     headlineLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(22),
-        lineHeight: moderateScale(28),
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: moderateScale(20),
+        lineHeight: moderateScale(26),
         letterSpacing: -0.44,
         color: colors.onSurface,
     },
     titleLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(24),
-        lineHeight: moderateScale(32),
-        letterSpacing: -0.48,
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: moderateScale(18),
+        lineHeight: moderateScale(26),
+        letterSpacing: -0.368,
         color: colors.onSurface,
     },
     titleMd: {
         fontFamily: 'PlusJakartaSans_600SemiBold',
-        fontSize: moderateScale(20),
-        lineHeight: moderateScale(28),
-        letterSpacing: -0.4,
+        fontSize: moderateScale(18),
+        lineHeight: moderateScale(26),
+        letterSpacing: -0.36,
         color: colors.onSurface,
     },
 
