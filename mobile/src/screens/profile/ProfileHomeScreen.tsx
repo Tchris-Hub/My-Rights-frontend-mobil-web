@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
         lineHeight: 48,
         fontWeight: '700',
         letterSpacing: -1.2,
-        lineHeight: 48,
+
     },
     roleBadge: {
         alignSelf: 'flex-start',
