@@ -73,7 +73,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <Text style={[styles.greeting, { color: colors.onSurfaceVariant }]}>
                             {isGuest ? 'Welcome,' : 'Good Day,'}
                         </Text>
-                        <Text style={[styles.name, { color: colors.onSurface }]}>
+                        <Text style={[styles.name, { color: colors.onSurface, fontSize: profileNameSize, lineHeight: Math.round(profileNameSize * 1.2) }]}>
                             {user?.name?.split(' ')[0] || 'Jurist'}
                         </Text>
                         <View style={[styles.roleBadge, { backgroundColor: colors.primary + '15' }]}>
@@ -297,8 +297,8 @@ const styles = StyleSheet.create({
     },
     name: {
         fontFamily: theme.typography.fontFamily.headline,
-        fontSize: profileNameSize,
-        lineHeight: Math.round(profileNameSize * 1.2),
+        fontSize: 40,
+        lineHeight: 48,
         fontWeight: '700',
         letterSpacing: -1.2,
         lineHeight: 48,
