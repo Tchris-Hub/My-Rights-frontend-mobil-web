@@ -56,7 +56,8 @@ const slides: OnboardingSlide[] = [
 
 export const OnboardingScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentWidth, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentWidth, fluid } = useResponsive();
+    const onboardingTitleSize = fluid(38, 52, 320, 840);
     const { completeOnboarding } = useAuth();
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -92,12 +93,12 @@ export const OnboardingScreen: React.FC = () => {
                     <Text style={[styles.badgeText, { color: colors.secondary }]}>{item.badge}</Text>
                 </View>
 
-                <Text style={[styles.title, { color: colors.secondary, fontSize: narrow ? 44 : 52, lineHeight: narrow ? 48 : 56 }]}>
+                <Text style={[styles.title, { color: colors.secondary, fontSize: onboardingTitleSize, lineHeight: Math.round(onboardingTitleSize * 1.08) }]}>
                     {item.title}
                     <Text style={[styles.highlight, { color: colors.primary }]}>{item.highlight}</Text>
                 </Text>
 
-                <Text style={[styles.description, { color: colors.onSurfaceVariant, maxWidth: Math.min(320, contentWidth - 12), fontSize: narrow ? 16 : 18, lineHeight: narrow ? 24 : 28 }]}>
+                <Text style={[styles.description, { color: colors.onSurfaceVariant, maxWidth: Math.min(320, contentWidth - 12), fontSize: fluid(16, 18, 320, 840), lineHeight: Math.round(fluid(16, 18, 320, 840) * 1.55) }]}>
                     {item.description}
                 </Text>
             </View>
