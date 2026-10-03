@@ -678,7 +678,7 @@ export const ChatScreen: React.FC = () => {
                                 style={[
                                     styles.input,
                                     narrow && styles.inputNarrow,
-                                    { color: colors.onSurface },
+                                    { color: colors.onSurface, fontSize: compact ? fluid(14, 16, 320, 600) : 16 },
                                 ]}
                                 placeholder="Message AI..."
                                 placeholderTextColor={colors.onSurfaceVariant}
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
         paddingVertical: 10,
         fontFamily: theme.typography.fontFamily.body,
-        fontSize: compact ? fluid(14, 16, 320, 600) : 16,
+        fontSize: 16,
     },
     inputNarrow: {
         minHeight: 36,
