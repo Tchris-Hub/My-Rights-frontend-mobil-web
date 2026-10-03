@@ -6,10 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { accountService, SavedRight } from '../../services/account.service';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 
 export const SavedRightsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const [items, setItems] = useState<SavedRight[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,7 +37,7 @@ export const SavedRightsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.back, { backgroundColor: colors.surfaceContainer }]}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </TouchableOpacity>
@@ -54,7 +56,7 @@ export const SavedRightsScreen: React.FC = () => {
           testID="saved-rights-list"
           data={items}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} />}
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: colors.surfaceContainer }]}>
@@ -75,7 +77,7 @@ export const SavedRightsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container:{flex:1}, header:{flexDirection:'row',alignItems:'center',padding:24,gap:14}, back:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'}, headerText:{flex:1},
+  container:{flex:1}, header:{flexDirection:'row',alignItems:'center',padding:0,gap:14}, back:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'}, headerText:{flex:1},
   title:{...theme.typography.titleLg,fontWeight:'900'}, subtitle:{...theme.typography.bodyMd,marginTop:3}, list:{padding:24,gap:14,paddingBottom:50},
   card:{borderRadius:20,padding:18,gap:9}, row:{flexDirection:'row',alignItems:'center',gap:10}, cardTitle:{...theme.typography.titleMd,fontWeight:'800',flex:1},
   citation:{...theme.typography.labelSm,fontWeight:'800'}, summary:{...theme.typography.bodyMd,lineHeight:20}, remove:{alignSelf:'flex-start',paddingHorizontal:14,paddingVertical:9,borderWidth:1,borderRadius:12,marginTop:4},
