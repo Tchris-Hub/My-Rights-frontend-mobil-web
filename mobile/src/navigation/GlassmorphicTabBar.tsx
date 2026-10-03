@@ -10,7 +10,7 @@ import {
     Keyboard,
     StyleSheet,
     Platform,
-    Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,10 +26,6 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import theme from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Tab bar specifications (12-14% of screen height)
-const TAB_BAR_HEIGHT = Math.min(Math.max(SCREEN_HEIGHT * 0.13, 80), 90);
 const HORIZONTAL_MARGIN = 16;
 const BOTTOM_SPACING = 16; // Breathing space below bar
 const ICON_SIZE = 24;
@@ -115,6 +111,8 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
     const { state, descriptors, navigation } = props;
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+    const tabBarHeight = Math.min(Math.max(windowHeight * 0.13, 80), 90);
     const [keyboardVisible, setKeyboardVisible] = React.useState(false);
 
     React.useEffect(() => {
@@ -146,8 +144,8 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
                 styles.container,
                 {
                     bottom: insets.bottom + BOTTOM_SPACING,
-                    width: SCREEN_WIDTH - (HORIZONTAL_MARGIN * 2),
-                    height: TAB_BAR_HEIGHT,
+                    width: windowWidth - (HORIZONTAL_MARGIN * 2),
+                    height: tabBarHeight,
                 },
             ]}
         >
