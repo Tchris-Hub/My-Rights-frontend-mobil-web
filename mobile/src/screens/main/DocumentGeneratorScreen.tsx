@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     templateTitleCompact: {
         fontSize: 16,
         lineHeight: 20,
-        fontWeight: '900',
+        fontWeight: '600',
         letterSpacing: -0.2,
     },
     templateDescCompact: {
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     templateTitle: {
         ...theme.typography.titleMd,
         fontSize: 18,
-        fontWeight: '900',
+        fontWeight: '600',
     },
     templateDesc: {
         ...theme.typography.caption,
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     sectionHeader: {
         ...theme.typography.titleLg,
         fontSize: 24,
-        fontWeight: '900',
+        fontWeight: '600',
     },
     formContainer: {
         gap: 20,
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
     },
     inputLabel: {
         fontSize: 11,
-        fontWeight: '900',
+        fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 1.5,
         marginLeft: 4,
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
     finalActionText: {
         color: '#FFF',
         fontSize: 16,
-        fontWeight: '900',
+        fontWeight: '600',
     },
     centerContainer: {
         flex: 1,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     loadingText: {
         ...theme.typography.titleMd,
         marginTop: 20,
-        fontWeight: '900',
+        fontWeight: '600',
     },
     previewScroll: {
         flex: 1,
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
     actionBtnTextMain: {
         color: '#FFF',
         fontSize: 16,
-        fontWeight: '900',
+        fontWeight: '600',
     },
     actionBtnTextOutline: {
         fontSize: 14,
