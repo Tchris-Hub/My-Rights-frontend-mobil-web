@@ -71,7 +71,7 @@ export const OnboardingScreen: React.FC = () => {
     };
 
     const renderSlide = ({ item }: { item: OnboardingSlide }) => (
-        <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+        <View style={[styles.slide, { width: SCREEN_WIDTH, paddingBottom: Math.min(220, Math.max(150, SCREEN_HEIGHT * 0.27)) }]}>
             <View style={styles.imageContainer}>
                 <Image 
                     source={item.image} 
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     slide: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: Math.min(220, Math.max(150, SCREEN_HEIGHT * 0.27)), // Reserve space for the floating footer without over-consuming short landscape windows
+        paddingBottom: 220, // Default; render-time responsive override handles short windows
     },
     imageContainer: {
         position: 'absolute',
