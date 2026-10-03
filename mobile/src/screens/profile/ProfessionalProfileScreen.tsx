@@ -17,12 +17,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { legalService } from '../../services/legalService';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 
 const roles = ['practising_lawyer', 'law_student', 'legal_researcher', 'legal_support'];
 
 export const ProfessionalProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [role, setRole] = useState('practising_lawyer');
@@ -89,7 +91,7 @@ export const ProfessionalProfileScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}>
           <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
           </TouchableOpacity>
@@ -99,7 +101,7 @@ export const ProfessionalProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
