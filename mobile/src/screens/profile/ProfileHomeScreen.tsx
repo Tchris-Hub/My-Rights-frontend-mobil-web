@@ -160,7 +160,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('LegalEnquiries');
                             }}
@@ -191,7 +191,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('ProfessionalProfile');
                             }}
@@ -222,7 +222,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('SavedRights');
                             }}
@@ -250,7 +250,7 @@ export const ProfileHomeScreen: React.FC = () => {
 
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => navigation.navigate('PrivacyCenter')}
                             accessibilityRole="button"
                         >
@@ -271,7 +271,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => navigation.navigate('Settings')}
                             accessibilityRole="button"
                         >
