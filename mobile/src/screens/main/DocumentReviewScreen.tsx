@@ -45,7 +45,7 @@ const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentWidth, narrow } = useResponsive();
     const { activeJob, startJob, finishJob, failJob, updateJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
@@ -334,7 +334,7 @@ export const DocumentReviewScreen: React.FC = () => {
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {!result ? (
                         <View style={styles.inputSection}>
                             {reviewHistory.length > 0 && (
@@ -479,7 +479,7 @@ export const DocumentReviewScreen: React.FC = () => {
                         </View>
                         
                         {selectedClause && (
-                            <ScrollView contentContainerStyle={styles.modalScroll}>
+                            <ScrollView contentContainerStyle={[styles.modalScroll, { paddingHorizontal: horizontalPadding }]}>
                                 <Text style={[styles.modalTitle, { color: colors.onSurface }]}>{selectedClause.clause_title}</Text>
                                 
                                 <View style={[styles.modalClauseBox, { backgroundColor: colors.surfaceContainerLow }]}>
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...theme.typography.displayMd,
-        fontSize: 36,
+        fontSize: narrow ? 30 : 36,
         fontWeight: '900',
         letterSpacing: -1.5,
     },
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
         marginTop: -4,
     },
     scrollContent: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         paddingBottom: 120,
     },
     documentAttached: {
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 32,
+        padding: 24,
         paddingBottom: 16,
     },
     modalType: {
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     modalScroll: {
-        paddingHorizontal: 32,
+        paddingHorizontal: 0,
         paddingBottom: 60,
         gap: 32,
     },
