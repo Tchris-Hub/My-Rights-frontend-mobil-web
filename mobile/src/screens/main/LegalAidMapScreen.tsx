@@ -480,7 +480,7 @@ export const LegalAidMapScreen: React.FC = () => {
                     )}
                     ListHeaderComponent={renderHeader}
                     stickySectionHeadersEnabled={false}
-                    contentContainerStyle={{ paddingBottom: 120 }}
+                    contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={() => (
                         <View style={styles.emptyState}>
