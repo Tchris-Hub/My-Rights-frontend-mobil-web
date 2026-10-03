@@ -146,7 +146,7 @@ export const CustomSplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFin
                         <BlurView
                             intensity={30}
                             tint="light"
-                            style={styles.logoBlur}
+                            style={[styles.logoBlur, { width: fluid(140, 180, 320, 600), height: fluid(140, 180, 320, 600) }]}
                         >
                             <Image
                                 source={require('../../../assets/premium_logo.png')}
@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     logoBlur: {
-        width: narrow ? 140 : 180,
-        height: narrow ? 140 : 180,
+        width: 180,
+        height: 180,
         borderRadius: 45,
         padding: 4,
         overflow: 'hidden',
