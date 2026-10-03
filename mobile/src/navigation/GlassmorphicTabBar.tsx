@@ -113,6 +113,8 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
     const insets = useSafeAreaInsets();
     const { width: windowWidth, height: windowHeight } = useWindowDimensions();
     const tabBarHeight = Math.min(Math.max(windowHeight * 0.13, 80), 90);
+    const tabBarWidth = Math.min(windowWidth - (HORIZONTAL_MARGIN * 2), 640);
+    const tabBarLeft = (windowWidth - tabBarWidth) / 2;
     const [keyboardVisible, setKeyboardVisible] = React.useState(false);
 
     React.useEffect(() => {
@@ -144,7 +146,8 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
                 styles.container,
                 {
                     bottom: insets.bottom + BOTTOM_SPACING,
-                    width: windowWidth - (HORIZONTAL_MARGIN * 2),
+                    left: tabBarLeft,
+                    width: tabBarWidth,
                     height: tabBarHeight,
                 },
             ]}
@@ -177,7 +180,6 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = (props) => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        left: HORIZONTAL_MARGIN,
         borderRadius: theme.borderRadius.xl,
         overflow: 'hidden',
         // Outer shadow (soft elevation)
