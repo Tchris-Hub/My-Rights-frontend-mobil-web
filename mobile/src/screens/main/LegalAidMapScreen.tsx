@@ -504,8 +504,8 @@ const styles = StyleSheet.create({
     },
     globalBackground: {
         position: 'absolute',
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
+        width: '100%',
+        height: '100%',
         opacity: 0.1,
     },
     header: {
