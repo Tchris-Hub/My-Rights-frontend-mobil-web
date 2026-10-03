@@ -57,7 +57,7 @@ const escapeHtml = (value: string): string => value
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, compact, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, compact, narrow, fluid } = useResponsive();
     const { activeJob, startJob, updateJob, finishJob, failJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
@@ -272,7 +272,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
             </TouchableOpacity>
             <View>
-                <Text style={[styles.title, { color: colors.onSurface, fontSize: compact ? (narrow ? 26 : 28) : 32, lineHeight: compact ? (narrow ? 31 : 34) : 38 }]}>Document Architect</Text>
+                <Text style={[styles.title, { color: colors.onSurface, fontSize: compact ? fluid(23, 32, 320, 600) : 32, lineHeight: compact ? Math.round(fluid(28, 38, 320, 600)) : 38 }]}>Document Architect</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                     {step === 'SELECT' ? 'Choose a document type' : 
                      step === 'INTAKE' ? 'Enter the document details' : 
@@ -311,7 +311,11 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         accessibilityRole="button"
                                         style={[
                                             styles.templateCard,
-                                            compact && styles.templateCardCompact,
+                                            compact && {
+                                                padding: fluid(10, 20, 320, 600),
+                                                borderRadius: fluid(20, 32, 320, 600),
+                                                marginBottom: fluid(10, 16, 320, 600),
+                                            },
                                             {
                                                 backgroundColor: colors.surfaceContainerLow,
                                                 marginTop: compact ? 0 : (idx % 2 === 0 ? 0 : 24),
@@ -321,15 +325,33 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         ]}
                                         onPress={() => handleSelectTemplate(t)}
                                     >
-                                        <View style={[styles.templateIcon, compact && styles.templateIconCompact, { backgroundColor: colors.primary + '10' }]}>
-                                            <Ionicons name="document-text" size={compact ? 24 : 28} color={colors.primary} />
+                                        <View style={[styles.templateIcon, compact && {
+                                            width: fluid(44, 64, 320, 600),
+                                            height: fluid(44, 64, 320, 600),
+                                            borderRadius: fluid(14, 20, 320, 600),
+                                        }, { backgroundColor: colors.primary + '10' }]}>
+                                            <Ionicons name="document-text" size={compact ? fluid(20, 28, 320, 600) : 28} color={colors.primary} />
                                         </View>
-                                        <View style={[styles.templateInfo, compact && styles.templateInfoCompact]}>
-                                            <Text style={[styles.templateTitle, compact && styles.templateTitleCompact, { color: colors.onSurface }]} numberOfLines={2} ellipsizeMode="tail">{t.title}</Text>
-                                            <Text style={[styles.templateDesc, compact && styles.templateDescCompact, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
+                                        <View style={[styles.templateInfo, compact && { marginLeft: fluid(10, 16, 320, 600), marginRight: fluid(4, 8, 320, 600), minWidth: 0 }]}>
+                                            <Text style={[styles.templateTitle, compact && {
+                                                fontSize: fluid(14.5, 18, 320, 600),
+                                                lineHeight: fluid(18, 21, 320, 600),
+                                                fontWeight: '900',
+                                                letterSpacing: -0.2,
+                                            }, { color: colors.onSurface }]} numberOfLines={2} ellipsizeMode="tail">{t.title}</Text>
+                                            <Text style={[styles.templateDesc, compact && {
+                                                fontSize: fluid(10, 12, 320, 600),
+                                                lineHeight: fluid(13, 16, 320, 600),
+                                                marginTop: fluid(2, 4, 320, 600),
+                                            }, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
                                         </View>
-                                        <View style={[styles.arrowCircle, compact && styles.arrowCircleCompact, { backgroundColor: colors.surfaceContainerHighest }]}>
-                                            <Ionicons name="chevron-forward" size={compact ? 14 : 16} color={colors.primary} />
+                                        <View style={[styles.arrowCircle, compact && {
+                                            width: fluid(28, 32, 320, 600),
+                                            height: fluid(28, 32, 320, 600),
+                                            borderRadius: fluid(14, 16, 320, 600),
+                                            flexShrink: 0,
+                                        }, { backgroundColor: colors.surfaceContainerHighest }]}>
+                                            <Ionicons name="chevron-forward" size={compact ? fluid(13, 16, 320, 600) : 16} color={colors.primary} />
                                         </View>
                                     </TouchableOpacity>
                                 </Animated.View>
