@@ -272,7 +272,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
             </TouchableOpacity>
             <View>
-                <Text style={[styles.title, { color: colors.onSurface }]}>Document Architect</Text>
+                <Text style={[styles.title, { color: colors.onSurface, fontSize: narrow ? 28 : 32, lineHeight: narrow ? 34 : 38 }]}>Document Architect</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                     {step === 'SELECT' ? 'Choose a document type' : 
                      step === 'INTAKE' ? 'Enter the document details' : 
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...theme.typography.displaySm,
-        fontSize: narrow ? 28 : 32,
+        fontSize: 32,
         fontWeight: '900',
         letterSpacing: -1,
     },
