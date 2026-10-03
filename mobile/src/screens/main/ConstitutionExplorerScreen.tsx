@@ -27,7 +27,7 @@ import { accountService } from '../../services/account.service';
 
 export const ConstitutionExplorerScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth } = useResponsive();
     const navigation = useNavigation<any>();
     const [searchQuery, setSearchQuery] = useState('');
     const [chapters, setChapters] = useState<Chapter[]>([]);
