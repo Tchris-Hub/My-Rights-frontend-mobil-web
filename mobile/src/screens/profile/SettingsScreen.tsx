@@ -22,7 +22,7 @@ import { APP_CONFIG } from '../../constants/config';
 
 export const SettingsScreen: React.FC = () => {
     const { colors, isDark, toggleTheme } = useTheme();
-    const { narrow } = useResponsive();
+    const { narrow, horizontalPadding, contentWidth } = useResponsive();
     const { logout } = useAuth();
     const navigation = useNavigation<any>();
 
@@ -39,7 +39,7 @@ export const SettingsScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}>
                 <View style={styles.headerTop}>
                     <View>
                         <Text style={[styles.headerSubtitle, { color: colors.primary }]}>PREFERENCES</Text>
@@ -52,7 +52,7 @@ export const SettingsScreen: React.FC = () => {
             </View>
 
             <ScrollView 
-                contentContainerStyle={styles.content}
+                contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.section}>
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     content: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 0,
         paddingBottom: 40,
     },
     section: {
