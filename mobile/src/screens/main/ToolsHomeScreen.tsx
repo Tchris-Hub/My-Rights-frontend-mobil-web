@@ -121,6 +121,8 @@ export const ToolsHomeScreen: React.FC = () => {
                 <View style={[
                     styles.heroSection,
                     {
+                        marginTop: heroTop,
+                        marginBottom: heroBottom,
                         paddingHorizontal: horizontalPadding,
                         maxWidth: contentMaxWidth,
                         alignSelf: contentMaxWidth ? 'center' : undefined,
@@ -165,6 +167,7 @@ export const ToolsHomeScreen: React.FC = () => {
                                 {
                                     padding: cardPadding,
                                     minHeight: cardMinHeight,
+                                    borderRadius: cardRadius,
                                     backgroundColor: index % 2 === 0
                                         ? colors.surfaceContainerLow
                                         : colors.surfaceContainerHigh,
@@ -210,6 +213,9 @@ export const ToolsHomeScreen: React.FC = () => {
                     {
                         backgroundColor: colors.surfaceContainerHighest || colors.surfaceContainerHigh,
                         marginHorizontal: horizontalPadding,
+                        marginTop: fluid(40, 60, 320, 600),
+                        padding: fluid(20, 32, 320, 600),
+                        borderRadius: fluid(28, 36, 320, 600),
                         maxWidth: contentMaxWidth,
                         alignSelf: contentMaxWidth ? 'center' : undefined,
                         width: contentMaxWidth ? '100%' : undefined,
@@ -277,8 +283,8 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     heroSection: {
-        marginTop: heroTop,
-        marginBottom: heroBottom,
+        marginTop: 20,
+        marginBottom: 40,
     },
     heroPreTitle: {
         ...theme.typography.labelSm,
@@ -308,7 +314,7 @@ const styles = StyleSheet.create({
         rowGap: 16,
     },
     toolCard: {
-        borderRadius: cardRadius,
+        borderRadius: 28,
         justifyContent: 'space-between',
     },
     cardHeader: {
@@ -343,9 +349,9 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     promoBox: {
-        marginTop: fluid(40, 60, 320, 600),
-        padding: fluid(20, 32, 320, 600),
-        borderRadius: fluid(28, 36, 320, 600),
+        marginTop: 60,
+        padding: 32,
+        borderRadius: 36,
         overflow: 'hidden',
     },
     promoHeader: {
