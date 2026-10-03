@@ -10,7 +10,6 @@ import {
     Image,
     Alert,
     ActivityIndicator,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,14 +20,14 @@ import theme, { spacing, borderRadius } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { FloatingChatButton } from '../../components/common/FloatingChatButton';
+import { useResponsive } from '../../utils/responsive';
 
 import { legalService, Chapter } from '../../services/legalService';
 import { accountService } from '../../services/account.service';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 export const ConstitutionExplorerScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
+    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, narrow } = useResponsive();
     const navigation = useNavigation<any>();
     const [searchQuery, setSearchQuery] = useState('');
     const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -102,7 +101,7 @@ export const ConstitutionExplorerScreen: React.FC = () => {
 
             <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint={isDark ? 'dark' : 'light'} style={styles.blurHeader}>
                 <SafeAreaView edges={['top']}>
-                    <View style={styles.header}>
+                    <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}>
                         <View style={styles.headerTop}>
                             <TouchableOpacity
                                 style={[styles.backButton, { backgroundColor: colors.surfaceContainerHigh }]}
@@ -148,7 +147,7 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                     </TouchableOpacity>
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
                     {filteredChapters.map(chapter => (
                         <View key={chapter.id.toString()} style={styles.chapterWrapper}>
                             <TouchableOpacity
@@ -265,7 +264,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFill,
     },
     header: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 0,
         paddingTop: 12,
         paddingBottom: 16,
         gap: 24,
@@ -340,7 +339,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 24,
+        padding: 20,
     },
     chapterTitleRow: {
         flexDirection: 'row',
