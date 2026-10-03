@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { legalService } from '../../services/legalService';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
+import { useResponsive } from '../../utils/responsive';
 
 type Enquiry = {
   id: string;
@@ -34,6 +35,7 @@ type Enquiry = {
 export const LegalEnquiriesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
+  const { horizontalPadding, contentWidth } = useResponsive();
   const [tab, setTab] = useState<'sent' | 'received'>('sent');
   const [sent, setSent] = useState<Enquiry[]>([]);
   const [received, setReceived] = useState<Enquiry[]>([]);
@@ -73,7 +75,7 @@ export const LegalEnquiriesScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}>
         <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
         </TouchableOpacity>
