@@ -57,7 +57,7 @@ const escapeHtml = (value: string): string => value
 
 export const DocumentGeneratorScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, narrow } = useResponsive();
+    const { width: SCREEN_WIDTH, horizontalPadding, contentWidth, compact, narrow } = useResponsive();
     const { activeJob, startJob, updateJob, finishJob, failJob, clearJob } = useJobs();
     const navigation = useNavigation<any>();
     const { isAuthenticated } = useAuth();
@@ -272,7 +272,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
                 <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
             </TouchableOpacity>
             <View>
-                <Text style={[styles.title, { color: colors.onSurface, fontSize: narrow ? 28 : 32, lineHeight: narrow ? 34 : 38 }]}>Document Architect</Text>
+                <Text style={[styles.title, { color: colors.onSurface, fontSize: compact ? (narrow ? 26 : 28) : 32, lineHeight: compact ? (narrow ? 31 : 34) : 38 }]}>Document Architect</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                     {step === 'SELECT' ? 'Choose a document type' : 
                      step === 'INTAKE' ? 'Enter the document details' : 
@@ -310,25 +310,26 @@ export const DocumentGeneratorScreen: React.FC = () => {
                                         testID={`document-template-${t.id}`}
                                         accessibilityRole="button"
                                         style={[
-                                            styles.templateCard, 
-                                            { 
+                                            styles.templateCard,
+                                            compact && styles.templateCardCompact,
+                                            {
                                                 backgroundColor: colors.surfaceContainerLow,
-                                                marginTop: idx % 2 === 0 ? 0 : 24,
-                                                marginLeft: idx % 2 === 0 ? 0 : 16,
-                                                marginRight: idx % 2 === 0 ? 16 : 0,
+                                                marginTop: compact ? 0 : (idx % 2 === 0 ? 0 : 24),
+                                                marginLeft: compact ? 0 : (idx % 2 === 0 ? 0 : 16),
+                                                marginRight: compact ? 0 : (idx % 2 === 0 ? 16 : 0),
                                             }
                                         ]}
                                         onPress={() => handleSelectTemplate(t)}
                                     >
-                                        <View style={[styles.templateIcon, { backgroundColor: colors.primary + '10' }]}>
-                                            <Ionicons name="document-text" size={28} color={colors.primary} />
+                                        <View style={[styles.templateIcon, compact && styles.templateIconCompact, { backgroundColor: colors.primary + '10' }]}>
+                                            <Ionicons name="document-text" size={compact ? 24 : 28} color={colors.primary} />
                                         </View>
-                                        <View style={styles.templateInfo}>
-                                            <Text style={[styles.templateTitle, { color: colors.onSurface }]}>{t.title}</Text>
-                                            <Text style={[styles.templateDesc, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
+                                        <View style={[styles.templateInfo, compact && styles.templateInfoCompact]}>
+                                            <Text style={[styles.templateTitle, compact && styles.templateTitleCompact, { color: colors.onSurface }]} numberOfLines={2} ellipsizeMode="tail">{t.title}</Text>
+                                            <Text style={[styles.templateDesc, compact && styles.templateDescCompact, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
                                         </View>
-                                        <View style={[styles.arrowCircle, { backgroundColor: colors.surfaceContainerHighest }]}>
-                                            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                                        <View style={[styles.arrowCircle, compact && styles.arrowCircleCompact, { backgroundColor: colors.surfaceContainerHighest }]}>
+                                            <Ionicons name="chevron-forward" size={compact ? 14 : 16} color={colors.primary} />
                                         </View>
                                     </TouchableOpacity>
                                 </Animated.View>
@@ -540,6 +541,39 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 24,
     },
+    templateCardCompact: {
+        padding: 14,
+        borderRadius: 24,
+        marginBottom: 12,
+        minHeight: 0,
+    },
+    templateIconCompact: {
+        width: 52,
+        height: 52,
+        borderRadius: 16,
+    },
+    templateInfoCompact: {
+        marginLeft: 12,
+        marginRight: 6,
+        minWidth: 0,
+    },
+    templateTitleCompact: {
+        fontSize: 16,
+        lineHeight: 20,
+        fontWeight: '900',
+        letterSpacing: -0.2,
+    },
+    templateDescCompact: {
+        fontSize: 11.5,
+        lineHeight: 15,
+        marginTop: 3,
+    },
+    arrowCircleCompact: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        flexShrink: 0,
+    },
     templateCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -559,6 +593,7 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 16,
         marginRight: 8,
+        minWidth: 0,
     },
     templateTitle: {
         ...theme.typography.titleMd,
@@ -570,6 +605,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 4,
         lineHeight: 16,
+        flexShrink: 1,
     },
     arrowCircle: {
         width: 32,
