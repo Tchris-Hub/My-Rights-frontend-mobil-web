@@ -92,7 +92,7 @@ export const LoginScreen: React.FC = () => {
                             <View style={[styles.iconContainer, { backgroundColor: colors.surfaceContainerHigh }]}>
                                 <Ionicons name="shield-checkmark" size={32} color={colors.primary} />
                             </View>
-                            <Text style={[styles.title, { color: colors.primary, fontSize: narrow ? 30 : 36 }]}>My Rights</Text>
+                            <Text style={[styles.title, { color: colors.primary, fontSize: fluid(30, 36, 320, 600) }]}>My Rights</Text>
                             <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
                                 Secure access without passwords
                             </Text>
