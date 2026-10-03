@@ -28,7 +28,7 @@ export const ProfileHomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { colors } = useTheme();
     const { user, logout, isGuest } = useAuth();
-    const { horizontalPadding, contentWidth, fluid } = useResponsive();
+    const { horizontalPadding, contentWidth, fluid, narrow } = useResponsive();
     const profileNameSize = fluid(32, 40, 320, 600);
     const [stats, setStats] = useState({ consultations: 0, enquiries: 0, saved_rights: 0 });
 
@@ -90,11 +90,23 @@ export const ProfileHomeScreen: React.FC = () => {
                 >
                     <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
                         <Text style={[styles.statValue, { color: colors.onSurface }]}>{stats.consultations}</Text>
-                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Consultations</Text>
+                        <Text
+                            style={[styles.statLabel, { color: colors.onSurfaceVariant }]}
+                            numberOfLines={1}
+                            maxFontSizeMultiplier={1.2}
+                        >
+                            Consultations
+                        </Text>
                     </View>
                     <View style={[styles.statBox, { backgroundColor: colors.surfaceContainerLow }]}>
                         <Text style={[styles.statValue, { color: colors.onSurface }]}>{stats.saved_rights}</Text>
-                        <Text style={[styles.statLabel, { color: colors.onSurfaceVariant }]}>Saved Rights</Text>
+                        <Text
+                            style={[styles.statLabel, { color: colors.onSurfaceVariant }]}
+                            numberOfLines={1}
+                            maxFontSizeMultiplier={1.2}
+                        >
+                            Saved Rights
+                        </Text>
                     </View>
                 </Animated.View>
 
@@ -106,7 +118,7 @@ export const ProfileHomeScreen: React.FC = () => {
                     
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (isGuest) {
                                     Alert.alert(
@@ -126,8 +138,21 @@ export const ProfileHomeScreen: React.FC = () => {
                                 <Ionicons name="chatbubbles" size={20} color={colors.primary} />
                             </View>
                             <View style={styles.menuTextContent}>
-                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Consultation History</Text>
-                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Review past legal briefings</Text>
+                                <Text
+                                    style={[styles.menuTitle, { color: colors.onSurface }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Consultation History
+                                </Text>
+                                <Text
+                                    style={[styles.menuSub, { color: colors.onSurfaceVariant }]}
+                                    numberOfLines={2}
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Review past legal briefings
+                                </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
                         </TouchableOpacity>
@@ -135,7 +160,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('LegalEnquiries');
                             }}
@@ -144,8 +169,21 @@ export const ProfileHomeScreen: React.FC = () => {
                                 <Ionicons name="chatbubbles-outline" size={20} color={colors.primary} />
                             </View>
                             <View style={styles.menuTextContent}>
-                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Legal Enquiries</Text>
-                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Track requests and manage your professional inbox</Text>
+                                <Text
+                                    style={[styles.menuTitle, { color: colors.onSurface }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Legal Enquiries
+                                </Text>
+                                <Text
+                                    style={[styles.menuSub, { color: colors.onSurfaceVariant }]}
+                                    numberOfLines={2}
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Track requests and manage your professional inbox
+                                </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
                         </TouchableOpacity>
@@ -153,7 +191,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('ProfessionalProfile');
                             }}
@@ -162,8 +200,21 @@ export const ProfileHomeScreen: React.FC = () => {
                                 <Ionicons name="briefcase-outline" size={20} color={colors.secondary} />
                             </View>
                             <View style={styles.menuTextContent}>
-                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Professional Profile</Text>
-                                <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Manage your legal marketplace profile</Text>
+                                <Text
+                                    style={[styles.menuTitle, { color: colors.onSurface }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Professional Profile
+                                </Text>
+                                <Text
+                                    style={[styles.menuSub, { color: colors.onSurfaceVariant }]}
+                                    numberOfLines={2}
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Manage your legal marketplace profile
+                                </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
                         </TouchableOpacity>
@@ -171,7 +222,7 @@ export const ProfileHomeScreen: React.FC = () => {
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => {
                                 if (!isGuest) navigation.navigate('SavedRights');
                             }}
@@ -181,7 +232,14 @@ export const ProfileHomeScreen: React.FC = () => {
                                 <Ionicons name="document-text" size={20} color={colors.secondary} />
                             </View>
                             <View style={styles.menuTextContent}>
-                                <Text style={[styles.menuTitle, { color: colors.onSurface }]}>Saved Rights</Text>
+                                <Text
+                                    style={[styles.menuTitle, { color: colors.onSurface }]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                    maxFontSizeMultiplier={1.2}
+                                >
+                                    Saved Rights
+                                </Text>
                                 <Text style={[styles.menuSub, { color: colors.onSurfaceVariant }]}>Quick access to your bookmarks</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
@@ -192,28 +250,42 @@ export const ProfileHomeScreen: React.FC = () => {
 
                     <View style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHigh }]}>
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => navigation.navigate('PrivacyCenter')}
                             accessibilityRole="button"
                         >
                             <View style={[styles.iconBox, { backgroundColor: colors.primary + '10' }]}>
                                 <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
                             </View>
-                            <Text style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}>Security & Privacy</Text>
+                            <Text
+                            style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            maxFontSizeMultiplier={1.2}
+                        >
+                            Security & Privacy
+                        </Text>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
                         </TouchableOpacity>
 
                         <View style={[styles.divider, { backgroundColor: colors.outlineVariant + '30' }]} />
 
                         <TouchableOpacity
-                            style={styles.menuItem}
+                            style={[styles.menuItem, narrow && styles.menuItemNarrow]}
                             onPress={() => navigation.navigate('Settings')}
                             accessibilityRole="button"
                         >
                             <View style={[styles.iconBox, { backgroundColor: colors.onSurfaceVariant + '15' }]}>
                                 <Ionicons name="information-circle" size={20} color={colors.onSurface} />
                             </View>
-                            <Text style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}>Legal Notices</Text>
+                            <Text
+                            style={[styles.menuTitle, { color: colors.onSurface, flex: 1 }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            maxFontSizeMultiplier={1.2}
+                        >
+                            Legal Notices
+                        </Text>
                             <Ionicons name="chevron-forward" size={18} color={colors.outline} />
                         </TouchableOpacity>
                     </View>
@@ -362,6 +434,10 @@ const styles = StyleSheet.create({
         padding: 16,
         gap: 16,
     },
+    menuItemNarrow: {
+        paddingHorizontal: 12,
+        gap: 12,
+    },
     iconBox: {
         width: 44,
         height: 44,
@@ -371,15 +447,18 @@ const styles = StyleSheet.create({
     },
     menuTextContent: {
         flex: 1,
+        minWidth: 0,
         gap: 2,
     },
     menuTitle: {
         fontFamily: theme.typography.fontFamily.bodyBold,
-        fontSize: 16,
+        fontSize: 15,
+        lineHeight: 20,
     },
     menuSub: {
         fontFamily: theme.typography.fontFamily.body,
-        fontSize: 12,
+        fontSize: 11.5,
+        lineHeight: 16,
         opacity: 0.7,
     },
     divider: {

@@ -66,12 +66,14 @@ export const ToolsHomeScreen: React.FC = () => {
     const columns = getColumns(220, 16);
     const isTwoColumn = columns >= 2;
 
-    const heroTitleSize = fluid(38, 54, 320, 600);
+    const heroTitleSize = fluid(32, 54, 320, 600);
     const heroTitleLineHeight = Math.round(heroTitleSize * 1.08);
-    const cardTitleSize = fluid(18, 22, 320, 840);
-    const cardSubtitleSize = fluid(13, 15, 320, 840);
-    const cardPadding = fluid(16, 24, 320, 840);
-    const cardMinHeight = fluid(190, 220, 320, 840);
+    const heroSubtitleSize = fluid(14, 16, 320, 600);
+    const cardTitleSize = fluid(17, 22, 320, 600);
+    const cardSubtitleSize = fluid(12.5, 15, 320, 600);
+    const cardPadding = fluid(16, 24, 320, 600);
+    const cardMinHeight = fluid(176, 220, 320, 600);
+    const cardIconSize = fluid(48, 56, 320, 600);
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -121,7 +123,16 @@ export const ToolsHomeScreen: React.FC = () => {
                     <Text style={[styles.heroTitle, { color: colors.onSurface, fontSize: heroTitleSize, lineHeight: heroTitleLineHeight }]}>
                         THE HUB
                     </Text>
-                    <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant }]}>
+                    <Text
+                        style={[
+                            styles.heroSubtitle,
+                            {
+                                color: colors.onSurfaceVariant,
+                                fontSize: heroSubtitleSize,
+                                lineHeight: Math.round(heroSubtitleSize * 1.45),
+                            },
+                        ]}
+                    >
                         Legal information, document tools, and pathways to human legal help.
                     </Text>
                 </View>
@@ -157,8 +168,18 @@ export const ToolsHomeScreen: React.FC = () => {
                             activeOpacity={0.9}
                         >
                             <View style={styles.cardHeader}>
-                                <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
-                                    <Ionicons name={tool.icon as any} size={28} color={tool.color} />
+                                <View
+                                    style={[
+                                        styles.iconBox,
+                                        {
+                                            width: cardIconSize,
+                                            height: cardIconSize,
+                                            borderRadius: Math.round(cardIconSize * 0.32),
+                                            backgroundColor: colors.surface,
+                                        },
+                                    ]}
+                                >
+                                    <Ionicons name={tool.icon as any} size={Math.round(cardIconSize * 0.5)} color={tool.color} />
                                 </View>
                                 <Ionicons
                                     name="arrow-up-outline"

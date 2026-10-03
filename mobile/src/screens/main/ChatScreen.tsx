@@ -29,7 +29,6 @@ import { MessageBubble } from '../../components/chat/MessageBubble';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
 import { documentService } from '../../services/document.service';
-import { usageService } from '../../services/usage.service';
 import { sanitizeDocumentName, validateDocumentMetadata } from '../../services/documentSecurity.service';
 import { useAuth } from '../../contexts/AuthContext';
 import theme from '../../constants/theme';
@@ -48,7 +47,7 @@ const SUGGESTIONS = [
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { horizontalPadding, narrow } = useResponsive();
+    const { horizontalPadding, narrow, width, fluid } = useResponsive();
     const { isAuthenticated } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
@@ -64,7 +63,6 @@ export const ChatScreen: React.FC = () => {
     const [inputFocused, setInputFocused] = useState(false);
     const [attachment, setAttachment] = useState<{ name: string; mimeType: string; text: string; characterCount: number; truncated: boolean } | null>(null);
     const [isExtractingAttachment, setIsExtractingAttachment] = useState(false);
-    const [chatQuotaRemaining, setChatQuotaRemaining] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
@@ -94,23 +92,6 @@ export const ChatScreen: React.FC = () => {
             };
         }, [isAuthenticated])
     );
-
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setChatQuotaRemaining(null);
-            return;
-        }
-
-        usageService.getAiQuota()
-            .then((quotas) => {
-                const chatQuota = quotas.find((quota) => quota.feature === 'chat');
-                setChatQuotaRemaining(chatQuota?.remaining ?? null);
-            })
-            .catch((error) => {
-                logger.error('Failed to load AI quota:', error);
-                setChatQuotaRemaining(null);
-            });
-    }, [isAuthenticated]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -149,16 +130,6 @@ export const ChatScreen: React.FC = () => {
 
 
     const isSubmitting = useRef(false);
-
-    const refreshChatQuota = async () => {
-        try {
-            const quotas = await usageService.getAiQuota();
-            const quota = quotas.find((item) => item.feature === 'chat');
-            setChatQuotaRemaining(quota?.remaining ?? null);
-        } catch (error) {
-            logger.error('Failed to refresh AI quota:', error);
-        }
-    };
 
     const handleSend = async (text?: string) => {
         const messageText = text || inputText.trim() || (attachment ? 'Please review the attached document.' : '');
@@ -221,7 +192,6 @@ export const ChatScreen: React.FC = () => {
                 setConversationId(result.conversation_id);
             }
 
-            await refreshChatQuota();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } catch (error) {
             logger.error('Chat error:', error);
@@ -474,13 +444,6 @@ export const ChatScreen: React.FC = () => {
                                     {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
                                 </Text>
                             </View>
-                            <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
-                                {isIncognito
-                                    ? 'Private Session'
-                                    : chatQuotaRemaining === null
-                                        ? 'Online • AI-generated information'
-                                        : `Online • ${chatQuotaRemaining} free questions left today`}
-                            </Text>
                         </View>
 
                         <TouchableOpacity
@@ -504,7 +467,16 @@ export const ChatScreen: React.FC = () => {
                 <TouchableWithoutFeedback onPress={closeMenu}>
                     <View style={[styles.menuOverlay, { paddingTop: insets.top + theme.spacing.md }]}>
                         <TouchableWithoutFeedback>
-                            <View style={[styles.menuContainer, { backgroundColor: colors.surfaceContainer, borderColor: colors.outline }]}>
+                            <View
+                                style={[
+                                    styles.menuContainer,
+                                    {
+                                        width: Math.min(320, Math.max(240, width - horizontalPadding * 2)),
+                                        backgroundColor: colors.surfaceContainer,
+                                        borderColor: colors.outline,
+                                    },
+                                ]}
+                            >
                                 <TouchableOpacity
                                     style={styles.menuItem}
                                     onPress={() => {
@@ -603,15 +575,32 @@ export const ChatScreen: React.FC = () => {
 
                 {messages.length === 0 ? (
                     <Pressable style={styles.emptyState} onPress={Keyboard.dismiss}>
-                        <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
-                            <Ionicons name="sparkles" size={48} color={colors.primary} />
+                        <View style={styles.emptyCopy}>
+                            <Text
+                                style={[
+                                    styles.emptyTitle,
+                                    {
+                                        color: colors.onSurface,
+                                        fontSize: fluid(26, 32, 320, 600),
+                                        lineHeight: fluid(32, 38, 320, 600),
+                                    },
+                                ]}
+                            >
+                                How can I help you today?
+                            </Text>
+                            <Text
+                                style={[
+                                    styles.emptySubtitle,
+                                    {
+                                        color: colors.onSurfaceVariant,
+                                        fontSize: fluid(14, 16, 320, 600),
+                                        lineHeight: fluid(21, 24, 320, 600),
+                                    },
+                                ]}
+                            >
+                                Ask me about your legal rights or instruct me to draft a document for you.
+                            </Text>
                         </View>
-                        <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>
-                            How can I help you today?
-                        </Text>
-                        <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
-                            Ask me about your legal rights or instruct me to draft a document for you.
-                        </Text>
                     </Pressable>
                 ) : (
                     <FlatList
@@ -684,7 +673,11 @@ export const ChatScreen: React.FC = () => {
                             <TextInput
                                 testID="chat-input"
                                 accessibilityLabel="Message AI"
-                                style={[styles.input, { color: colors.onSurface }]}
+                                style={[
+                                    styles.input,
+                                    narrow && styles.inputNarrow,
+                                    { color: colors.onSurface },
+                                ]}
                                 placeholder="Message AI..."
                                 placeholderTextColor={colors.onSurfaceVariant}
                                 value={inputText}
@@ -828,16 +821,9 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: -0.36,
     },
-    headerStatus: {
-        fontSize: 10,
-        fontFamily: theme.typography.fontFamily.bodyBold,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 2,
-    },
     keyboardView: {
         flex: 1,
-        paddingTop: 80,
+        paddingTop: 68,
     },
     suggestionsContainer: {
         paddingVertical: 12,
@@ -859,27 +845,25 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        padding: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
     },
-    emptyIconContainer: {
-        padding: 24,
-        borderRadius: 40,
-        marginBottom: 24,
+    emptyCopy: {
+        width: '100%',
+        maxWidth: 560,
+        alignItems: 'center',
     },
     emptyTitle: {
         fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 32,
         fontWeight: '700',
         textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: -0.64,
+        marginBottom: 10,
+        letterSpacing: -0.5,
     },
     emptySubtitle: {
         fontFamily: theme.typography.fontFamily.body,
-        fontSize: 16,
         textAlign: 'center',
-        lineHeight: 24,
         opacity: 0.7,
+        maxWidth: 520,
     },
     messagesList: {
         padding: theme.spacing.lg,
@@ -926,6 +910,10 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         paddingHorizontal: 4,
     },
+    inputWrapperNarrow: {
+        minHeight: 48,
+        maxHeight: 104,
+    },
     input: {
         flex: 1,
         minHeight: 40,
@@ -934,6 +922,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         fontFamily: theme.typography.fontFamily.body,
         fontSize: 16,
+    },
+    inputNarrow: {
+        minHeight: 36,
+        maxHeight: 88,
+        paddingVertical: 8,
+        fontSize: 15,
     },
     inputLeftIcon: {
         width: 36,
@@ -977,9 +971,9 @@ const styles = StyleSheet.create({
     },
     menuContainer: {
         position: 'absolute',
-        top: 100,
+        top: 84,
         right: theme.spacing.lg,
-        width: 240,
+        maxWidth: 320,
         borderRadius: 20,
         paddingVertical: 8,
     },
