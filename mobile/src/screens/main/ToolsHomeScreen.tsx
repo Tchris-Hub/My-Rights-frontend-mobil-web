@@ -60,11 +60,18 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, compact } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, compact, fluid } = useResponsive();
     const navigation = useNavigation<any>();
 
     const columns = getColumns(220, 16);
-    const isTwoColumn = columns === 2;
+    const isTwoColumn = columns >= 2;
+
+    const heroTitleSize = fluid(38, 54, 320, 600);
+    const heroTitleLineHeight = Math.round(heroTitleSize * 1.08);
+    const cardTitleSize = fluid(18, 22, 320, 840);
+    const cardSubtitleSize = fluid(13, 15, 320, 840);
+    const cardPadding = fluid(16, 24, 320, 840);
+    const cardMinHeight = fluid(190, 220, 320, 840);
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -111,7 +118,7 @@ export const ToolsHomeScreen: React.FC = () => {
                     },
                 ]}>
                     <Text style={[styles.heroPreTitle, { color: colors.primary }]}>Institutional Access</Text>
-                    <Text style={[styles.heroTitle, { color: colors.onSurface }, compact && styles.heroTitleCompact]}>
+                    <Text style={[styles.heroTitle, { color: colors.onSurface, fontSize: heroTitleSize, lineHeight: heroTitleLineHeight }]}>
                         THE HUB
                     </Text>
                     <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant }]}>
@@ -137,6 +144,8 @@ export const ToolsHomeScreen: React.FC = () => {
                             style={[
                                 styles.toolCard,
                                 {
+                                    padding: cardPadding,
+                                    minHeight: cardMinHeight,
                                     backgroundColor: index % 2 === 0
                                         ? colors.surfaceContainerLow
                                         : colors.surfaceContainerHigh,
@@ -160,8 +169,8 @@ export const ToolsHomeScreen: React.FC = () => {
                             </View>
 
                             <View style={[styles.toolInfo, compact && styles.toolInfoCompact]}>
-                                <Text style={[styles.toolTitle, { color: colors.onSurface }]}>{tool.title}</Text>
-                                <Text style={[styles.toolSubtitle, { color: colors.onSurfaceVariant }]}>{tool.subtitle}</Text>
+                                <Text style={[styles.toolTitle, { color: colors.onSurface, fontSize: cardTitleSize, lineHeight: Math.round(cardTitleSize * 1.15) }]}>{tool.title}</Text>
+                                <Text style={[styles.toolSubtitle, { color: colors.onSurfaceVariant, fontSize: cardSubtitleSize, lineHeight: Math.round(cardSubtitleSize * 1.45) }]}>{tool.subtitle}</Text>
                             </View>
                         </TouchableOpacity>
                     ))}
@@ -222,7 +231,7 @@ const styles = StyleSheet.create({
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 20,
         gap: 6,
@@ -251,16 +260,11 @@ const styles = StyleSheet.create({
     },
     heroTitle: {
         ...theme.typography.displayLg,
-        fontSize: 56,
-        lineHeight: 60,
         fontWeight: '900',
-        letterSpacing: -3,
+        letterSpacing: -2.2,
     },
     heroTitleCompact: {
-        fontSize: 46,
-        lineHeight: 50,
-        letterSpacing: -2,
-    },
+        
     heroSubtitle: {
         ...theme.typography.bodyLg,
         marginTop: 12,
@@ -277,10 +281,8 @@ const styles = StyleSheet.create({
         rowGap: 16,
     },
     toolCard: {
-        padding: 24,
-        borderRadius: 32,
+        borderRadius: 28,
         justifyContent: 'space-between',
-        minHeight: 220,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -295,7 +297,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     toolInfo: {
-        marginTop: 32,
+        marginTop: 24,
     },
     toolInfoCompact: {
         marginTop: 24,
