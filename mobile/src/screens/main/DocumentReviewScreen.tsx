@@ -61,7 +61,6 @@ export const DocumentReviewScreen: React.FC = () => {
     const [result, setResult] = useState<DocumentAnalysisResponse | null>(null);
     const [selectedClause, setSelectedClause] = useState<AnalysisResult | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
-    const [loadingPhase, setLoadingPhase] = useState<string>('');
     const [analyzeQuotaRemaining, setAnalyzeQuotaRemaining] = useState<number | null>(null);
     const [reviewHistory, setReviewHistory] = useState<LocalDocumentReview[]>([]);
 
@@ -117,11 +116,8 @@ export const DocumentReviewScreen: React.FC = () => {
             params: { text: targetText }
         });
 
-        setLoadingPhase('Uploading Document...');
-
         try {
             const updatePhase = (phase: string) => {
-                setLoadingPhase(phase);
                 updateJob(jobId, { progress: phase });
             };
 
@@ -167,7 +163,6 @@ export const DocumentReviewScreen: React.FC = () => {
         if (!pendingDocument.uri || !pendingDocument.mimeType) return;
 
         setIsLoading(true);
-        setLoadingPhase('Reviewing document...');
         const jobId = startJob({
             type: 'analysis',
             title: 'Analyzing Document',
@@ -192,7 +187,6 @@ export const DocumentReviewScreen: React.FC = () => {
             Alert.alert('Document Review Failed', error?.message || 'Could not analyze the selected document.');
         } finally {
             setIsLoading(false);
-            setLoadingPhase('');
         }
     };
 
@@ -285,7 +279,6 @@ export const DocumentReviewScreen: React.FC = () => {
                 }
 
                 setIsLoading(true);
-                setLoadingPhase('Reading document...');
                 try {
                     const extracted = await documentService.extractText(
                         asset.uri,
@@ -303,7 +296,6 @@ export const DocumentReviewScreen: React.FC = () => {
                     Alert.alert('Document Upload Failed', error?.message || 'Could not read the selected document.');
                 } finally {
                     setIsLoading(false);
-                    setLoadingPhase('');
                 }
             }
         } catch (error: any) {
@@ -409,7 +401,7 @@ export const DocumentReviewScreen: React.FC = () => {
                             <Button
                                 title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
                                 onPress={reviewSelectedDocument}
-                                loading={isLoading}
+                                loading={isLoading && !activeJob}
                                 disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
                                 fullWidth
                             />
@@ -513,17 +505,6 @@ export const DocumentReviewScreen: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-
-            {isLoading && (
-                <View style={styles.loadingOverlay}>
-                    <BlurView intensity={30} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={[styles.loadingTitle, { color: colors.onSurface }]}>Review in Progress</Text>
-                        <Text style={[styles.loadingSub, { color: colors.onSurfaceVariant }]}>{loadingPhase}</Text>
-                    </View>
-                </View>
-            )}
 
             <FloatingChatButton />
         </View>
@@ -857,24 +838,6 @@ const styles = StyleSheet.create({
         ...theme.typography.bodyLg,
         fontWeight: '700',
         lineHeight: 24,
-    },
-    loadingOverlay: {
-        ...StyleSheet.absoluteFill,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-    },
-    loadingContainer: {
-        alignItems: 'center',
-        gap: 20,
-    },
-    loadingTitle: {
-        ...theme.typography.titleLg,
-        fontWeight: '900',
-    },
-    loadingSub: {
-        ...theme.typography.bodyMd,
-        opacity: 0.7,
     },
 });
 
