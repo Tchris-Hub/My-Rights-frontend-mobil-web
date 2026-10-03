@@ -29,7 +29,7 @@ interface ConversationSummary {
 
 export const ChatHistoryScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { narrow } = useResponsive();
+    const { narrow, horizontalPadding, contentWidth } = useResponsive();
     const navigation = useNavigation<any>();
     const [conversations, setConversations] = useState<ConversationSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +92,7 @@ export const ChatHistoryScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]} edges={['top']}>
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: "100%", alignSelf: "center" }]}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
                 </TouchableOpacity>
@@ -121,7 +121,7 @@ export const ChatHistoryScreen: React.FC = () => {
                     data={conversations}
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPadding, maxWidth: contentWidth, width: '100%', alignSelf: 'center' }]}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: 0,
         paddingTop: 24,
         paddingBottom: 16,
         gap: 16,
