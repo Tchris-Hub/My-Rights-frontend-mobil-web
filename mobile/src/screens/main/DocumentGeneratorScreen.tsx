@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: 16,
         paddingTop: 12,
-        paddingBottom: fluid(20, 24, 320, 600),
+        paddingBottom: 24,
     },
     backBtn: {
         width: 48,
