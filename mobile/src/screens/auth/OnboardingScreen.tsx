@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     slide: {
         flex: 1,
         justifyContent: 'flex-end',
-        paddingBottom: 220, // Keep copy clear of the floating footer
+        paddingBottom: Math.min(220, Math.max(150, SCREEN_HEIGHT * 0.27)), // Reserve space for the floating footer without over-consuming short landscape windows
     },
     imageContainer: {
         position: 'absolute',
