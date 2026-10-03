@@ -50,6 +50,8 @@ export function useResponsive() {
         isTablet: width >= 600,
         horizontalPadding,
         contentMaxWidth,
+        // Backwards-compatible alias used by existing screens.
+        contentWidth: contentMaxWidth ?? width - horizontalPadding * 2,
         getColumns,
         scale: (size: number) => size * widthRatio,
         verticalScale: (size: number) => size * heightRatio,
