@@ -60,20 +60,28 @@ const TOOLS = [
 
 export const ToolsHomeScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, fluid } = useResponsive();
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, horizontalPadding, contentMaxWidth, getColumns, fluid, compact } = useResponsive();
     const navigation = useNavigation<any>();
 
     const columns = getColumns(220, 16);
-    const isTwoColumn = columns >= 2;
+    // Keep the staggered two-column composition as a tablet treatment.
+    // Large phones remain a single-column composition instead of becoming
+    // cramped pseudo-tablets.
+    const isTwoColumn = !compact && columns >= 2;
 
-    const heroTitleSize = fluid(32, 54, 320, 600);
+    const heroTitleSize = fluid(26, 54, 320, 600);
     const heroTitleLineHeight = Math.round(heroTitleSize * 1.08);
-    const heroSubtitleSize = fluid(14, 16, 320, 600);
-    const cardTitleSize = fluid(17, 22, 320, 600);
-    const cardSubtitleSize = fluid(12.5, 15, 320, 600);
-    const cardPadding = fluid(16, 24, 320, 600);
-    const cardMinHeight = fluid(176, 220, 320, 600);
-    const cardIconSize = fluid(48, 56, 320, 600);
+    const heroSubtitleSize = fluid(13, 16, 320, 600);
+    const cardTitleSize = fluid(15, 22, 320, 600);
+    const cardSubtitleSize = fluid(11.5, 15, 320, 600);
+    const cardPadding = fluid(14, 24, 320, 600);
+    const cardMinHeight = fluid(156, 220, 320, 600);
+    const cardIconSize = fluid(44, 56, 320, 600);
+    const cardRadius = fluid(22, 28, 320, 600);
+    const heroTop = fluid(16, 20, 320, 600);
+    const heroBottom = fluid(28, 40, 320, 600);
+    const cardInfoTop = fluid(18, 24, 320, 600);
+    const statusFontSize = fluid(10, 12, 320, 600);
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -101,7 +109,7 @@ export const ToolsHomeScreen: React.FC = () => {
                     <View style={styles.headerSpacer} />
                     <View style={[styles.statusBadge, { backgroundColor: colors.primary + '15' }]}>
                         <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                        <Text style={[styles.statusText, { color: colors.primary }]}>Live Service</Text>
+                        <Text style={[styles.statusText, { color: colors.primary, fontSize: statusFontSize }]}>Live Service</Text>
                     </View>
                 </View>
             </SafeAreaView>
@@ -113,6 +121,8 @@ export const ToolsHomeScreen: React.FC = () => {
                 <View style={[
                     styles.heroSection,
                     {
+                        marginTop: heroTop,
+                        marginBottom: heroBottom,
                         paddingHorizontal: horizontalPadding,
                         maxWidth: contentMaxWidth,
                         alignSelf: contentMaxWidth ? 'center' : undefined,
@@ -157,6 +167,7 @@ export const ToolsHomeScreen: React.FC = () => {
                                 {
                                     padding: cardPadding,
                                     minHeight: cardMinHeight,
+                                    borderRadius: cardRadius,
                                     backgroundColor: index % 2 === 0
                                         ? colors.surfaceContainerLow
                                         : colors.surfaceContainerHigh,
@@ -183,13 +194,13 @@ export const ToolsHomeScreen: React.FC = () => {
                                 </View>
                                 <Ionicons
                                     name="arrow-up-outline"
-                                    size={20}
+                                    size={fluid(18, 20, 320, 600)}
                                     color={colors.onSurfaceVariant}
                                     style={{ transform: [{ rotate: '45deg' }] }}
                                 />
                             </View>
 
-                            <View style={styles.toolInfo}>
+                            <View style={[styles.toolInfo, { marginTop: cardInfoTop }]}>
                                 <Text style={[styles.toolTitle, { color: colors.onSurface, fontSize: cardTitleSize, lineHeight: Math.round(cardTitleSize * 1.15) }]}>{tool.title}</Text>
                                 <Text style={[styles.toolSubtitle, { color: colors.onSurfaceVariant, fontSize: cardSubtitleSize, lineHeight: Math.round(cardSubtitleSize * 1.45) }]}>{tool.subtitle}</Text>
                             </View>
@@ -202,6 +213,9 @@ export const ToolsHomeScreen: React.FC = () => {
                     {
                         backgroundColor: colors.surfaceContainerHighest || colors.surfaceContainerHigh,
                         marginHorizontal: horizontalPadding,
+                        marginTop: fluid(40, 60, 320, 600),
+                        padding: fluid(20, 32, 320, 600),
+                        borderRadius: fluid(28, 36, 320, 600),
                         maxWidth: contentMaxWidth,
                         alignSelf: contentMaxWidth ? 'center' : undefined,
                         width: contentMaxWidth ? '100%' : undefined,
@@ -319,7 +333,7 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     toolInfoCompact: {
-        marginTop: 24,
+        marginTop: 18,
     },
     toolTitle: {
         ...theme.typography.titleLg,

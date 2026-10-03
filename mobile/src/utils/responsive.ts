@@ -4,6 +4,13 @@ const MIN_CONTENT_GUTTER = 16;
 const MAX_CONTENT_GUTTER = 32;
 
 export type ResponsiveLayout = 'compact' | 'regular' | 'expanded';
+export type ResponsiveBand =
+    | 'veryCompact'
+    | 'compactPhone'
+    | 'standardPhone'
+    | 'largePhone'
+    | 'tablet'
+    | 'expanded';
 
 /**
  * Adaptive layout primitives for React Native.
@@ -20,10 +27,29 @@ export function useResponsive() {
         width < 840 ? 'regular' :
         'expanded';
 
-    const horizontalPadding = Math.min(
-        MAX_CONTENT_GUTTER,
-        Math.max(MIN_CONTENT_GUTTER, width * 0.06),
-    );
+    // Visual calibration bands. These are deliberately based on available
+    // logical width rather than device/model names. Components can use the
+    // band for composition changes while fluid() handles interpolation.
+    const band: ResponsiveBand =
+        width < 360 ? 'veryCompact' :
+        width < 390 ? 'compactPhone' :
+        width < 430 ? 'standardPhone' :
+        width < 600 ? 'largePhone' :
+        width < 840 ? 'tablet' :
+        'expanded';
+
+    const veryCompact = band === 'veryCompact';
+    const compactPhone = band === 'compactPhone';
+    const standardPhone = band === 'standardPhone';
+    const largePhone = band === 'largePhone';
+    const tablet = band === 'tablet';
+
+    const horizontalPadding = width < 600
+        ? Math.min(32, Math.max(16, width * 0.06))
+        : Math.min(
+            MAX_CONTENT_GUTTER,
+            Math.max(MIN_CONTENT_GUTTER, width * 0.06),
+        );
 
     const contentMaxWidth = layout === 'expanded'
         ? 960
@@ -62,6 +88,12 @@ export function useResponsive() {
         layout,
         compact: layout === 'compact',
         narrow: width < 380,
+        veryCompact,
+        compactPhone,
+        standardPhone,
+        largePhone,
+        tablet,
+        band,
         regular: layout === 'regular',
         expanded: layout === 'expanded',
         isTablet: width >= 600,

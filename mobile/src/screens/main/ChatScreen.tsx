@@ -47,7 +47,7 @@ const SUGGESTIONS = [
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { horizontalPadding, narrow, width, fluid } = useResponsive();
+    const { horizontalPadding, narrow, compact, width, fluid } = useResponsive();
     const { isAuthenticated } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
@@ -428,26 +428,26 @@ export const ChatScreen: React.FC = () => {
                 <BlurView intensity={isDark ? 40 : 80} style={styles.headerBlur}>
                     <View style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}>
                         <TouchableOpacity
-                            style={styles.headerIconButton}
+                            style={[styles.headerIconButton, { width: fluid(36, 40, 320, 600), height: fluid(36, 40, 320, 600) }]}
                             onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 navigation.navigate('Tools');
                             }}
                         >
-                            <Ionicons name="apps-outline" size={24} color={colors.primary} />
+                            <Ionicons name="apps-outline" size={fluid(21, 24, 320, 600)} color={colors.primary} />
                         </TouchableOpacity>
 
                         <View style={styles.headerCentered}>
                             <View style={styles.statusRow}>
                                 <View style={[styles.onlineDot, isIncognito && { backgroundColor: colors.onSurfaceVariant }]} />
-                                <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
+                                <Text style={[styles.headerTitle, { color: colors.onSurface, fontSize: fluid(16, 18, 320, 600) }]}>
                                     {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
                                 </Text>
                             </View>
                         </View>
 
                         <TouchableOpacity
-                            style={styles.headerIconButton}
+                            style={[styles.headerIconButton, { width: fluid(36, 40, 320, 600), height: fluid(36, 40, 320, 600) }]}
                             onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 setIsMenuVisible(prev => !prev);
@@ -455,7 +455,7 @@ export const ChatScreen: React.FC = () => {
                         >
                             <Ionicons
                                 name={isMenuVisible ? 'close-circle-outline' : 'ellipsis-horizontal-circle-outline'}
-                                size={26}
+                                size={fluid(23, 26, 320, 600)}
                                 color={colors.primary}
                             />
                         </TouchableOpacity>
@@ -471,14 +471,16 @@ export const ChatScreen: React.FC = () => {
                                 style={[
                                     styles.menuContainer,
                                     {
-                                        width: Math.min(320, Math.max(240, width - horizontalPadding * 2)),
+                                        width: Math.min(320, Math.max(236, width - horizontalPadding * 2)),
+                                        top: fluid(76, 84, 320, 600),
                                         backgroundColor: colors.surfaceContainer,
                                         borderColor: colors.outline,
+                                        borderRadius: fluid(16, 20, 320, 600),
                                     },
                                 ]}
                             >
                                 <TouchableOpacity
-                                    style={styles.menuItem}
+                                    style={[styles.menuItem, { paddingHorizontal: fluid(12, 16, 320, 600), paddingVertical: fluid(10, 12, 320, 600) }]}
                                     onPress={() => {
                                         closeMenu();
                                         handleNewChat();
@@ -486,13 +488,13 @@ export const ChatScreen: React.FC = () => {
                                 >
                                     <View style={styles.menuItemLabelWrap}>
                                         <Ionicons name="refresh-circle" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Start New Chat</Text>
+                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface, fontSize: fluid(13, 14, 320, 600) }]}>Start New Chat</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 {isAuthenticated && (
-                                    <View style={[styles.menuItem, styles.menuItemDivider]}>
+                                    <View style={[styles.menuItem, styles.menuItemDivider, { paddingHorizontal: fluid(12, 16, 320, 600) }]}>
                                         <View style={styles.menuItemLabelWrap}>
                                             <Ionicons name="eye-off" size={20} color={isIncognito ? colors.primary : colors.onSurfaceVariant} />
                                             <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Incognito Mode</Text>
@@ -581,8 +583,8 @@ export const ChatScreen: React.FC = () => {
                                     styles.emptyTitle,
                                     {
                                         color: colors.onSurface,
-                                        fontSize: fluid(26, 32, 320, 600),
-                                        lineHeight: fluid(32, 38, 320, 600),
+                                        fontSize: fluid(24, 32, 320, 600),
+                                        lineHeight: fluid(29, 38, 320, 600),
                                     },
                                 ]}
                             >
@@ -593,8 +595,8 @@ export const ChatScreen: React.FC = () => {
                                     styles.emptySubtitle,
                                     {
                                         color: colors.onSurfaceVariant,
-                                        fontSize: fluid(14, 16, 320, 600),
-                                        lineHeight: fluid(21, 24, 320, 600),
+                                        fontSize: fluid(13, 16, 320, 600),
+                                        lineHeight: fluid(19, 24, 320, 600),
                                     },
                                 ]}
                             >
@@ -653,7 +655,7 @@ export const ChatScreen: React.FC = () => {
                             {isExtractingAttachment && <ActivityIndicator size="small" color={colors.primary} />}
                         </View>
                     )}
-                    <View style={styles.inputContainer}>
+                    <View style={[styles.inputContainer, { gap: fluid(8, 12, 320, 600) }]}>
                         <View
                             style={[
                                 styles.inputWrapper,
@@ -676,7 +678,7 @@ export const ChatScreen: React.FC = () => {
                                 style={[
                                     styles.input,
                                     narrow && styles.inputNarrow,
-                                    { color: colors.onSurface },
+                                    { color: colors.onSurface, fontSize: compact ? fluid(14, 16, 320, 600) : 16 },
                                 ]}
                                 placeholder="Message AI..."
                                 placeholderTextColor={colors.onSurfaceVariant}
