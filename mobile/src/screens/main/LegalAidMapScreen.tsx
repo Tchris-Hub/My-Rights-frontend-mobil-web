@@ -322,7 +322,7 @@ export const LegalAidMapScreen: React.FC = () => {
     const mapTilerConfigured = Boolean(mapTilerApiKey);
 
     const renderHeader = () => (
-        <View style={styles.mapContainer}>
+        <View style={[styles.mapContainer, { height: Math.min(360, Math.max(220, SCREEN_HEIGHT * 0.38)) }]}>
             {mapTilerConfigured ? (
                 <Map
                     style={styles.map}
