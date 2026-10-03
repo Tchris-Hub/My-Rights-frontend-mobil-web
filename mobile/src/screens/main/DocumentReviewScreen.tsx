@@ -326,7 +326,7 @@ export const DocumentReviewScreen: React.FC = () => {
                         <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
                     </TouchableOpacity>
                     <View style={styles.titleContainer}>
-                        <Text style={[styles.title, { color: colors.onSurface }]}>Review</Text>
+                        <Text style={[styles.title, { color: colors.onSurface, fontSize: narrow ? 30 : 36, lineHeight: narrow ? 34 : 40 }]}>Review</Text>
                         <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>AI Document Review</Text>
                     </View>
                 </View>
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
     },
     globalBackground: {
         position: 'absolute',
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
+        width: '100%',
+        height: '100%',
         resizeMode: 'cover',
         opacity: 0.15,
     },
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...theme.typography.displayMd,
-        fontSize: narrow ? 30 : 36,
+        fontSize: 36,
         fontWeight: '900',
         letterSpacing: -1.5,
     },
