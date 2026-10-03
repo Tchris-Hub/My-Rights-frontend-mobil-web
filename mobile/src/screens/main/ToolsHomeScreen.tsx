@@ -66,14 +66,14 @@ export const ToolsHomeScreen: React.FC = () => {
     const columns = getColumns(220, 16);
     const isTwoColumn = columns >= 2;
 
-    const heroTitleSize = fluid(32, 50, 320, 840);
+    const heroTitleSize = fluid(32, 54, 320, 600);
     const heroTitleLineHeight = Math.round(heroTitleSize * 1.08);
-    const heroSubtitleSize = fluid(14, 16, 320, 840);
-    const cardTitleSize = fluid(17, 21, 320, 840);
-    const cardSubtitleSize = fluid(12.5, 14.5, 320, 840);
-    const cardPadding = fluid(16, 24, 320, 840);
-    const cardMinHeight = fluid(176, 220, 320, 840);
-    const cardIconSize = fluid(48, 56, 320, 840);
+    const heroSubtitleSize = fluid(14, 16, 320, 600);
+    const cardTitleSize = fluid(17, 22, 320, 600);
+    const cardSubtitleSize = fluid(12.5, 15, 320, 600);
+    const cardPadding = fluid(16, 24, 320, 600);
+    const cardMinHeight = fluid(176, 220, 320, 600);
+    const cardIconSize = fluid(48, 56, 320, 600);
 
     const handleToolPress = (tool: typeof TOOLS[0]) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
