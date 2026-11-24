@@ -13,8 +13,10 @@ const required = [
   'scripts/e2e-contract.mjs',
 ];
 
+const repoRoot = path.resolve(root, '..');
 for (const file of required) {
-  if (!fs.existsSync(path.join(root, file))) failures.push(`Missing release-gate artifact: ${file}`);
+  const found = fs.existsSync(path.join(root, file)) || (file.startsWith('docs/') && fs.existsSync(path.join(repoRoot, file)));
+  if (!found) failures.push(`Missing release-gate artifact: ${file}`);
 }
 
 const appConfig = read('app.config.ts');

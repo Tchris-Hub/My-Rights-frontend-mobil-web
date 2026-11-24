@@ -74,6 +74,18 @@ export interface AuthenticatedChatResponse {
 
 export type ChatResponse = PublicChatResponse | AuthenticatedChatResponse;
 
+/** Canonical response from POST /api/ai/chat (mirrors ChatResponseContract in ragPolicy). */
+export interface AiChatResponse {
+    content: string;
+    conversation_id: string | null;
+    citation_status: 'verified_context' | 'live_research' | 'unverified';
+    sources?: Array<Omit<SourceCitation, 'excerpt'> & { excerpt?: string }>;
+    legal_disclaimer?: string;
+    escalation_recommended?: boolean;
+    risk_level?: string;
+    quota?: { remaining: number; limit?: number; [key: string]: unknown };
+}
+
 // Document types
 export interface AnalysisResult {
     clause_title: string;
