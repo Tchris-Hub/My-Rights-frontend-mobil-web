@@ -40,6 +40,31 @@ enum VerificationStatus {
   superseded
 }
 
+enum DataRequestType {
+  export
+  deletion
+}
+
+enum DataRequestStatus {
+  pending
+  in_progress
+  completed
+  rejected
+}
+
+enum EnquiryStatus {
+  pending
+  accepted
+  declined
+  closed
+}
+
+enum CaseStatus {
+  open
+  referred
+  closed
+}
+
 enum LegalSourceType {
   constitution
   statute
@@ -68,6 +93,13 @@ model User {
   chat_sessions       ChatSession[]
   escalation_requests LegalEscalationRequest[]
   privacy_consents    PrivacyConsent[]
+  saved_rights        SavedRight[]
+  data_requests       DataRequest[]
+  reports             UserReport[]
+  cases               Case[]
+  enquiries           Enquiry[]
+  professional        Professional?
+  usage_counters      UsageCounter[]
 
   @@map("users")
 }
@@ -284,4 +316,187 @@ model ConstitutionSection {
 
   @@index([chapter_id])
   @@map("constitution_sections")
+}
+
+// ---------------------------------------------------------------------------
+// Account: saved rights, data requests (export / deletion), reports, usage.
+// Every query is scoped by user_id taken from the session, never from input.
+// ---------------------------------------------------------------------------
+
+model SavedRight {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id     String
+  source_type String
+  source_id   String
+  title       String
+  citation    String?
+  summary     String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, source_type, source_id])
+  @@map("saved_rights")
+}
+
+model DataRequest {
+  id           String            @id @default(dbgenerated("gen_random_uuid()"))
+  user_id      String
+  request_type DataRequestType
+  status       DataRequestStatus @default(pending)
+  details      String?
+  created_at   DateTime          @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("data_requests")
+}
+
+model UserReport {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id      String
+  category     String
+  message      String
+  status       String   @default("open")
+  context_type String?
+  context_id   String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
+  @@map("user_reports")
+}
+
+// Daily AI usage per feature. Read by GET /api/usage; written by the AI gateway.
+model UsageCounter {
+  id      String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id String
+  feature String
+  day     DateTime @db.Date
+  used    Int      @default(0)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, feature, day])
+  @@map("usage_counters")
+}
+
+// ---------------------------------------------------------------------------
+// Directory: verified professionals and firms, and the enquiries sent to them.
+// Only rows with verification_status = 'verified' are ever listed or matched.
+// ---------------------------------------------------------------------------
+
+model Professional {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()"))
+  user_id             String             @unique
+  role                String
+  display_name        String
+  bio                 String?
+  location            String?
+  practice_areas      String[]
+  service_areas       String[]
+  languages           String[]
+  availability        String?
+  fee_band            String?
+  verification_status VerificationStatus @default(unverified)
+  verified_at         DateTime?          @db.Timestamptz(6)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime           @updatedAt @db.Timestamptz(6)
+
+  user      User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  firms     FirmMember[]
+  enquiries Enquiry[]
+
+  @@index([verification_status])
+  @@map("professionals")
+}
+
+model Firm {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()"))
+  name                String
+  description         String?
+  location            String?
+  practice_areas      String[]
+  service_areas       String[]
+  languages           String[]
+  fee_band            String?
+  verification_status VerificationStatus @default(unverified)
+  verified_at         DateTime?          @db.Timestamptz(6)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+
+  members   FirmMember[]
+  enquiries Enquiry[]
+
+  @@index([verification_status])
+  @@map("firms")
+}
+
+model FirmMember {
+  firm_id         String
+  professional_id String
+  member_role     String?
+
+  firm         Firm         @relation(fields: [firm_id], references: [id], onDelete: Cascade)
+  professional Professional @relation(fields: [professional_id], references: [id], onDelete: Cascade)
+
+  @@id([firm_id, professional_id])
+  @@map("firm_members")
+}
+
+model Enquiry {
+  id               String        @id @default(dbgenerated("gen_random_uuid()"))
+  reference_number String        @unique
+  user_id          String
+  professional_id  String?
+  firm_id          String?
+  message          String
+  practice_area    String?
+  status           EnquiryStatus @default(pending)
+  response_message String?
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime      @updatedAt @db.Timestamptz(6)
+
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  professional Professional? @relation(fields: [professional_id], references: [id], onDelete: SetNull)
+  firm         Firm?         @relation(fields: [firm_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, created_at])
+  @@index([professional_id, status])
+  @@map("enquiries")
+}
+
+// ---------------------------------------------------------------------------
+// Intake: a case is an append-only ledger of facts (see src/intake).
+// ---------------------------------------------------------------------------
+
+model Case {
+  id             String     @id @default(dbgenerated("gen_random_uuid()"))
+  user_id        String
+  situation      String
+  schema_version Int
+  status         CaseStatus @default(open)
+  created_at     DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime   @updatedAt @db.Timestamptz(6)
+
+  user  User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  facts CaseFact[]
+
+  @@index([user_id, updated_at])
+  @@map("cases")
+}
+
+model CaseFact {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  case_id    String
+  key        String
+  value      String
+  source     String   @default("person")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  case Case @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  @@index([case_id, created_at])
+  @@map("case_facts")
 }
