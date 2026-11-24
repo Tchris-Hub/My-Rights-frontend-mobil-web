@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
-import { Chapter, Section, Template, LegalAidCenter, Lawyer, ProfessionalMatch, FirmMatch } from '../types';
+import type { Chapter, Section, Template, LegalAidCenter, Lawyer, ProfessionalMatch, FirmMatch } from '../types';
 
-export { Chapter, Section, Template, LegalAidCenter as Center, Lawyer, ProfessionalMatch, FirmMatch };
+export type { Chapter, Section, Template, LegalAidCenter as Center, Lawyer, ProfessionalMatch, FirmMatch };
 
 export const legalService = {
   async getConstitution() {

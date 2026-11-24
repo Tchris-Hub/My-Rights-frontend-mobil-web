@@ -24,11 +24,11 @@ export const MagicLinkSentScreen: React.FC<Props> = ({ route }) => {
 
                 <Text style={[styles.title, { color: colors.onSurface }]}>Check your email</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    We sent a secure sign-in link to
+                    We sent a sign-in link to
                 </Text>
                 <Text style={[styles.email, { color: colors.onSurface }]}>{email}</Text>
                 <Text style={[styles.help, { color: colors.onSurfaceVariant }]}>
-                    Open the link on this device to continue. The link expires in 5 minutes and can only be used once.
+                    Open the link on this device to continue. It works once and expires in 5 minutes.
                 </Text>
 
                 <TouchableOpacity
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 96,
         height: 96,
-        borderRadius: 48,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: theme.spacing.xl,
@@ -89,6 +89,6 @@ const styles = StyleSheet.create({
     },
     backText: {
         ...theme.typography.labelMd,
-        fontWeight: '700',
+        fontFamily: theme.typography.fontFamily.headlineMedium,
     },
 });

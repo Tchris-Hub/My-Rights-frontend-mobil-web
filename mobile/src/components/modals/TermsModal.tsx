@@ -1,6 +1,6 @@
 /**
  * Terms and Conditions Modal
- * Premium, scrollable modal for legal documents
+ * Scrollable modal for legal documents
  */
 
 import React from 'react';
@@ -13,7 +13,7 @@ import {
     Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { Button } from '../ui/Button';
 import theme from '../../constants/theme';
 import { APP_CONFIG } from '../../constants/config';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,7 +25,7 @@ interface TermsModalProps {
 }
 
 export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
 
     const title = type === 'terms' ? 'Terms of Service' : 'Privacy Policy';
 
@@ -36,11 +36,11 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }
             animationType="slide"
             onRequestClose={onClose}
         >
-            <BlurView intensity={isDark ? 40 : 80} style={styles.overlay} tint="dark">
-                <View style={[styles.modal, { backgroundColor: colors.surfaceContainer }]}>
+            <View style={styles.overlay}>
+                <View style={[styles.modal, { backgroundColor: colors.card }]}>
                     <View style={styles.header}>
                         <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <TouchableOpacity style={styles.closeBtn} onPress={onClose} accessibilityLabel="Close">
                             <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
                         </TouchableOpacity>
                     </View>
@@ -54,14 +54,9 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }
                         <View style={{ height: 40 }} />
                     </ScrollView>
 
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: colors.primary }]}
-                        onPress={onClose}
-                    >
-                        <Text style={[styles.actionText, { color: colors.onPrimary }]}>Understood</Text>
-                    </TouchableOpacity>
+                    <Button title="Got it" onPress={onClose} fullWidth />
                 </View>
-            </BlurView>
+            </View>
         </Modal>
     );
 };
@@ -69,7 +64,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose, type }
 const TermsContent = ({ colors }: any) => (
     <View>
         <Text style={[styles.text, { color: colors.onSurface }]}>
-            Welcome to My Rights. By using our platform, you agree to these terms:
+            By using My Rights you agree to these terms.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. General Information</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
@@ -77,7 +72,7 @@ const TermsContent = ({ colors }: any) => (
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. No Legal Advice</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
-            The information provided by the AI is NOT legal advice and does not create an attorney-client relationship. Always consult a licensed lawyer for specific legal issues.
+            The information provided by the AI is not legal advice and does not create an attorney-client relationship. Always consult a licensed lawyer for specific legal issues.
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>3. User Conduct</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
@@ -93,13 +88,13 @@ const TermsContent = ({ colors }: any) => (
 const PrivacyContent = ({ colors }: any) => (
     <View>
         <Text style={[styles.text, { color: colors.onSurface }]}>
-            {'This notice describes the current data flow and privacy baseline. Effective date: ' + APP_CONFIG.PRIVACY_POLICY_VERSION}
+            {'How your data is handled today. Version: ' + APP_CONFIG.PRIVACY_POLICY_VERSION}
         </Text>
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>1. Data Collection</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             We may collect account information such as your email and name, authenticated chat history, and technical/security metadata needed to operate and protect the service.
         </Text>
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. Encryption</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>2. How data is protected</Text>
         <Text style={[styles.text, { color: colors.onSurfaceVariant }]}>
             Data is protected in transit and by access controls appropriate to the service. Authenticated chat history is intended to be account-scoped; do not treat the AI service as a confidential attorney-client channel.
         </Text>
@@ -118,14 +113,14 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'flex-end',
+        backgroundColor: 'rgba(18,24,56,0.55)',
     },
     modal: {
         height: '85%',
         width: '100%',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        padding: 24,
-        ...theme.shadows.glass,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
     },
     header: {
         flexDirection: 'row',
@@ -150,16 +145,5 @@ const styles = StyleSheet.create({
     text: {
         ...theme.typography.bodyLg,
         lineHeight: 22,
-    },
-    actionBtn: {
-        paddingVertical: 16,
-        borderRadius: 20,
-        alignItems: 'center',
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    actionText: {
-        ...theme.typography.bodyLg,
-        fontWeight: '800',
     },
 });

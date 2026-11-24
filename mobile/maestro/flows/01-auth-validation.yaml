@@ -3,17 +3,9 @@ appId: com.myrights.app
 - launchApp:
     clearState: true
 - assertVisible:
-    text: "My Rights"
-- assertVisible:
-    id: "onboarding-primary"
+    id: "onboarding-start"
 - tapOn:
-    id: "onboarding-primary"
-- tapOn:
-    id: "onboarding-primary"
-- assertVisible:
-    text: "Get Started"
-- tapOn:
-    id: "onboarding-primary"
+    id: "onboarding-start"
 - assertVisible:
     id: "auth-email"
 - tapOn:

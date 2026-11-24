@@ -5,13 +5,33 @@
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
-// Root Stack (Onboarding → Auth → Main)
+// Root Stack (Onboarding -> Auth -> Main)
 export type RootStackParamList = {
     Onboarding: undefined;
     Auth: NavigatorScreenParams<AuthStackParamList>;
-    Chat: { initialMessage?: string; conversationId?: string } | undefined;
-    Tools: NavigatorScreenParams<ToolsStackParamList>;
-    Profile: NavigatorScreenParams<ProfileStackParamList>;
+    Main: NavigatorScreenParams<MainTabParamList>;
+};
+
+export type MainTabParamList = {
+    HomeTab: NavigatorScreenParams<HomeStackParamList>;
+    AskTab: { initialMessage?: string; conversationId?: string; nonce?: number } | undefined;
+    HelpTab: NavigatorScreenParams<HelpStackParamList>;
+    MeTab: NavigatorScreenParams<ProfileStackParamList>;
+};
+
+export type HomeStackParamList = {
+    Home: undefined;
+    Emergency: undefined;
+    DocumentReview: { jobId?: string } | undefined;
+    DocumentGenerate: { jobId?: string } | undefined;
+    ConstitutionExplorer: undefined;
+};
+
+export type HelpStackParamList = {
+    HelpHome: undefined;
+    LegalAidMap: undefined;
+    ProfessionalEnquiry: { professionalId?: string; firmId?: string; professionalName: string; practiceArea?: string };
+    FirmDetails: { firm: any };
 };
 
 // Auth Stack (Login, Signup)
@@ -19,18 +39,6 @@ export type AuthStackParamList = {
     Login: undefined;
     MagicLinkSent: { email: string };
     Consent: undefined;
-};
-
-// Tools Stack (Document Review, Generate)
-export type ToolsStackParamList = {
-    ToolsHome: undefined;
-    DocumentReview: undefined;
-    DocumentGenerate: undefined;
-    LawyerDirectory: undefined;
-    ConstitutionExplorer: undefined;
-    LegalAidMap: undefined;
-    ProfessionalEnquiry: { professionalId?: string; firmId?: string; professionalName: string; practiceArea?: string };
-    FirmDetails: { firm: any };
 };
 
 // Profile Stack (Profile, Settings)

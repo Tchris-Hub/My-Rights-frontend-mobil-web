@@ -18,7 +18,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { Button } from '../ui/Button';
 import * as Haptics from 'expo-haptics';
 import { chatService } from '../../services/chat.service';
 import theme from '../../constants/theme';
@@ -33,25 +33,25 @@ interface EscalateModalProps {
 type Urgency = 'low' | 'medium' | 'high' | 'critical';
 
 const urgencyOptions: { label: string; value: Urgency; color: string }[] = [
-    { label: 'Low', value: 'low', color: '#10B981' },
-    { label: 'Medium', value: 'medium', color: '#F59E0B' },
-    { label: 'High', value: 'high', color: '#EF4444' },
-    { label: 'Critical', value: 'critical', color: '#991B1B' },
+    { label: 'Can wait', value: 'low', color: '#1F7A4D' },
+    { label: 'This week', value: 'medium', color: '#B7791F' },
+    { label: 'Within a day', value: 'high', color: '#D7332B' },
+    { label: 'Right now', value: 'critical', color: '#9B1C16' },
 ];
 
 export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, conversationId }) => {
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const [reason, setReason] = useState('');
     const [urgency, setUrgency] = useState<Urgency>('medium');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
         if (!reason.trim()) {
-            Alert.alert('Missing Information', 'Please describe why you need human assistance.');
+            Alert.alert('Tell us what happened', 'Add a few lines about why you need a lawyer.');
             return;
         }
         if (!conversationId) {
-            Alert.alert('No Active Conversation', 'Please send at least one message before escalating.');
+            Alert.alert('Ask a question first', 'Send at least one message so the lawyer has something to read.');
             return;
         }
 
@@ -61,45 +61,41 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
         try {
             const response = await chatService.escalateConversation(conversationId, reason.trim(), urgency);
             Alert.alert(
-                '✅ Escalation Submitted',
-                `Your reference number is: ${response.reference_number}\n\nIf a participating legal-service provider accepts the request, their stated response process will apply.`,
-                [{ text: 'Okay', onPress: onClose }]
+                'Request sent',
+                `Your reference number is ${response.reference_number}. Keep it. If a legal-aid provider accepts, they will follow their own process to reach you.`,
+                [{ text: 'OK', onPress: onClose }]
             );
             setReason('');
             setUrgency('medium');
         } catch (error) {
             console.error('Escalation failed:', error);
-            Alert.alert('Escalation Failed', 'Could not submit your request. Please try again.');
+            Alert.alert('Request not sent', 'We could not send it. Check your connection and try again.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <BlurView intensity={isDark ? 40 : 80} style={styles.overlay} tint="dark">
+        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+            <View style={styles.overlay}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
                     <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-                <View style={[styles.modal, { backgroundColor: colors.surfaceContainer }]}>
-                    <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                        <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
-                    </TouchableOpacity>
-
-                    <View style={styles.header}>
-                        <View style={[styles.iconCircle, { backgroundColor: theme.colors.error + '20' }]}>
-                            <Ionicons name="call" size={32} color={theme.colors.error} />
-                        </View>
-                        <Text style={[styles.title, { color: colors.onSurface }]}>Request Human Legal Assistance</Text>
-                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                            Submit a request for human legal assistance. Availability and response times depend on the service provider.
-                        </Text>
+                <View style={[styles.modal, { backgroundColor: colors.card }]}>
+                    <View style={styles.titleRow}>
+                        <Text style={[styles.title, { color: colors.onSurface }]}>Talk to a lawyer</Text>
+                        <TouchableOpacity onPress={onClose} accessibilityLabel="Close" style={styles.closeBtn}>
+                            <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
+                        </TouchableOpacity>
                     </View>
+                    <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+                        We pass your request to a legal-aid provider. Whether and how fast they reply depends on the provider.
+                    </Text>
 
                     <View style={styles.formGroup}>
-                        <Text style={[styles.label, { color: colors.onSurface }]}>Why do you need help?</Text>
+                        <Text style={[styles.label, { color: colors.onSurface }]}>What happened?</Text>
                         <TextInput
-                            style={[styles.textArea, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.outline }]}
-                            placeholder="Describe your situation briefly..."
+                            style={[styles.textArea, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.line }]}
+                            placeholder="Say it in a few lines. Leave out ID numbers."
                             placeholderTextColor={colors.onSurfaceVariant}
                             value={reason}
                             onChangeText={setReason}
@@ -109,133 +105,53 @@ export const EscalateModal: React.FC<EscalateModalProps> = ({ visible, onClose, 
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={[styles.label, { color: colors.onSurface }]}>Urgency Level</Text>
+                        <Text style={[styles.label, { color: colors.onSurface }]}>How soon do you need help?</Text>
                         <View style={styles.urgencyGrid}>
-                            {urgencyOptions.map((opt) => (
-                                <TouchableOpacity
-                                    key={opt.value}
-                                    style={[
-                                        styles.urgencyBtn,
-                                        { borderColor: colors.outline },
-                                        urgency === opt.value && { backgroundColor: opt.color + '20', borderColor: opt.color },
-                                    ]}
-                                    onPress={() => setUrgency(opt.value)}
-                                >
-                                    <Text style={[styles.urgencyText, urgency === opt.value && { color: opt.color, fontWeight: '800' }]}>
-                                        {opt.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                            {urgencyOptions.map((opt) => {
+                                const active = urgency === opt.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={opt.value}
+                                        accessibilityRole="radio"
+                                        accessibilityState={{ selected: active }}
+                                        style={[
+                                            styles.urgencyBtn,
+                                            { borderColor: colors.line },
+                                            active && { backgroundColor: opt.color + '1A', borderColor: opt.color },
+                                        ]}
+                                        onPress={() => setUrgency(opt.value)}
+                                    >
+                                        <Text style={[styles.urgencyText, { color: active ? opt.color : colors.onSurfaceVariant }]}>
+                                            {opt.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.submitBtn, { backgroundColor: theme.colors.error }]}
-                        onPress={handleSubmit}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator color="#FFF" />
-                        ) : (
-                            <>
-                                <Ionicons name="arrow-forward" size={20} color="#FFF" />
-                                <Text style={styles.submitText}>Submit Escalation</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+                    <Button title="Send request" onPress={handleSubmit} loading={isSubmitting} fullWidth />
                 </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
-            </BlurView>
+            </View>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    keyboardView: { width: '100%', maxHeight: '92%' },
-    modalScroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-    modal: {
-        width: '100%',
-        borderRadius: 32,
-        padding: 24,
-        ...theme.shadows.glass,
-    },
-    closeBtn: {
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        padding: 8,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    iconCircle: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-    },
-    title: {
-        ...theme.typography.titleLg,
-        marginBottom: 4,
-    },
-    subtitle: {
-        ...theme.typography.bodyMd,
-        textAlign: 'center',
-    },
-    formGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        ...theme.typography.bodyLg,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    textArea: {
-        minHeight: 100,
-        borderWidth: 1,
-        borderRadius: 16,
-        padding: 16,
-        ...theme.typography.bodyMd,
-    },
-    urgencyGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    urgencyBtn: {
-        flex: 1,
-        minWidth: '45%',
-        paddingVertical: 12,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        alignItems: 'center',
-    },
-    urgencyText: {
-        ...theme.typography.bodyMd,
-        fontWeight: '600',
-    },
-    submitBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        borderRadius: 20,
-        gap: 10,
-        marginTop: 8,
-    },
-    submitText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: '800',
-    },
+    overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18,24,56,0.55)' },
+    keyboardView: { width: '100%', maxHeight: '100%' },
+    modalScroll: { flexGrow: 1, justifyContent: 'flex-end' },
+    modal: { width: '100%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 28 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    closeBtn: { padding: 6, marginRight: -6 },
+    title: { ...theme.typography.titleLg },
+    subtitle: { ...theme.typography.bodyMd, marginTop: 4, marginBottom: 18 },
+    formGroup: { marginBottom: 18 },
+    label: { ...theme.typography.titleMd, marginBottom: 8 },
+    textArea: { minHeight: 110, borderWidth: 1, borderRadius: 12, padding: 14, ...theme.typography.bodyMd },
+    urgencyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    urgencyBtn: { flexGrow: 1, flexBasis: '45%', minHeight: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    urgencyText: { ...theme.typography.labelMd },
 });

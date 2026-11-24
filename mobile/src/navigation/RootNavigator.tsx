@@ -9,9 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingScreen } from '../screens/auth/OnboardingScreen';
 import { AuthStack } from './AuthStack';
-import { ChatScreen } from '../screens/main/ChatScreen';
-import { ToolsNavigator } from './ToolsStack';
-import { ProfileNavigator } from './ProfileStack';
+import { MainTabs } from './MainTabs';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { CustomSplashScreen as SplashScreen } from '../screens/common/SplashScreen';
 import { useAuth } from '../contexts/AuthContext';
@@ -60,7 +58,7 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
             <Stack.Navigator
                 key={routeMode}
                 screenOptions={{ headerShown: false }}
-                initialRouteName={routeMode === 'onboarding' ? 'Onboarding' : routeMode === 'main' ? 'Chat' : 'Auth'}
+                initialRouteName={routeMode === 'onboarding' ? 'Onboarding' : routeMode === 'main' ? 'Main' : 'Auth'}
             >
                 {!onboardingCompleted ? (
                     <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -69,11 +67,7 @@ export const RootNavigator: React.FC<RootNavigatorProps> = ({ linking }) => {
                 ) : (isAuthenticated && !consentAccepted) ? (
                     <Stack.Screen name="Auth" component={AuthStack} />
                 ) : (
-                    <>
-                        <Stack.Screen name="Chat" component={ChatScreen} />
-                        <Stack.Screen name="Tools" component={ToolsNavigator} />
-                        <Stack.Screen name="Profile" component={ProfileNavigator} />
-                    </>
+                    <Stack.Screen name="Main" component={MainTabs} />
                 )}
             </Stack.Navigator>
             <BackgroundJobOverlay />

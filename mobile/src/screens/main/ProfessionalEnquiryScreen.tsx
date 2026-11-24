@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import {
   ActivityIndicator,
   Alert,
@@ -15,12 +16,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import type { ToolsStackParamList } from '../../navigation/types';
+import type { HelpStackParamList } from '../../navigation/types';
 import { legalService } from '../../services/legalService';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
 
-type Route = RouteProp<ToolsStackParamList, 'ProfessionalEnquiry'>;
+type Route = RouteProp<HelpStackParamList, 'ProfessionalEnquiry'>;
 
 export const ProfessionalEnquiryScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -60,28 +61,15 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: colors.surfaceContainer }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.onSurface }]}>Send legal enquiry</Text>
-            <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-              {route.params.professionalName}
-            </Text>
-          </View>
-        </View>
+        <ScreenHeader title="Contact a lawyer" />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-          <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
+          <View style={[styles.notice, { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
               Your message is sent through My Rights to the verified professional. Do not include passwords, payment card details, or unnecessary sensitive information.
@@ -106,7 +94,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
               styles.input,
               {
                 color: colors.onSurface,
-                backgroundColor: colors.surfaceContainer,
+                backgroundColor: colors.card,
                 borderColor: colors.outlineVariant,
               },
             ]}
@@ -133,7 +121,7 @@ export const ProfessionalEnquiryScreen: React.FC = () => {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -150,14 +138,13 @@ const styles = StyleSheet.create({
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
   title: {
     ...theme.typography.titleLg,
-    fontWeight: '900',
   },
   subtitle: {
     ...theme.typography.bodyMd,
@@ -181,13 +168,10 @@ const styles = StyleSheet.create({
   },
   practiceArea: {
     ...theme.typography.labelSm,
-    fontWeight: '800',
-    textTransform: 'uppercase',
     letterSpacing: 1,
   },
   label: {
     ...theme.typography.titleMd,
-    fontWeight: '800',
     marginTop: 4,
   },
   input: {
@@ -213,6 +197,5 @@ const styles = StyleSheet.create({
   },
   submitText: {
     ...theme.typography.labelLg,
-    fontWeight: '900',
   },
 });

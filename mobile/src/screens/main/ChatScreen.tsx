@@ -17,16 +17,16 @@ import {
     Switch,
     Pressable,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { MessageBubble } from '../../components/chat/MessageBubble';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { Button } from '../../components/ui/Button';
 import { EscalateModal } from '../../components/chat/EscalateModal';
 import { chatService } from '../../services/chat.service';
 import { documentService } from '../../services/document.service';
@@ -38,15 +38,15 @@ import { useTheme } from '../../contexts/ThemeContext';
 import type { ChatMessage } from '../../types';
 
 const SUGGESTIONS = [
-    { title: 'Tenant Rights', query: 'What are my rights as a tenant?' },
-    { title: 'Demand Letter', query: 'How do I write a demand letter?' },
-    { title: 'Employment', query: 'Can my employer fire me without notice?' },
-    { title: 'Land law', query: 'Explain the Land Use Act simply.' },
+    'Can my landlord remove me without notice?',
+    'Can my employer sack me without notice?',
+    'How do I write a demand letter?',
+    'Explain the Land Use Act simply.',
 ];
 
 export const ChatScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, logout } = useAuth();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const insets = useSafeAreaInsets();
@@ -150,7 +150,7 @@ export const ChatScreen: React.FC = () => {
         if (!messageText || isLoading || isSubmitting.current) return;
 
         if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in to use the Legal Agent. Guest mode does not send legal queries to the AI service.');
+            Alert.alert('Sign in required', 'Sign in to ask questions. Guests can read the law and use the emergency guide.');
             return;
         }
 
@@ -228,6 +228,21 @@ export const ChatScreen: React.FC = () => {
             isSubmitting.current = false;
         }
     };
+
+    // A situation chosen on Home (or from Emergency) arrives as route params.
+    // Signed-in people get the question sent straight away; guests get it pre-filled behind the sign-in card.
+    const handledNonce = useRef<number | undefined>(undefined);
+    useEffect(() => {
+        const params = route.params;
+        if (!params?.initialMessage || handledNonce.current === params.nonce) return;
+        handledNonce.current = params.nonce;
+        if (isAuthenticated) {
+            void handleSend(params.initialMessage);
+        } else {
+            setInputText(params.initialMessage);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [route.params?.nonce, isAuthenticated]);
 
     const closeMenu = () => setIsMenuVisible(false);
 
@@ -372,84 +387,49 @@ export const ChatScreen: React.FC = () => {
     });
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-            {/* Background Decoration (Blobs) */}
-            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <View style={[styles.blob1, { backgroundColor: colors.primary + '0A' }]} />
-                <View style={[styles.blob2, { backgroundColor: colors.secondaryContainer + '0A' }]} />
-            </View>
-
-            {/* Premium Header */}
-            <View style={styles.headerContainer}>
-                <BlurView intensity={isDark ? 40 : 80} style={styles.headerBlur}>
-                    <View style={[styles.header, { paddingTop: insets.top + theme.spacing.sm }]}>
-                        <TouchableOpacity
-                            style={styles.headerIconButton}
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                navigation.navigate('Tools');
-                            }}
-                        >
-                            <Ionicons name="apps-outline" size={24} color={colors.primary} />
-                        </TouchableOpacity>
-
-                        <View style={styles.headerCentered}>
-                            <View style={styles.statusRow}>
-                                <View style={[styles.onlineDot, isIncognito && { backgroundColor: colors.onSurfaceVariant }]} />
-                                <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
-                                    {isIncognito ? 'Ghost Advisor' : 'Legal Agent'}
-                                </Text>
-                            </View>
-                            <Text style={[styles.headerStatus, { color: isIncognito ? colors.onSurfaceVariant : colors.primary }]}>
-                                {isIncognito
-                                    ? 'Private Session'
-                                    : chatQuotaRemaining === null
-                                        ? 'Online • AI-generated information'
-                                        : `Online • ${chatQuotaRemaining} free questions left today`}
-                            </Text>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.headerIconButton}
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                setIsMenuVisible(prev => !prev);
-                            }}
-                        >
-                            <Ionicons
-                                name={isMenuVisible ? 'close-circle-outline' : 'ellipsis-horizontal-circle-outline'}
-                                size={26}
-                                color={colors.primary}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </BlurView>
-            </View>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <ScreenHeader
+                root
+                title="Ask"
+                subtitle={
+                    isIncognito
+                        ? 'Private session'
+                        : chatQuotaRemaining === null
+                            ? 'Answers show the law they rely on'
+                            : `${chatQuotaRemaining} free questions left today`
+                }
+                right={
+                    <Pressable
+                        testID="chat-menu"
+                        accessibilityRole="button"
+                        accessibilityLabel="Chat options"
+                        hitSlop={8}
+                        onPress={() => setIsMenuVisible((prev) => !prev)}
+                        style={styles.menuButton}
+                    >
+                        <Ionicons name={isMenuVisible ? 'close' : 'ellipsis-horizontal'} size={22} color={colors.onSurface} />
+                    </Pressable>
+                }
+            />
 
             {isMenuVisible && (
                 <TouchableWithoutFeedback onPress={closeMenu}>
-                    <View style={[styles.menuOverlay, { paddingTop: insets.top + theme.spacing.md }]}>
+                    <View style={styles.menuOverlay}>
                         <TouchableWithoutFeedback>
-                            <View style={[styles.menuContainer, { backgroundColor: colors.surfaceContainer, borderColor: colors.outline }]}>
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        closeMenu();
-                                        handleNewChat();
-                                    }}
-                                >
-                                    <View style={styles.menuItemLabelWrap}>
-                                        <Ionicons name="refresh-circle" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Start New Chat</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
-                                </TouchableOpacity>
-
-                                {isAuthenticated && (
-                                    <View style={[styles.menuItem, styles.menuItemDivider]}>
-                                        <View style={styles.menuItemLabelWrap}>
-                                            <Ionicons name="eye-off" size={20} color={isIncognito ? colors.primary : colors.onSurfaceVariant} />
-                                            <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Incognito Mode</Text>
+                            <View style={[styles.menu, { top: insets.top + 60, backgroundColor: colors.card, borderColor: colors.line }]}>
+                                <MenuItem icon="add-circle-outline" label="New conversation" onPress={() => { closeMenu(); handleNewChat(); }} />
+                                {conversationId && isAuthenticated ? (
+                                    <MenuItem icon="people-outline" label="Ask a lawyer about this" onPress={() => { closeMenu(); setShowEscalateModal(true); }} />
+                                ) : null}
+                                {isAuthenticated ? (
+                                    <MenuItem icon="time-outline" label="Past conversations" onPress={() => { closeMenu(); navigation.navigate('MeTab', { screen: 'ChatHistory' }); }} />
+                                ) : null}
+                                {isAuthenticated ? (
+                                    <View style={[styles.menuItem, { borderTopColor: colors.line, borderTopWidth: 1 }]}>
+                                        <Ionicons name="eye-off-outline" size={20} color={colors.onSurface} />
+                                        <View style={styles.menuText}>
+                                            <Text style={[styles.menuLabel, { color: colors.onSurface }]}>Private session</Text>
+                                            <Text style={[styles.menuHint, { color: colors.onSurfaceVariant }]}>Not saved to your history</Text>
                                         </View>
                                         <Switch
                                             value={isIncognito}
@@ -459,488 +439,202 @@ export const ChatScreen: React.FC = () => {
                                                 resetChatState();
                                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                                 if (val) {
-                                                    Alert.alert("Private Session", "Messages from this session are not added to your My Rights conversation history. The request is still processed by the AI service and may appear in service/security logs.");
+                                                    Alert.alert('Private session', 'Messages from this session are not added to your My Rights conversation history. The request is still processed by the AI service and may appear in service and security logs.');
                                                 }
                                             }}
-                                            trackColor={{ false: colors.outline, true: colors.primary + '40' }}
-                                            thumbColor={isIncognito ? colors.primary : '#f4f3f4'}
-                                            ios_backgroundColor={colors.outline}
-                                            style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }}
+                                            trackColor={{ false: colors.outlineVariant, true: colors.primary }}
+                                            thumbColor="#FFFFFF"
                                         />
                                     </View>
-                                )}
-
-                                <TouchableOpacity
-                                    style={styles.menuItem}
-                                    onPress={() => {
-                                        closeMenu();
-                                        navigation.navigate('Profile');
-                                    }}
-                                >
-                                    <View style={styles.menuItemLabelWrap}>
-                                        <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
-                                        <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Account</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
-                                </TouchableOpacity>
-
-                                {isAuthenticated && (
-                                    <TouchableOpacity
-                                        style={styles.menuItem}
-                                        onPress={() => {
-                                            closeMenu();
-                                            navigation.navigate('Profile', { screen: 'ChatHistory' });
-                                        }}
-                                    >
-                                        <View style={styles.menuItemLabelWrap}>
-                                            <Ionicons name="time-outline" size={20} color={colors.primary} />
-                                            <Text style={[styles.menuItemLabel, { color: colors.onSurface }]}>Chat History</Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={14} color={colors.onSurfaceVariant} />
-                                    </TouchableOpacity>
-                                )}
+                                ) : null}
                             </View>
                         </TouchableWithoutFeedback>
                     </View>
                 </TouchableWithoutFeedback>
             )}
 
-            {/* FIX: 'padding' on iOS only; offset=0 because header is outside this view */}
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
-                keyboardVerticalOffset={0}
-            >
-                {/* Suggestions List */}
-                {messages.length === 0 && (
-                    <View style={styles.suggestionsContainer}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
-                            {SUGGESTIONS.map((s, i) => (
-                                <TouchableOpacity
-                                    key={i}
-                                    style={[styles.suggestionChip, { backgroundColor: colors.surfaceContainer }]}
-                                    onPress={() => handleSend(s.query)}
-                                >
-                                    <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{s.title}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardView}>
                 {messages.length === 0 ? (
-                    <Pressable style={styles.emptyState} onPress={Keyboard.dismiss}>
-                        <View style={[styles.emptyIconContainer, { backgroundColor: colors.primary + '10' }]}>
-                            <Ionicons name="sparkles" size={48} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>
-                            How can I help you today?
-                        </Text>
+                    <ScrollView contentContainerStyle={styles.empty} keyboardShouldPersistTaps="handled">
+                        <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>What do you need to know?</Text>
                         <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
-                            Ask me about your legal rights or instruct me to draft a document for you.
+                            Ask in your own words. You can also attach a photo or file of a document.
                         </Text>
-                    </Pressable>
+
+                        {!isAuthenticated ? (
+                            <View style={[styles.signIn, { backgroundColor: colors.tertiaryContainer, borderColor: colors.danfo }]}>
+                                <Text style={[styles.signInTitle, { color: colors.onTertiaryContainer }]}>Sign in to ask</Text>
+                                <Text style={[styles.signInBody, { color: colors.onTertiaryContainer }]}>
+                                    As a guest you can read the law and use the emergency guide. Questions to the assistant need an account.
+                                </Text>
+                                <Button title="Sign in or create account" variant="primary" onPress={() => { void logout(); }} testID="chat-signin" />
+                            </View>
+                        ) : null}
+
+                        <View style={[styles.suggestions, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                            {SUGGESTIONS.map((q, i) => (
+                                <Pressable
+                                    key={q}
+                                    accessibilityRole="button"
+                                    onPress={() => (isAuthenticated ? handleSend(q) : setInputText(q))}
+                                    style={({ pressed }) => [styles.suggestion, i > 0 && { borderTopWidth: 1, borderTopColor: colors.line }, pressed && { backgroundColor: colors.surfaceContainer }]}
+                                >
+                                    <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{q}</Text>
+                                    <Ionicons name="arrow-up-circle-outline" size={20} color={colors.primary} />
+                                </Pressable>
+                            ))}
+                        </View>
+                    </ScrollView>
                 ) : (
                     <FlatList
                         ref={flatListRef}
-                        style={{ flex: 1 }}
+                        style={styles.list}
                         data={messages}
-                        renderItem={({ item }) => (
+                        renderItem={({ item }) =>
                             item.isLoading ? (
-                                <View style={styles.loadingBubble}>
+                                <View style={[styles.loadingBubble, { backgroundColor: colors.card, borderColor: colors.line }]}>
                                     <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>
-                                        {isTranscribing ? "Transcribing voice..." : "Drafting response..."}
+                                        {isTranscribing ? 'Writing down what you said' : 'Checking the law'}
                                     </Text>
                                 </View>
-                            ) : <MessageBubble message={item} />
-                        )}
+                            ) : (
+                                <MessageBubble message={item} />
+                            )
+                        }
                         keyExtractor={(item) => item.id}
-                        contentContainerStyle={[styles.messagesList, isKeyboardVisible && { paddingBottom: theme.spacing.lg }]}
+                        contentContainerStyle={styles.messagesList}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                        // FIX 3: Tapping on messages list dismisses keyboard
                         keyboardShouldPersistTaps="handled"
                         onScrollBeginDrag={Keyboard.dismiss}
                     />
                 )}
 
-                <BlurView
-                    intensity={isDark ? 60 : 90}
-                    tint={isDark ? 'dark' : 'light'}
-                    style={[
-                        styles.inputBlur,
-                        {
-                            paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, theme.spacing.sm),
-                        }
-                    ]}
-                >
+                <View style={[styles.composer, { backgroundColor: colors.card, borderTopColor: colors.line }]}>
                     {(attachment || isExtractingAttachment) && (
-                        <View style={[styles.attachmentCard, { backgroundColor: colors.surfaceContainerHigh }]}> 
-                            <View style={[styles.attachmentIcon, { backgroundColor: colors.primary + '12' }]}>
-                                <Ionicons name={isExtractingAttachment ? 'sync-outline' : 'document-text-outline'} size={20} color={colors.primary} />
-                            </View>
+                        <View style={[styles.attachment, { backgroundColor: colors.surfaceContainer }]}>
+                            <Ionicons name={isExtractingAttachment ? 'sync-outline' : 'document-text-outline'} size={20} color={colors.primary} />
                             <View style={styles.attachmentInfo}>
                                 <Text style={[styles.attachmentName, { color: colors.onSurface }]} numberOfLines={1}>
                                     {isExtractingAttachment ? 'Reading document…' : attachment?.name}
                                 </Text>
                                 <Text style={[styles.attachmentMeta, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
-                                    {isExtractingAttachment ? 'Extracting readable text' : `${attachment?.characterCount.toLocaleString()} characters extracted${attachment?.truncated ? ' • shortened for chat' : ''}`}
+                                    {isExtractingAttachment
+                                        ? 'Getting the text out'
+                                        : `${attachment?.characterCount.toLocaleString()} characters read${attachment?.truncated ? ', shortened to fit' : ''}`}
                                 </Text>
                             </View>
-                            {attachment && !isExtractingAttachment && <TouchableOpacity onPress={() => setAttachment(null)} style={styles.attachmentRemove}><Ionicons name="close-circle" size={20} color={colors.onSurfaceVariant} /></TouchableOpacity>}
-                            {isExtractingAttachment && <ActivityIndicator size="small" color={colors.primary} />}
+                            {isExtractingAttachment ? (
+                                <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                                <Pressable accessibilityRole="button" accessibilityLabel="Remove attachment" hitSlop={10} onPress={() => setAttachment(null)}>
+                                    <Ionicons name="close-circle" size={20} color={colors.onSurfaceVariant} />
+                                </Pressable>
+                            )}
                         </View>
                     )}
-                    <View style={styles.inputContainer}>
-                        <View
-                            style={[
-                                styles.inputWrapper,
-                                {
-                                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.surfaceContainerHighest,
-                                    // No-Line Rule: Removed borderBottomWidth
-                                }
-                            ]}
-                        >
-                            <TouchableOpacity
-                                style={styles.inputLeftIcon}
-                                onPress={pickDocument}
-                            >
-                                <Ionicons name="add" size={24} color={colors.onSurfaceVariant} />
-                            </TouchableOpacity>
 
+                    <View style={styles.inputRow}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Attach a document" onPress={pickDocument} style={styles.iconButton}>
+                            <Ionicons name="attach" size={24} color={colors.onSurfaceVariant} />
+                        </Pressable>
+
+                        <View style={[styles.inputWrap, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
                             <TextInput
                                 testID="chat-input"
-                                accessibilityLabel="Message AI"
+                                accessibilityLabel="Your question"
                                 style={[styles.input, { color: colors.onSurface }]}
-                                placeholder={isRecording ? "Listening..." : "Message AI..."}
-                                placeholderTextColor={colors.onSurfaceVariant}
+                                placeholder={isRecording ? 'Listening…' : 'Type your question'}
+                                placeholderTextColor={colors.outline}
                                 value={inputText}
                                 onChangeText={setInputText}
                                 multiline
                                 maxLength={10000}
-                                textAlignVertical="center"
                                 blurOnSubmit={false}
                                 autoCorrect
-                                returnKeyType="default"
                             />
-
-                            <TouchableOpacity
-                                onPress={toggleRecording}
-                                style={[styles.inputRightIcon, isRecording && { backgroundColor: theme.colors.error + '20', borderRadius: 16 }]}
-                            >
-                                <Ionicons
-                                    name={isRecording ? 'mic' : 'mic-outline'}
-                                    size={20}
-                                    color={isRecording ? theme.colors.error : colors.onSurfaceVariant}
-                                />
-                            </TouchableOpacity>
                             {inputText.length > 8000 && (
-                                <Text style={[styles.charCounter, { color: inputText.length > 9500 ? '#EF4444' : colors.onSurfaceVariant }]}>
-                                    {inputText.length}/10000
-                                </Text>
+                                <Text style={[styles.counter, { color: inputText.length > 9500 ? colors.error : colors.onSurfaceVariant }]}>{inputText.length}/10000</Text>
                             )}
                         </View>
 
-                        <TouchableOpacity
-                            testID="chat-send"
-                            accessibilityRole="button"
-                            accessibilityLabel="Send message"
-                            onPress={() => handleSend()}
-                            disabled={(!inputText.trim() && !attachment) || isLoading || isExtractingAttachment || inputText.length > 10000}
-                            activeOpacity={0.7}
-                        >
-                            <LinearGradient
-                                colors={(inputText.trim() || attachment) && !isLoading && !isExtractingAttachment
-                                    ? [colors.primary, theme.colors.primaryContainer]
-                                    : [colors.surfaceContainerHigh, colors.surfaceContainerHigh]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={[
-                                    styles.sendButton,
-                                    ((inputText.trim() || attachment) && !isLoading && !isExtractingAttachment) && {
-                                        shadowColor: colors.primary,
-                                        shadowOffset: { width: 0, height: 4 },
-                                        shadowOpacity: 0.3,
-                                        shadowRadius: 8,
-                                        elevation: 4,
-                                    }
-                                ]}
+                        {inputText.trim() || attachment ? (
+                            <Pressable
+                                testID="chat-send"
+                                accessibilityRole="button"
+                                accessibilityLabel="Send message"
+                                onPress={() => handleSend()}
+                                disabled={isLoading || isExtractingAttachment || inputText.length > 10000}
+                                style={({ pressed }) => [styles.send, { backgroundColor: pressed ? colors.onPrimaryFixedVariant : colors.primary, opacity: isLoading || isExtractingAttachment ? 0.5 : 1 }]}
                             >
-                                <Ionicons
-                                    name={isLoading ? "ellipsis-horizontal" : "arrow-up"}
-                                    size={22}
-                                    color={(inputText.trim() || attachment) && !isLoading && !isExtractingAttachment ? colors.onPrimary : colors.onSurfaceVariant}
-                                />
-                            </LinearGradient>
-                        </TouchableOpacity>
+                                <Ionicons name={isLoading ? 'ellipsis-horizontal' : 'arrow-up'} size={22} color={colors.onPrimary} />
+                            </Pressable>
+                        ) : (
+                            <Pressable
+                                testID="chat-mic"
+                                accessibilityRole="button"
+                                accessibilityLabel={isRecording ? 'Stop recording' : 'Speak your question'}
+                                onPress={toggleRecording}
+                                style={[styles.send, { backgroundColor: isRecording ? colors.error : colors.primaryContainer }]}
+                            >
+                                <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color={isRecording ? colors.onError : colors.primary} />
+                            </Pressable>
+                        )}
                     </View>
-
                     {!isKeyboardVisible && (
-                        <Text
-                            style={[styles.disclaimer, { color: colors.onSurfaceVariant }]}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                        >
-                            AI can make mistakes. Verify important legal info.
-                        </Text>
+                        <Text style={[styles.disclaimer, { color: colors.onSurfaceVariant }]}>General information, not legal advice. Check important points with a lawyer.</Text>
                     )}
-                </BlurView>
+                </View>
             </KeyboardAvoidingView>
 
-            {/* Escalation Modal */}
-            <EscalateModal
-                visible={showEscalateModal}
-                onClose={() => setShowEscalateModal(false)}
-                conversationId={conversationId}
-            />
-        </SafeAreaView >
+            <EscalateModal visible={showEscalateModal} onClose={() => setShowEscalateModal(false)} conversationId={conversationId} />
+        </View>
+    );
+};
+
+const MenuItem: React.FC<{ icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }> = ({ icon, label, onPress }) => {
+    const { colors } = useTheme();
+    return (
+        <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.menuItem, pressed && { backgroundColor: colors.surfaceContainer }]}>
+            <Ionicons name={icon} size={20} color={colors.onSurface} />
+            <Text style={[styles.menuLabel, { color: colors.onSurface }]}>{label}</Text>
+        </Pressable>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    blob1: {
-        position: 'absolute',
-        top: -100,
-        right: -100,
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-    },
-    blob2: {
-        position: 'absolute',
-        bottom: -100,
-        left: -100,
-        width: 400,
-        height: 400,
-        borderRadius: 200,
-    },
-    headerContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-    },
-    headerBlur: {
-        overflow: 'hidden',
-    },
-    header: {
-        paddingBottom: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    headerIconButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerCentered: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    onlineDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#10B981',
-    },
-    headerTitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 18,
-        fontWeight: '700',
-        letterSpacing: -0.36,
-    },
-    headerStatus: {
-        fontSize: 10,
-        fontFamily: theme.typography.fontFamily.bodyBold,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 2,
-    },
-    keyboardView: {
-        flex: 1,
-        paddingTop: 80,
-    },
-    suggestionsContainer: {
-        paddingVertical: 12,
-    },
-    suggestionsScroll: {
-        paddingHorizontal: theme.spacing.lg,
-        gap: 8,
-    },
-    suggestionChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 16,
-    },
-    suggestionText: {
-        fontFamily: theme.typography.fontFamily.bodyMedium,
-        fontSize: 14,
-    },
-    emptyState: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: theme.spacing.xl,
-    },
-    emptyIconContainer: {
-        padding: 24,
-        borderRadius: 40,
-        marginBottom: 24,
-    },
-    emptyTitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 32,
-        fontWeight: '700',
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: -0.64,
-    },
-    emptySubtitle: {
-        fontFamily: theme.typography.fontFamily.body,
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-        opacity: 0.7,
-    },
-    messagesList: {
-        padding: theme.spacing.lg,
-        paddingBottom: 20,
-    },
-    loadingBubble: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 20,
-        paddingLeft: 4,
-    },
-    loadingText: {
-        fontFamily: theme.typography.fontFamily.bodyMedium,
-        fontSize: 14,
-    },
-    inputBlur: {
-        width: '100%',
-        paddingTop: 12,
-        paddingHorizontal: theme.spacing.lg,
-    },
-    attachmentCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8,
-        paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14,
-    },
-    attachmentIcon: {
-        width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-    },
-    attachmentInfo: { flex: 1, minWidth: 0 },
-    attachmentName: { fontFamily: theme.typography.fontFamily.bodyMedium, fontSize: 13 },
-    attachmentMeta: { fontFamily: theme.typography.fontFamily.body, fontSize: 11, marginTop: 2 },
-    attachmentRemove: { padding: 2 },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        gap: 12,
-    },
-    inputWrapper: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        minHeight: 52,
-        maxHeight: 120,
-        borderRadius: 16,
-        paddingHorizontal: 4,
-    },
-    input: {
-        flex: 1,
-        minHeight: 40,
-        maxHeight: 100,
-        paddingHorizontal: 6,
-        paddingVertical: 10,
-        fontFamily: theme.typography.fontFamily.body,
-        fontSize: 16,
-    },
-    inputLeftIcon: {
-        width: 36,
-        height: 36,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    inputRightIcon: {
-        width: 36,
-        height: 36,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    charCounter: {
-        fontSize: 10,
-        position: 'absolute',
-        bottom: 2,
-        right: 44,
-    },
-    disclaimer: {
-        fontSize: 10,
-        fontFamily: theme.typography.fontFamily.body,
-        textAlign: 'center',
-        marginTop: 8,
-        opacity: 0.5,
-    },
-    menuOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 200,
-    },
-    menuContainer: {
-        position: 'absolute',
-        top: 100,
-        right: theme.spacing.lg,
-        width: 240,
-        borderRadius: 20,
-        paddingVertical: 8,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    menuItemLabelWrap: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    menuItemLabel: {
-        fontFamily: theme.typography.fontFamily.bodyMedium,
-        fontSize: 14,
-    },
-    menuItemDivider: {
-        height: 1,
-        marginHorizontal: 16,
-    },
-    escalateButton: {
-        marginLeft: 6,
-        padding: 5,
-        borderRadius: 10,
-    },
+    container: { flex: 1 },
+    keyboardView: { flex: 1 },
+    menuButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    menuOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50 },
+    menu: { position: 'absolute', right: 12, width: 270, borderRadius: theme.borderRadius.lg, borderWidth: 1, overflow: 'hidden', ...theme.shadows.sheet },
+    menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13, minHeight: 50 },
+    menuText: { flex: 1 },
+    menuLabel: { ...theme.typography.labelMd, flexShrink: 1 },
+    menuHint: { ...theme.typography.caption },
+    empty: { padding: 20, paddingBottom: 24 },
+    emptyTitle: { ...theme.typography.displaySm, fontFamily: theme.typography.fontFamily.display },
+    emptySubtitle: { ...theme.typography.bodyLg, marginTop: 8, marginBottom: 20 },
+    signIn: { borderWidth: 1, borderRadius: theme.borderRadius.lg, padding: 16, marginBottom: 20, gap: 10 },
+    signInTitle: { ...theme.typography.titleMd },
+    signInBody: { ...theme.typography.bodyMd },
+    suggestions: { borderRadius: theme.borderRadius.lg, borderWidth: 1, overflow: 'hidden' },
+    suggestion: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14, minHeight: 56 },
+    suggestionText: { ...theme.typography.labelMd, flex: 1 },
+    list: { flex: 1 },
+    messagesList: { padding: 16, paddingBottom: 20, gap: 14 },
+    loadingBubble: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', padding: 12, borderRadius: theme.borderRadius.lg, borderWidth: 1 },
+    loadingText: { ...theme.typography.bodyMd },
+    composer: { borderTopWidth: 1, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 6 },
+    attachment: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: theme.borderRadius.md, marginBottom: 8 },
+    attachmentInfo: { flex: 1 },
+    attachmentName: { ...theme.typography.labelMd },
+    attachmentMeta: { ...theme.typography.caption },
+    inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+    iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    inputWrap: { flex: 1, borderWidth: 1, borderRadius: 22, paddingHorizontal: 14, minHeight: 44, maxHeight: 140, justifyContent: 'center' },
+    input: { fontFamily: theme.typography.fontFamily.body, fontSize: 16, paddingVertical: 10, maxHeight: 120 },
+    counter: { ...theme.typography.caption, alignSelf: 'flex-end', paddingBottom: 4 },
+    send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    disclaimer: { ...theme.typography.caption, textAlign: 'center', paddingTop: 6 },
 });

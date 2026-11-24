@@ -1,6 +1,5 @@
 /**
- * Document Review Screen - Premium Risk Assessment
- * Editorial "Lincoln College" upgrade: No-Line aesthetic, tonal surfaces, and classroom watermark.
+ * Check a document: pick a file or photo, get the clauses that need attention, tap one for the detail.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,25 +10,22 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Dimensions,
     ActivityIndicator,
-    Image,
     Alert,
     Modal,
     Keyboard,
     KeyboardAvoidingView,
     Platform,
     TouchableWithoutFeedback,
+    Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 
 import { Button } from '../../components/ui/Button';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
@@ -40,8 +36,6 @@ import type { DocumentAnalysisResponse, AnalysisResult } from '../../types';
 import { useJobs } from '../../contexts/JobContext';
 import { useNavigation } from '@react-navigation/native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CLASSROOM_BG = require('../../../assets/onboarding/classroom_bg.png');
 
 export const DocumentReviewScreen: React.FC = () => {
     const { colors, isDark } = useTheme();
@@ -267,484 +261,198 @@ export const DocumentReviewScreen: React.FC = () => {
         }
     };
 
+    const riskLabel = (level?: string) => (level === 'High' ? 'High risk' : level === 'Medium' ? 'Check this' : 'Low risk');
+    const riskColor = (level?: string) => (level === 'High' ? colors.error : level === 'Medium' ? colors.danfo : colors.verified);
+
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            {/* Background Decoration (Lincoln College Watermark) */}
-            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Image source={CLASSROOM_BG} style={styles.globalBackground} />
-                <View style={[styles.blob1, { backgroundColor: colors.primary + '05' }]} />
-            </View>
+            <ScreenHeader title="Check a document" subtitle="Tenancy, contract, notice or letter" />
 
-            <SafeAreaView edges={['top']} style={styles.header}>
-                <View style={styles.headerContent}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-                    </TouchableOpacity>
-                    <View style={styles.titleContainer}>
-                        <Text style={[styles.title, { color: colors.onSurface }]}>Review</Text>
-                        <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>AI Document Review</Text>
-                    </View>
-                </View>
-            </SafeAreaView>
-
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardView}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-                    {!result ? (
-                        <View style={styles.inputSection}>
-                            <TouchableOpacity style={[styles.scanAction, { backgroundColor: colors.surfaceContainerHigh }]} onPress={handleScan}>
-                                <Ionicons name="scan-outline" size={32} color={colors.primary} />
-                                <Text style={[styles.scanActionText, { color: colors.onSurface }]}>Upload or Scan a Document</Text>
-                                <Text style={[styles.scanActionSub, { color: colors.onSurfaceVariant }]}>PDF, DOCX, RTF, TXT, or image</Text>
-                            </TouchableOpacity>
-
-                            {pendingDocument ? (
-                                <View style={[styles.documentAttached, { backgroundColor: colors.surfaceContainerLow }]}>
-                                    <View style={[styles.documentCheck, { backgroundColor: colors.primary + '14' }]}>
-                                        <Ionicons name="checkmark" size={22} color={colors.primary} />
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                        {!result ? (
+                            <View style={styles.inputSection}>
+                                <Pressable
+                                    testID="review-pick"
+                                    accessibilityRole="button"
+                                    onPress={handleScan}
+                                    style={({ pressed }) => [styles.pick, { borderColor: colors.outline, backgroundColor: pressed ? colors.surfaceContainer : colors.card }]}
+                                >
+                                    <View style={[styles.pickIcon, { backgroundColor: colors.primaryContainer }]}>
+                                        <Ionicons name="scan-outline" size={28} color={colors.primary} />
                                     </View>
-                                    <View style={styles.documentAttachedInfo}>
-                                        <Text style={[styles.documentAttachedTitle, { color: colors.onSurface }]}>Document added</Text>
-                                        <Text style={[styles.documentAttachedName, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
-                                            {pendingDocument.name}
-                                        </Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setPendingDocument(null);
-                                            setDocumentText('');
-                                        }}
-                                        accessibilityLabel="Remove attached document"
-                                    >
-                                        <Ionicons name="close-circle-outline" size={24} color={colors.onSurfaceVariant} />
-                                    </TouchableOpacity>
-                                </View>
-                            ) : null}
+                                    <Text style={[styles.pickTitle, { color: colors.onSurface }]}>Choose a file or take a photo</Text>
+                                    <Text style={[styles.pickSub, { color: colors.onSurfaceVariant }]}>PDF, Word, RTF, text or image</Text>
+                                </Pressable>
 
-                            <Button
-                                title={analyzeQuotaRemaining === 0 ? 'Daily review limit reached' : 'Review Document'}
-                                onPress={reviewSelectedDocument}
-                                loading={isLoading}
-                                disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
-                                fullWidth
-                            />
-                            {isAuthenticated && analyzeQuotaRemaining !== null && (
-                                <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
-                                    Free plan: {analyzeQuotaRemaining} document review{analyzeQuotaRemaining === 1 ? '' : 's'} remaining today.
-                                </Text>
-                            )}
-                        </View>
-                    ) : (
-                        <View style={styles.resultsSection}>
-                            <TouchableOpacity style={styles.resetBtn} onPress={() => setResult(null)}>
-                                <Ionicons name="refresh-outline" size={16} color={colors.primary} />
-                                <Text style={[styles.resetText, { color: colors.primary }]}>NEW REVIEW</Text>
-                            </TouchableOpacity>
-
-                            {/* General findings summary — no numerical risk/confidence score is shown. */}
-                            <View style={[styles.riskHero, { backgroundColor: colors.surfaceContainerHigh }]}>
-                                <View style={styles.riskHeader}>
-                                    <View>
-                                        <Text style={[styles.riskTitle, { color: colors.onSurface }]}>{result.document_type}</Text>
-                                        <Text style={[styles.riskStatus, { color: colors.primary }]}>{result.overall_verdict.toUpperCase()}</Text>
-                                    </View>
-
-                                </View>
-                                <Text style={[styles.riskSummary, { color: colors.onSurfaceVariant }]}>{result.summary}</Text>
-                            </View>
-
-                            {/* Clauses List */}
-                            <View style={styles.clausesGrid}>
-                                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Detected Clauses</Text>
-                                {result.analysis_results.map((clause, idx) => (
-                                    <TouchableOpacity 
-                                        key={idx} 
-                                        style={[styles.clauseCard, { backgroundColor: colors.surfaceContainerLow }]}
-                                        onPress={() => {
-                                            setSelectedClause(clause);
-                                            setModalVisible(true);
-                                        }}
-                                    >
-                                        <View style={[styles.riskIndicator, { backgroundColor: clause.risk_level === 'High' ? colors.error : colors.warning }]} />
-                                        <View style={styles.clauseInfo}>
-                                            <Text style={[styles.clauseTitle, { color: colors.onSurface }]}>{clause.clause_title}</Text>
-                                            <Text style={[styles.clauseSnippet, { color: colors.onSurfaceVariant }]} numberOfLines={2}>"{clause.clause_text}"</Text>
+                                {pendingDocument ? (
+                                    <View style={[styles.attached, { backgroundColor: colors.verifiedContainer }]}>
+                                        <Ionicons name="checkmark-circle" size={24} color={colors.verified} />
+                                        <View style={styles.attachedText}>
+                                            <Text style={[styles.attachedTitle, { color: colors.onSurface }]}>Ready to check</Text>
+                                            <Text style={[styles.attachedName, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{pendingDocument.name}</Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
-                                    </TouchableOpacity>
-                                ))}
+                                        <Pressable
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Remove document"
+                                            hitSlop={10}
+                                            onPress={() => {
+                                                setPendingDocument(null);
+                                                setDocumentText('');
+                                            }}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color={colors.onSurfaceVariant} />
+                                        </Pressable>
+                                    </View>
+                                ) : null}
+
+                                <Button
+                                    title={analyzeQuotaRemaining === 0 ? 'Daily limit reached' : 'Check this document'}
+                                    onPress={reviewSelectedDocument}
+                                    loading={isLoading}
+                                    disabled={!pendingDocument || isLoading || analyzeQuotaRemaining === 0}
+                                    size="large"
+                                    fullWidth
+                                    testID="review-run"
+                                />
+                                {isAuthenticated && analyzeQuotaRemaining !== null ? (
+                                    <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
+                                        {analyzeQuotaRemaining} free check{analyzeQuotaRemaining === 1 ? '' : 's'} left today.
+                                    </Text>
+                                ) : null}
+                                <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
+                                    This explains what a document says. It is not legal advice.
+                                </Text>
                             </View>
-                        </View>
-                    )}
-                </ScrollView>
-            </TouchableWithoutFeedback>
+                        ) : (
+                            <View style={styles.resultsSection}>
+                                <View style={[styles.summary, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                                    <Text style={[styles.summaryType, { color: colors.onSurfaceVariant }]}>{result.document_type}</Text>
+                                    <Text style={[styles.summaryVerdict, { color: colors.onSurface }]}>{result.overall_verdict}</Text>
+                                    <Text style={[styles.summaryText, { color: colors.onSurface }]}>{result.summary}</Text>
+                                </View>
+
+                                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Clauses to look at</Text>
+                                <View style={[styles.clauses, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                                    {result.analysis_results.map((clause, idx) => (
+                                        <Pressable
+                                            key={idx}
+                                            accessibilityRole="button"
+                                            onPress={() => {
+                                                setSelectedClause(clause);
+                                                setModalVisible(true);
+                                            }}
+                                            style={({ pressed }) => [styles.clause, idx > 0 && { borderTopWidth: 1, borderTopColor: colors.line }, pressed && { backgroundColor: colors.surfaceContainer }]}
+                                        >
+                                            <View style={[styles.riskBar, { backgroundColor: riskColor(clause.risk_level) }]} />
+                                            <View style={styles.clauseInfo}>
+                                                <Text style={[styles.clauseTitle, { color: colors.onSurface }]}>{clause.clause_title}</Text>
+                                                <Text style={[styles.clauseRisk, { color: colors.onSurfaceVariant }]}>{riskLabel(clause.risk_level)}</Text>
+                                                <Text style={[styles.clauseSnippet, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{clause.clause_text}</Text>
+                                            </View>
+                                            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                                        </Pressable>
+                                    ))}
+                                </View>
+
+                                <Button title="Check another document" variant="outline" fullWidth onPress={() => setResult(null)} style={styles.again} />
+                            </View>
+                        )}
+                    </ScrollView>
+                </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
 
-            {/* Analysis Detail Modal */}
             <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                <View style={[styles.modalOverlay, { backgroundColor: 'rgba(18,24,56,0.55)' }]}>
                     <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalType, { color: colors.onSurfaceVariant }]}>Deep Analysis</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                        <View style={[styles.modalHeader, { borderBottomColor: colors.line }]}>
+                            <Text style={[styles.modalType, { color: colors.onSurface }]}>About this clause</Text>
+                            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close" size={24} color={colors.onSurface} />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
-                        
-                        {selectedClause && (
+
+                        {selectedClause ? (
                             <ScrollView contentContainerStyle={styles.modalScroll}>
                                 <Text style={[styles.modalTitle, { color: colors.onSurface }]}>{selectedClause.clause_title}</Text>
-                                
-                                <View style={[styles.modalClauseBox, { backgroundColor: colors.surfaceContainerLow }]}>
-                                    <Text style={[styles.modalClauseText, { color: colors.onSurface }]}>"{selectedClause.clause_text}"</Text>
-                                </View>
 
-                                <View style={styles.editorialMetric}>
-                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>GENERAL EXPLANATION</Text>
-                                    <Text style={[styles.metricValue, { color: colors.onSurface }]}>{selectedClause.explanation_ei}</Text>
-                                </View>
+                                <Text style={[styles.clauseQuote, { color: colors.onSurface, borderLeftColor: colors.danfo, backgroundColor: colors.card }]}>{selectedClause.clause_text}</Text>
 
-                                <View style={styles.editorialMetric}>
-                                    <Text style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}>LEGAL CONTEXT</Text>
-                                    <Text style={[styles.metricValue, { color: colors.onSurface }]}>{selectedClause.legal_principle}</Text>
-                                </View>
+                                <Text style={[styles.detailLabel, { color: colors.onSurface }]}>What it means</Text>
+                                <Text style={[styles.detailText, { color: colors.onSurface }]}>{selectedClause.explanation_ei}</Text>
 
-                                <View style={[styles.riskWarning, { backgroundColor: colors.error + '10' }]}>
+                                <Text style={[styles.detailLabel, { color: colors.onSurface }]}>The law behind it</Text>
+                                <Text style={[styles.detailText, { color: colors.onSurface }]}>{selectedClause.legal_principle}</Text>
+
+                                <View style={[styles.concern, { backgroundColor: colors.errorContainer, borderColor: colors.error }]}>
                                     <Ionicons name="alert-circle" size={20} color={colors.error} />
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={[styles.warningTitle, { color: colors.error }]}>POTENTIAL CONCERNS</Text>
-                                        <Text style={[styles.warningText, { color: colors.onSurface }]}>{selectedClause.long_term_risk}</Text>
+                                    <View style={styles.concernText}>
+                                        <Text style={[styles.concernTitle, { color: colors.onErrorContainer }]}>What could go wrong</Text>
+                                        <Text style={[styles.detailText, { color: colors.onErrorContainer }]}>{selectedClause.long_term_risk}</Text>
                                     </View>
                                 </View>
 
-                                <View style={styles.actionSection}>
-                                    <Text style={[styles.metricLabel, { color: colors.primary }]}>POSSIBLE NEXT STEP</Text>
-                                    <Text style={[styles.actionText, { color: colors.onSurface }]}>{selectedClause.action_step}</Text>
-                                </View>
+                                <Text style={[styles.detailLabel, { color: colors.onSurface }]}>What you could do</Text>
+                                <Text style={[styles.detailText, { color: colors.onSurface }]}>{selectedClause.action_step}</Text>
                             </ScrollView>
-                        )}
+                        ) : null}
                     </View>
                 </View>
             </Modal>
 
-            {isLoading && (
-                <View style={styles.loadingOverlay}>
-                    <BlurView intensity={30} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={[styles.loadingTitle, { color: colors.onSurface }]}>Review in Progress</Text>
-                        <Text style={[styles.loadingSub, { color: colors.onSurfaceVariant }]}>{loadingPhase}</Text>
-                    </View>
+            {isLoading ? (
+                <View style={[styles.loadingOverlay, { backgroundColor: 'rgba(242,244,249,0.94)' }]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingTitle, { color: colors.onSurface }]}>Reading your document</Text>
+                    <Text style={[styles.loadingSub, { color: colors.onSurfaceVariant }]}>{loadingPhase}</Text>
                 </View>
-            )}
-
-            <FloatingChatButton />
+            ) : null}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    globalBackground: {
-        position: 'absolute',
-        width: SCREEN_WIDTH,
-        height: SCREEN_HEIGHT,
-        resizeMode: 'cover',
-        opacity: 0.15,
-    },
-    blob1: {
-        position: 'absolute',
-        top: -100,
-        right: -50,
-        width: 400,
-        height: 400,
-        borderRadius: 200,
-    },
-    header: {
-        zIndex: 100,
-    },
-    headerContent: {
-        paddingHorizontal: 32,
-        paddingTop: 12,
-        paddingBottom: 24,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-    },
-    backButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0,0,0,0.03)',
-    },
-    titleContainer: {
-        flex: 1,
-    },
-    title: {
-        ...theme.typography.displayMd,
-        fontSize: 36,
-        fontWeight: '900',
-        letterSpacing: -1.5,
-    },
-    subtitle: {
-        ...theme.typography.labelSm,
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        fontWeight: '700',
-        marginTop: -4,
-    },
-    scrollContent: {
-        paddingHorizontal: 32,
-        paddingBottom: 120,
-    },
-    documentAttached: {
-        minHeight: 72,
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 16,
-        marginBottom: 12,
-    },
-    documentCheck: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    documentAttachedInfo: {
-        flex: 1,
-    },
-    documentAttachedTitle: {
-        fontSize: 15,
-        fontWeight: '800',
-    },
-    documentAttachedName: {
-        fontSize: 12,
-        marginTop: 3,
-    },
-    inputSection: {
-        gap: 32,
-    },
-    scanAction: {
-        padding: 40,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-    },
-    scanActionText: {
-        ...theme.typography.titleMd,
-        fontWeight: '800',
-    },
-    scanActionSub: {
-        ...theme.typography.labelSm,
-        opacity: 0.6,
-    },
-    editorialInput: {
-        gap: 12,
-    },
-    inputLabel: {
-        ...theme.typography.labelSm,
-        fontWeight: '800',
-        letterSpacing: 1,
-    },
-    textArea: {
-        minHeight: 200,
-        borderRadius: 24,
-        padding: 24,
-        ...theme.typography.bodyMd,
-        fontSize: 16,
-        lineHeight: 24,
-        textAlignVertical: 'top',
-    },
-    resultsSection: {
-        gap: 32,
-    },
-    quotaHint: {
-        textAlign: 'center',
-        marginTop: 8,
-        fontSize: 12,
-    },
-    resetBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    resetText: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        letterSpacing: 1,
-    },
-    riskHero: {
-        padding: 32,
-        borderRadius: 32,
-        gap: 20,
-    },
-    riskHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    riskTitle: {
-        ...theme.typography.displaySm,
-        fontSize: 24,
-        fontWeight: '900',
-    },
-    riskStatus: {
-        ...theme.typography.labelSm,
-        fontWeight: '800',
-        marginTop: 4,
-    },
-    riskSummary: {
-        ...theme.typography.bodyMd,
-        lineHeight: 22,
-        fontSize: 15,
-    },
-    clausesGrid: {
-        gap: 16,
-    },
-    sectionTitle: {
-        ...theme.typography.titleMd,
-        fontSize: 20,
-        fontWeight: '900',
-        marginBottom: 8,
-    },
-    clauseCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        borderRadius: 20,
-        gap: 16,
-    },
-    riskIndicator: {
-        width: 6,
-        height: 48,
-        borderRadius: 3,
-    },
-    clauseInfo: {
-        flex: 1,
-    },
-    clauseTitle: {
-        ...theme.typography.titleMd,
-        fontWeight: '800',
-        marginBottom: 4,
-    },
-    clauseSnippet: {
-        ...theme.typography.caption,
-        fontSize: 13,
-        fontStyle: 'italic',
-    },
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        height: '92%',
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 32,
-        paddingBottom: 16,
-    },
-    modalType: {
-        ...theme.typography.labelSm,
-        fontWeight: '800',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-    },
-    modalScroll: {
-        paddingHorizontal: 32,
-        paddingBottom: 60,
-        gap: 32,
-    },
-    modalTitle: {
-        ...theme.typography.displaySm,
-        fontSize: 32,
-        fontWeight: '900',
-        lineHeight: 40,
-    },
-    modalClauseBox: {
-        padding: 24,
-        borderRadius: 24,
-    },
-    modalClauseText: {
-        ...theme.typography.bodyMd,
-        fontSize: 16,
-        lineHeight: 26,
-        fontStyle: 'italic',
-    },
-    editorialMetric: {
-        gap: 8,
-    },
-    metricLabel: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        letterSpacing: 1.5,
-    },
-    metricValue: {
-        ...theme.typography.bodyMd,
-        fontSize: 15,
-        lineHeight: 24,
-    },
-    riskWarning: {
-        flexDirection: 'row',
-        padding: 24,
-        borderRadius: 24,
-        gap: 16,
-    },
-    warningTitle: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        marginBottom: 4,
-    },
-    warningText: {
-        ...theme.typography.caption,
-        lineHeight: 20,
-    },
-    actionSection: {
-        gap: 12,
-        paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
-    },
-    actionText: {
-        ...theme.typography.bodyLg,
-        fontWeight: '700',
-        lineHeight: 24,
-    },
-    loadingOverlay: {
-        ...StyleSheet.absoluteFill,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-    },
-    loadingContainer: {
-        alignItems: 'center',
-        gap: 20,
-    },
-    loadingTitle: {
-        ...theme.typography.titleLg,
-        fontWeight: '900',
-    },
-    loadingSub: {
-        ...theme.typography.bodyMd,
-        opacity: 0.7,
-    },
+    container: { flex: 1 },
+    keyboardView: { flex: 1 },
+    scrollContent: { padding: 16, paddingBottom: 32 },
+    inputSection: { gap: 14 },
+    pick: { borderWidth: 2, borderStyle: 'dashed', borderRadius: theme.borderRadius.lg, alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16, gap: 8 },
+    pickIcon: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+    pickTitle: { ...theme.typography.titleMd, textAlign: 'center' },
+    pickSub: { ...theme.typography.bodyMd, textAlign: 'center' },
+    attached: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: theme.borderRadius.md },
+    attachedText: { flex: 1 },
+    attachedTitle: { ...theme.typography.labelMd, fontFamily: theme.typography.fontFamily.headlineMedium },
+    attachedName: { ...theme.typography.caption },
+    quotaHint: { ...theme.typography.caption, textAlign: 'center' },
+    resultsSection: { gap: 14 },
+    summary: { borderWidth: 1, borderRadius: theme.borderRadius.lg, padding: 16, gap: 6 },
+    summaryType: { ...theme.typography.labelMd },
+    summaryVerdict: { ...theme.typography.titleLg },
+    summaryText: { ...theme.typography.reading, fontSize: 15.5, lineHeight: 24 },
+    sectionTitle: { ...theme.typography.titleMd, marginTop: 6 },
+    clauses: { borderWidth: 1, borderRadius: theme.borderRadius.lg, overflow: 'hidden' },
+    clause: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingRight: 14, minHeight: 80 },
+    riskBar: { width: 5, alignSelf: 'stretch' },
+    clauseInfo: { flex: 1, paddingVertical: 12 },
+    clauseTitle: { ...theme.typography.titleMd },
+    clauseRisk: { ...theme.typography.labelSm, marginTop: 2 },
+    clauseSnippet: { ...theme.typography.caption, marginTop: 4 },
+    again: { marginTop: 8 },
+    modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+    modalContent: { maxHeight: '88%', borderTopLeftRadius: theme.borderRadius.xl, borderTopRightRadius: theme.borderRadius.xl, ...theme.shadows.sheet },
+    modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
+    modalType: { ...theme.typography.titleMd },
+    modalScroll: { padding: 16, paddingBottom: 32, gap: 8 },
+    modalTitle: { ...theme.typography.titleLg },
+    clauseQuote: { ...theme.typography.readingSm, borderLeftWidth: 4, padding: 12, borderRadius: 6, marginVertical: 6 },
+    detailLabel: { ...theme.typography.titleMd, marginTop: 10 },
+    detailText: { ...theme.typography.bodyLg, color: undefined },
+    concern: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: theme.borderRadius.md, borderWidth: 1, marginTop: 12 },
+    concernText: { flex: 1, gap: 2 },
+    concernTitle: { ...theme.typography.titleMd },
+    loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 8, zIndex: 20 },
+    loadingTitle: { ...theme.typography.titleMd, marginTop: 8 },
+    loadingSub: { ...theme.typography.bodyMd, textAlign: 'center', paddingHorizontal: 32 },
 });
-

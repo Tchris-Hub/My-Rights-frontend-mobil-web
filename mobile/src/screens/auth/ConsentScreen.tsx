@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { TermsModal } from '../../components/modals/TermsModal';
 import { Button } from '../../components/ui/Button';
 import { APP_CONFIG } from '../../constants/config';
+import theme from '../../constants/theme';
 
 export const ConsentScreen: React.FC = () => {
     const { colors } = useTheme();
@@ -23,10 +24,10 @@ export const ConsentScreen: React.FC = () => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
             <ScrollView contentContainerStyle={styles.content}>
-                <Ionicons name="shield-checkmark" size={56} color={colors.primary} />
+                <Ionicons name="shield-checkmark" size={48} color={colors.primary} />
                 <Text style={[styles.title, { color: colors.onSurface }]}>One more step</Text>
                 <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    Please review and accept the current Terms of Service and Privacy Policy before using private My Rights features.
+                    Read and accept the Terms and Privacy Policy to use your account, saved rights and lawyer enquiries.
                 </Text>
 
                 <TouchableOpacity
@@ -82,11 +83,11 @@ export const ConsentScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-    title: { fontSize: 30, fontWeight: '800', marginTop: 24, marginBottom: 12 },
-    subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 24 },
+    title: { fontFamily: theme.typography.fontFamily.display, fontSize: 30, marginTop: 24, marginBottom: 12 },
+    subtitle: { fontFamily: theme.typography.fontFamily.body, fontSize: 16, lineHeight: 24, marginBottom: 24 },
     legalRow: { paddingVertical: 10 },
-    link: { fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
+    link: { fontFamily: theme.typography.fontFamily.headlineMedium, fontSize: 15, textDecorationLine: 'underline' },
     checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 28 },
-    checkboxText: { flex: 1, fontSize: 15, lineHeight: 22 },
+    checkboxText: { fontFamily: theme.typography.fontFamily.body, flex: 1, fontSize: 15, lineHeight: 22 },
     error: { marginBottom: 16, fontSize: 14 },
 });

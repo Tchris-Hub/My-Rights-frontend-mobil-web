@@ -6,39 +6,33 @@ import {
     StyleSheet,
     ScrollView,
     TextInput,
-    TouchableOpacity,
-    Dimensions,
+    Pressable,
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    Image,
     Alert,
 } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { Button } from '../../components/ui/Button';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { Input } from '../../components/ui/Input';
 import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { useAuth } from '../../contexts/AuthContext';
 
 import { useJobs } from '../../contexts/JobContext';
 import { legalService, Template } from '../../services/legalService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type ArchitectStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
+type DraftStep = 'SELECT' | 'INTAKE' | 'CONSULT' | 'BUILD' | 'PREVIEW' | 'FINALIZE';
 
 interface ConsultMessage {
     id: string;
@@ -63,7 +57,7 @@ export const DocumentGeneratorScreen: React.FC = () => {
     const { isAuthenticated } = useAuth();
     
     // Workflow State
-    const [step, setStep] = useState<ArchitectStep>('SELECT');
+    const [step, setStep] = useState<DraftStep>('SELECT');
     const [templates, setTemplates] = useState<Template[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
     const [intakeData, setIntakeData] = useState<Record<string, string>>({});
@@ -249,475 +243,181 @@ export const DocumentGeneratorScreen: React.FC = () => {
         }
     };
 
-    const renderHeader = () => (
-        <View style={styles.header}>
-            <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainer }]} onPress={() => step === 'SELECT' ? navigation.goBack() : setStep('SELECT')}>
-                <Ionicons name="chevron-back" size={24} color={colors.onSurface} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <View>
-                <Text style={[styles.title, { color: colors.onSurface }]}>Document Architect</Text>
-                <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-                    {step === 'SELECT' ? 'Choose your legal blueprint' : 
-                     step === 'INTAKE' ? 'Input critical details' : 
-                     step === 'CONSULT' ? 'AI-assisted drafting' : 'Draft preview — review before use'}
-                </Text>
-            </View>
-        </View>
-    );
+    const subtitle =
+        step === 'SELECT' ? 'Pick what you need'
+            : step === 'INTAKE' ? 'A few details'
+                : step === 'CONSULT' ? 'Say what to include'
+                    : step === 'BUILD' ? 'Writing'
+                        : 'Read it before you use it';
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Image 
-                    source={require('../../../assets/images/classroom_bg.png')} 
-                    style={styles.globalBackground} 
-                    resizeMode="cover"
-                />
-                <BlurView intensity={isDark ? 30 : 15} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-            </View>
-
-            {renderHeader()}
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <ScreenHeader
+                title="Write a document"
+                subtitle={subtitle}
+                onBack={() => (step === 'SELECT' ? navigation.goBack() : setStep('SELECT'))}
+            />
 
             {isLoading && step === 'SELECT' ? (
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Library...</Text>
+                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Loading templates</Text>
                 </View>
             ) : (
                 <View style={styles.workflowContainer}>
                     {step === 'SELECT' && (
                         <ScrollView contentContainerStyle={styles.templatesList} showsVerticalScrollIndicator={false}>
-                            {templates.map((t, idx) => (
-                                <Animated.View key={t.id} entering={FadeInRight.delay(idx * 100)}>
-                                    <TouchableOpacity 
-                                        style={[
-                                            styles.templateCard, 
-                                            { 
-                                                backgroundColor: colors.surfaceContainerLow,
-                                                marginTop: idx % 2 === 0 ? 0 : 24,
-                                                marginLeft: idx % 2 === 0 ? 0 : 16,
-                                                marginRight: idx % 2 === 0 ? 16 : 0,
-                                            }
-                                        ]}
+                            <View style={[styles.templateGroup, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                                {templates.map((t, idx) => (
+                                    <Pressable
+                                        key={t.id}
+                                        accessibilityRole="button"
                                         onPress={() => handleSelectTemplate(t)}
+                                        style={({ pressed }) => [styles.templateRow, idx > 0 && { borderTopWidth: 1, borderTopColor: colors.line }, pressed && { backgroundColor: colors.surfaceContainer }]}
                                     >
-                                        <View style={[styles.templateIcon, { backgroundColor: colors.primary + '10' }]}>
-                                            <Ionicons name="document-text" size={28} color={colors.primary} />
+                                        <View style={[styles.templateIcon, { backgroundColor: colors.primaryContainer }]}>
+                                            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
                                         </View>
                                         <View style={styles.templateInfo}>
                                             <Text style={[styles.templateTitle, { color: colors.onSurface }]}>{t.title}</Text>
                                             <Text style={[styles.templateDesc, { color: colors.onSurfaceVariant }]} numberOfLines={2}>{t.description}</Text>
                                         </View>
-                                        <View style={[styles.arrowCircle, { backgroundColor: colors.surfaceContainerHighest }]}>
-                                            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-                                        </View>
-                                    </TouchableOpacity>
-                                </Animated.View>
-                            ))}
+                                        <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+                                    </Pressable>
+                                ))}
+                            </View>
                         </ScrollView>
                     )}
 
                     {step === 'INTAKE' && selectedTemplate && (
-                        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
                             <ScrollView contentContainerStyle={styles.intakeScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-                                <View style={styles.asymmetricHeader}>
-                                    <View style={[styles.accentLine, { backgroundColor: colors.primary }]} />
-                                    <Text style={[styles.sectionHeader, { color: colors.onSurface }]}>Primary Details</Text>
-                                </View>
-                                <View style={styles.formContainer}>
-                                    {selectedTemplate.fields.map(field => (
-                                        <View key={field.key} style={styles.inputGroup}>
-                                            <Text style={[styles.inputLabel, { color: colors.primary }]}>{field.label}</Text>
-                                            <TextInput
-                                                style={[styles.input, { backgroundColor: colors.surfaceContainerLow, color: colors.onSurface }]}
-                                                placeholder={field.placeholder}
-                                                placeholderTextColor={colors.onSurfaceVariant + '60'}
-                                                value={intakeData[field.key]}
-                                                onChangeText={(val) => setIntakeData(prev => ({ ...prev, [field.key]: val }))}
-                                                keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                                            />
-                                        </View>
-                                    ))}
-                                </View>
-                                <Button 
-                                    title="Continue to AI Review" 
-                                    onPress={handleIntakeSubmit}
-                                    style={styles.submitBtn}
-                                />
+                                <Text style={[styles.intakeTitle, { color: colors.onSurface }]}>{selectedTemplate.title}</Text>
+                                {selectedTemplate.fields.map((field) => (
+                                    <Input
+                                        key={field.key}
+                                        label={field.label}
+                                        placeholder={field.placeholder}
+                                        value={intakeData[field.key] ?? ''}
+                                        onChangeText={(val) => setIntakeData((prev) => ({ ...prev, [field.key]: val }))}
+                                        keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                                    />
+                                ))}
+                                <Button title="Continue" size="large" fullWidth onPress={handleIntakeSubmit} />
                             </ScrollView>
                         </KeyboardAvoidingView>
                     )}
 
                     {step === 'CONSULT' && (
-                        <KeyboardAvoidingView
-                            style={{ flex: 1 }}
-                            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                        >
-                            <ScrollView
-                                style={styles.chatScroll}
-                                contentContainerStyle={styles.consultScrollContent}
-                                keyboardShouldPersistTaps="handled"
-                                keyboardDismissMode="on-drag"
-                            >
-                                {consultMessages.map(msg => (
-                                    <View key={msg.id} style={[
-                                        styles.chatBubble,
-                                        msg.role === 'user' ? styles.userBubble : [styles.aiBubble, { backgroundColor: colors.surfaceContainerHigh }]
-                                    ]}>
-                                        <Text style={[styles.chatText, { color: msg.role === 'user' ? '#FFF' : colors.onSurface }]}>{msg.content}</Text>
+                        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                            <ScrollView style={styles.flex} contentContainerStyle={styles.consultScrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                                {consultMessages.map((msg) => (
+                                    <View
+                                        key={msg.id}
+                                        style={[
+                                            styles.chatBubble,
+                                            msg.role === 'user'
+                                                ? { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 }
+                                                : { alignSelf: 'flex-start', backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderBottomLeftRadius: 4 },
+                                        ]}
+                                    >
+                                        <Text style={[styles.chatText, { color: msg.role === 'user' ? colors.onPrimary : colors.onSurface }]}>{msg.content}</Text>
                                     </View>
                                 ))}
-                                {isLoading && (
-                                    <ActivityIndicator color={colors.primary} style={{ alignSelf: 'flex-start', marginTop: 4, marginLeft: 8 }} />
-                                )}
+                                {isLoading ? <ActivityIndicator color={colors.primary} style={styles.thinking} /> : null}
                             </ScrollView>
 
-                            <BlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.inputBlur}>
+                            <View style={[styles.composer, { backgroundColor: colors.card, borderTopColor: colors.line }]}>
                                 <View style={styles.chatInputRow}>
                                     <TextInput
-                                        style={[styles.chatInput, { backgroundColor: colors.surfaceContainerHighest, color: colors.onSurface }]}
-                                        placeholder="Tell the AI what you want included..."
-                                        placeholderTextColor={colors.onSurfaceVariant}
+                                        style={[styles.chatInput, { backgroundColor: colors.surface, borderColor: colors.outlineVariant, color: colors.onSurface }]}
+                                        placeholder="Anything else to include?"
+                                        placeholderTextColor={colors.outline}
                                         value={userInput}
                                         onChangeText={setUserInput}
                                         multiline
-                                        textAlignVertical="top"
                                         editable={!isLoading}
                                     />
-                                    <TouchableOpacity
+                                    <Pressable
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Send"
                                         disabled={isLoading || !userInput.trim()}
-                                        style={[styles.sendBtn, { backgroundColor: colors.primary, opacity: isLoading || !userInput.trim() ? 0.45 : 1 }]}
+                                        style={[styles.sendBtn, { backgroundColor: colors.primary, opacity: isLoading || !userInput.trim() ? 0.4 : 1 }]}
                                         onPress={handleConsultSubmit}
                                     >
-                                        <Ionicons name="sparkles" size={20} color="#FFF" />
-                                    </TouchableOpacity>
+                                        <Ionicons name="arrow-up" size={22} color={colors.onPrimary} />
+                                    </Pressable>
                                 </View>
-
-                                <View style={styles.consultActions}>
-                                    {isAuthenticated && generationQuotaRemaining !== null && (
-                                        <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
-                                            {generationQuotaRemaining} draft{generationQuotaRemaining === 1 ? '' : 's'} remaining today.
-                                        </Text>
-                                    )}
-                                    <TouchableOpacity
-                                        style={[styles.finalActionBtn, { backgroundColor: colors.primary }]}
-                                        onPress={handleStartBuild}
-                                        disabled={isLoading}
-                                    >
-                                        <Text style={styles.finalActionText}>Generate Document</Text>
-                                        <Ionicons name="arrow-forward" size={18} color="#FFF" />
-                                    </TouchableOpacity>
-                                </View>
-                            </BlurView>
+                                {isAuthenticated && generationQuotaRemaining !== null ? (
+                                    <Text style={[styles.quotaHint, { color: colors.onSurfaceVariant }]}>
+                                        {generationQuotaRemaining} draft{generationQuotaRemaining === 1 ? '' : 's'} left today.
+                                    </Text>
+                                ) : null}
+                                <Button title="Write the document" variant="accent" size="large" fullWidth onPress={handleStartBuild} disabled={isLoading} />
+                            </View>
                         </KeyboardAvoidingView>
                     )}
 
                     {step === 'BUILD' && (
                         <View style={styles.centerContainer}>
                             <ActivityIndicator size="large" color={colors.primary} />
-                            <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Architecting Legal Instrument...</Text>
+                            <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Writing your document…</Text>
                         </View>
                     )}
 
                     {step === 'PREVIEW' && (
-                        <View style={{ flex: 1 }}>
-                            <ScrollView style={[styles.previewScroll, { backgroundColor: colors.surfaceContainerLow }]}>
-                                <View style={styles.previewSheet}>
-                                    <Text style={[styles.previewText, { color: colors.onSurface }]}>{draftContent.replace(/<[^>]*>?/gm, '')}</Text>
+                        <View style={styles.flex}>
+                            <View style={[styles.warn, { backgroundColor: colors.tertiaryContainer }]}>
+                                <Ionicons name="alert-circle" size={18} color={colors.onTertiaryContainer} />
+                                <Text style={[styles.warnText, { color: colors.onTertiaryContainer }]}>Draft written by AI. Have a lawyer check it before you sign or send it.</Text>
+                            </View>
+                            <ScrollView style={styles.flex} contentContainerStyle={styles.previewPad}>
+                                <View style={[styles.previewSheet, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                                    <Text style={[styles.previewText, { color: colors.onSurface }]} selectable>{draftContent.replace(/<[^>]*>?/gm, '')}</Text>
                                 </View>
                             </ScrollView>
-                            <View style={styles.previewActions}>
-                                <TouchableOpacity 
-                                    style={[styles.actionBtnPrimary, { backgroundColor: colors.primary }]}
-                                    onPress={handleExportPDF}
-                                >
-                                    <Ionicons name="download-outline" size={20} color="#FFF" />
-                                    <Text style={styles.actionBtnTextMain}>Export PDF</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity 
-                                    style={[styles.actionBtnOutline, { borderColor: colors.outline }]}
-                                    onPress={() => setStep('CONSULT')}
-                                >
-                                    <Text style={[styles.actionBtnTextOutline, { color: colors.onSurface }]}>Refine Draft</Text>
-                                </TouchableOpacity>
+                            <View style={[styles.previewActions, { backgroundColor: colors.card, borderTopColor: colors.line }]}>
+                                <Button title="Save as PDF" size="large" style={styles.actionMain} onPress={handleExportPDF} icon={<Ionicons name="download-outline" size={20} color={colors.onPrimary} />} />
+                                <Button title="Change it" variant="outline" size="large" style={styles.actionSide} onPress={() => setStep('CONSULT')} />
                             </View>
                         </View>
                     )}
                 </View>
             )}
-
-            <FloatingChatButton />
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    globalBackground: {
-        ...StyleSheet.absoluteFill,
-        opacity: 0.12,
-    },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 12,
-        paddingBottom: 24,
-    },
-    backBtn: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
-        ...theme.shadows.ambientFloat,
-    },
-    title: {
-        ...theme.typography.displaySm,
-        fontSize: 32,
-        fontWeight: '900',
-        letterSpacing: -1,
-    },
-    subtitle: {
-        ...theme.typography.labelLg,
-        fontSize: 12,
-        marginTop: 4,
-        opacity: 0.7,
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-    },
-    workflowContainer: {
-        flex: 1,
-    },
-    templatesList: {
-        padding: 24,
-        paddingTop: 0,
-    },
-    templateCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 20,
-        borderRadius: 32,
-        marginBottom: 16,
-        ...theme.shadows.ambientFloat,
-    },
-    templateIcon: {
-        width: 64,
-        height: 64,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    templateInfo: {
-        flex: 1,
-        marginLeft: 16,
-        marginRight: 8,
-    },
-    templateTitle: {
-        ...theme.typography.titleMd,
-        fontSize: 18,
-        fontWeight: '900',
-    },
-    templateDesc: {
-        ...theme.typography.caption,
-        fontSize: 12,
-        marginTop: 4,
-        lineHeight: 16,
-    },
-    arrowCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    intakeScroll: {
-        padding: 24,
-    },
-    asymmetricHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    accentLine: {
-        width: 40,
-        height: 4,
-        borderRadius: 2,
-        marginRight: 12,
-    },
-    sectionHeader: {
-        ...theme.typography.titleLg,
-        fontSize: 24,
-        fontWeight: '900',
-    },
-    formContainer: {
-        gap: 20,
-    },
-    inputGroup: {
-        gap: 10,
-    },
-    inputLabel: {
-        fontSize: 11,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        marginLeft: 4,
-    },
-    input: {
-        padding: 20,
-        borderRadius: 24,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    submitBtn: {
-        marginTop: 40,
-        height: 64,
-        borderRadius: 32,
-    },
-    chatScroll: {
-        flex: 1,
-    },
-    chatBubble: {
-        padding: 20,
-        borderRadius: 24,
-        maxWidth: '85%',
-        marginBottom: 16,
-    },
-    userBubble: {
-        backgroundColor: theme.colors.primary,
-        alignSelf: 'flex-end',
-        borderBottomRightRadius: 4,
-        ...theme.shadows.ambientFloat,
-    },
-    aiBubble: {
-        alignSelf: 'flex-start',
-        borderBottomLeftRadius: 4,
-        ...theme.shadows.ambientFloat,
-    },
-    chatText: {
-        ...theme.typography.bodyMd,
-        fontSize: 15,
-        lineHeight: 24,
-    },
-    inputBlur: {
-        paddingHorizontal: 14,
-        paddingTop: 12,
-        paddingBottom: Platform.OS === 'ios' ? 18 : 12,
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        overflow: 'hidden',
-    },
-    chatInputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    chatInput: {
-        flex: 1,
-        minHeight: 52,
-        maxHeight: 96,
-        borderRadius: 24,
-        paddingHorizontal: 18,
-        paddingVertical: 13,
-        fontSize: 15,
-        fontWeight: '600',
-    },
-    sendBtn: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...theme.shadows.ambientFloat,
-    },
-    quotaHint: {
-        textAlign: 'center',
-        marginBottom: 8,
-        fontSize: 12,
-    },
-    consultScrollContent: {
-        padding: 18,
-        paddingBottom: 12,
-    },
-    consultActions: {
-        marginTop: 10,
-    },
-    finalActionBtn: {
-        height: 48,
-        borderRadius: 24,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-    },
-    finalActionText: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: '900',
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        ...theme.typography.titleMd,
-        marginTop: 20,
-        fontWeight: '900',
-    },
-    previewScroll: {
-        flex: 1,
-        margin: 20,
-        borderRadius: 32,
-        overflow: 'hidden',
-    },
-    previewSheet: {
-        padding: 32,
-    },
-    previewWarning: {
-        marginTop: 24,
-        fontSize: 12,
-        lineHeight: 18,
-        fontWeight: '600',
-    },
-    previewText: {
-        ...theme.typography.bodyLg,
-        fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-        lineHeight: 28,
-        fontSize: 16,
-    },
-    previewActions: {
-        flexDirection: 'row',
-        padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-        gap: 16,
-    },
-    actionBtnPrimary: {
-        flex: 2,
-        height: 64,
-        borderRadius: 32,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-    },
-    actionBtnOutline: {
-        flex: 1,
-        height: 64,
-        borderRadius: 32,
-        borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    actionBtnTextMain: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: '900',
-    },
-    actionBtnTextOutline: {
-        fontSize: 14,
-        fontWeight: '800',
-    }
+    container: { flex: 1 },
+    flex: { flex: 1 },
+    centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+    loadingText: { ...theme.typography.bodyMd },
+    workflowContainer: { flex: 1 },
+    templatesList: { padding: 16, paddingBottom: 32 },
+    templateGroup: { borderWidth: 1, borderRadius: theme.borderRadius.lg, overflow: 'hidden' },
+    templateRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, minHeight: 72 },
+    templateIcon: { width: 42, height: 42, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    templateInfo: { flex: 1 },
+    templateTitle: { ...theme.typography.titleMd },
+    templateDesc: { ...theme.typography.caption, marginTop: 2 },
+    intakeScroll: { padding: 16, paddingBottom: 32 },
+    intakeTitle: { ...theme.typography.titleLg, marginBottom: 16 },
+    consultScrollContent: { padding: 16, gap: 10 },
+    chatBubble: { maxWidth: '86%', padding: 12, borderRadius: 16 },
+    chatText: { fontFamily: theme.typography.fontFamily.body, fontSize: 15.5, lineHeight: 22 },
+    thinking: { alignSelf: 'flex-start', marginLeft: 8 },
+    composer: { borderTopWidth: 1, padding: 12, gap: 10 },
+    chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+    chatInput: { flex: 1, borderWidth: 1, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 10, minHeight: 44, maxHeight: 120, fontFamily: theme.typography.fontFamily.body, fontSize: 16 },
+    sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    quotaHint: { ...theme.typography.caption, textAlign: 'center' },
+    warn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10 },
+    warnText: { ...theme.typography.labelSm, flex: 1, color: undefined },
+    previewPad: { padding: 16 },
+    previewSheet: { borderWidth: 1, borderRadius: theme.borderRadius.md, padding: 18 },
+    previewText: { ...theme.typography.reading },
+    previewActions: { flexDirection: 'row', gap: 10, padding: 12, borderTopWidth: 1 },
+    actionMain: { flex: 2, alignSelf: 'stretch' },
+    actionSide: { flex: 1, alignSelf: 'stretch' },
 });

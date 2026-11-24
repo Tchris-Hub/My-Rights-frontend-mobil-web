@@ -5,6 +5,9 @@ import * as escalation from './services/escalation';
 import * as legal from './services/legal';
 import * as profile from './services/profile';
 import * as consent from './services/consent';
+import * as account from './services/account';
+import * as directory from './services/directory';
+import * as cases from './services/cases';
 
 export function buildRoutes(): Router {
   const router = Router();
@@ -16,6 +19,38 @@ export function buildRoutes(): Router {
   }));
   router.patch('/api/users/me', requireUser, asyncHandler(async (req, res) => {
     res.json(await profile.updateProfile((req as AuthedRequest).userId, req.body ?? {}));
+  }));
+  router.delete('/api/users/me', requireUser, asyncHandler(async (req, res) => {
+    await account.deleteAccount((req as AuthedRequest).userId);
+    res.status(204).end();
+  }));
+
+  // ---- Account: saved rights, data requests, reports, usage ----------------
+  const uid = (req: unknown): string => (req as AuthedRequest).userId;
+  router.get('/api/account/stats', requireUser, asyncHandler(async (req, res) => {
+    res.json(await account.getStats(uid(req)));
+  }));
+  router.get('/api/account/saved-rights', requireUser, asyncHandler(async (req, res) => {
+    res.json(await account.listSavedRights(uid(req)));
+  }));
+  router.post('/api/account/saved-rights', requireUser, asyncHandler(async (req, res) => {
+    res.status(201).json(await account.saveRight(uid(req), req.body ?? {}));
+  }));
+  router.delete('/api/account/saved-rights/:id', requireUser, asyncHandler(async (req, res) => {
+    await account.deleteSavedRight(uid(req), req.params.id);
+    res.status(204).end();
+  }));
+  router.get('/api/account/data-requests', requireUser, asyncHandler(async (req, res) => {
+    res.json(await account.listDataRequests(uid(req)));
+  }));
+  router.post('/api/account/data-requests', requireUser, asyncHandler(async (req, res) => {
+    res.status(201).json(await account.createDataRequest(uid(req), req.body ?? {}));
+  }));
+  router.post('/api/account/reports', requireUser, asyncHandler(async (req, res) => {
+    res.status(201).json(await account.createReport(uid(req), req.body ?? {}));
+  }));
+  router.get('/api/usage', requireUser, asyncHandler(async (req, res) => {
+    res.json(await account.getUsage(uid(req)));
   }));
 
   // Consent is the one authenticated endpoint that does not require an
@@ -67,6 +102,59 @@ export function buildRoutes(): Router {
   }));
   router.get('/api/escalations', requireUser, requireConsent, asyncHandler(async (req, res) => {
     res.json(await escalation.listEscalations((req as AuthedRequest).userId));
+  }));
+
+  // ---- Directory: verified professionals and firms, enquiries ----------------
+  router.get('/api/legal/professionals/match', requireUser, asyncHandler(async (req, res) => {
+    res.json(await directory.matchProfessionals(req.query));
+  }));
+  router.get('/api/legal/professionals', requireUser, asyncHandler(async (req, res) => {
+    res.json(await directory.listProfessionals(req.query));
+  }));
+  router.get('/api/legal/firms/match', requireUser, asyncHandler(async (req, res) => {
+    res.json(await directory.matchFirms(req.query));
+  }));
+  router.get('/api/legal/firms', requireUser, asyncHandler(async (req, res) => {
+    res.json(await directory.listFirms(req.query));
+  }));
+  router.post('/api/legal/enquiries', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.status(201).json(await directory.createEnquiry(uid(req), req.body ?? {}));
+  }));
+  router.get('/api/legal/enquiries', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    const view = typeof req.query.view === 'string' ? req.query.view : undefined;
+    res.json(await directory.listEnquiries(uid(req), view));
+  }));
+  router.patch('/api/legal/enquiries/:id', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await directory.updateEnquiry(uid(req), req.params.id, req.body ?? {}));
+  }));
+  router.get('/api/professionals/me', requireUser, asyncHandler(async (req, res) => {
+    res.json(await directory.getOwnProfessional(uid(req)));
+  }));
+  router.put('/api/professionals/me', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await directory.upsertOwnProfessional(uid(req), req.body ?? {}));
+  }));
+
+  // ---- Intake: cases built from answered questions --------------------------
+  router.get('/api/situations', asyncHandler(async (_req, res) => {
+    res.json(cases.situations());
+  }));
+  router.post('/api/cases', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.status(201).json(await cases.createCase(uid(req), req.body ?? {}));
+  }));
+  router.get('/api/cases', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await cases.listCases(uid(req)));
+  }));
+  router.get('/api/cases/:id', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await cases.getCase(uid(req), req.params.id));
+  }));
+  router.post('/api/cases/:id/answers', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.status(201).json(await cases.answer(uid(req), req.params.id, req.body ?? {}));
+  }));
+  router.post('/api/cases/:id/finish', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await cases.finish(uid(req), req.params.id));
+  }));
+  router.get('/api/cases/:id/file', requireUser, requireConsent, asyncHandler(async (req, res) => {
+    res.json(await cases.getFile(uid(req), req.params.id));
   }));
 
   router.get('/api/legal/constitution', asyncHandler(async (_req, res) => {
