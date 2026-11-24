@@ -1,24 +1,15 @@
 /**
- * Premium Button Component
- * Multiple variants with micro-interactions and haptic feedback
+ * Button. Flat, square-ish, one pressed state (darker fill), no shadow.
+ * Variants: primary (indigo), accent (danfo yellow), secondary (tinted), outline, ghost, danger (signal red).
  */
 
 import React from 'react';
-import {
-    TouchableOpacity,
-    Text,
-    StyleSheet,
-    ActivityIndicator,
-    ViewStyle,
-    TextStyle,
-    View,
-    StyleProp,
-} from 'react-native';
+import { Pressable, Text, StyleSheet, ActivityIndicator, View, ViewStyle, StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'small' | 'medium' | 'large';
 
 interface ButtonProps {
@@ -36,6 +27,9 @@ interface ButtonProps {
     accessibilityLabel?: string;
 }
 
+const HEIGHT: Record<ButtonSize, number> = { small: 40, medium: 48, large: 56 };
+const FONT_SIZE: Record<ButtonSize, number> = { small: 14, medium: 16, large: 17 };
+
 export const Button: React.FC<ButtonProps> = ({
     title,
     onPress,
@@ -51,151 +45,67 @@ export const Button: React.FC<ButtonProps> = ({
     accessibilityLabel,
 }) => {
     const { colors } = useTheme();
-
-    const handlePress = () => {
-        // Haptic feedback
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-    };
-
     const isDisabled = disabled || loading;
 
+    const palette = {
+        primary: { bg: colors.primary, pressed: colors.onPrimaryFixedVariant, fg: colors.onPrimary, border: 'transparent' },
+        accent: { bg: colors.tertiary, pressed: '#DDA400', fg: colors.onTertiary, border: 'transparent' },
+        secondary: { bg: colors.primaryContainer, pressed: colors.surfaceContainerHigh, fg: colors.onPrimaryContainer, border: 'transparent' },
+        outline: { bg: 'transparent', pressed: colors.surfaceContainer, fg: colors.onSurface, border: colors.outline },
+        ghost: { bg: 'transparent', pressed: colors.surfaceContainer, fg: colors.primary, border: 'transparent' },
+        danger: { bg: colors.error, pressed: '#B52A23', fg: colors.onError, border: 'transparent' },
+    }[variant];
+
     return (
-        <TouchableOpacity
-            style={[
-                styles.buttonBase,
-                styles[`buttonBase_${size}`],
-                fullWidth && styles.fullWidth,
-                style,
-            ]}
-            onPress={handlePress}
+        <Pressable
+            onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onPress();
+            }}
             disabled={isDisabled}
             testID={testID}
             accessibilityRole="button"
             accessibilityLabel={accessibilityLabel ?? title}
-            activeOpacity={0.7}
+            accessibilityState={{ disabled: isDisabled, busy: loading }}
+            style={({ pressed }) => [
+                styles.base,
+                {
+                    minHeight: HEIGHT[size],
+                    backgroundColor: pressed ? palette.pressed : palette.bg,
+                    borderColor: palette.border,
+                    borderWidth: palette.border === 'transparent' ? 0 : 1.5,
+                    opacity: isDisabled ? 0.45 : 1,
+                },
+                fullWidth && styles.fullWidth,
+                style,
+            ]}
         >
-            <View style={[styles.container, isDisabled && styles.disabled, { backgroundColor: variant === 'primary' ? colors.primary : variant === 'secondary' ? colors.surfaceContainerHigh : variant === 'danger' ? colors.error : 'transparent' }, styles[`container_${variant}`]]}>
+            {loading ? (
+                <ActivityIndicator color={palette.fg} size="small" />
+            ) : (
                 <View style={styles.content}>
-                    {loading ? (
-                        <ActivityIndicator
-                            color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.onPrimary}
-                            size="small"
-                        />
-                    ) : (
-                        <>
-                            {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-                            <Text style={[styles.text, styles[`text_${size}`], { color: variant === 'primary' || variant === 'danger' ? colors.onPrimary : variant === 'secondary' ? colors.primary : colors.onSurface }]}>
-                                {title}
-                            </Text>
-                            {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
-                        </>
-                    )}
+                    {icon && iconPosition === 'left' ? <View style={styles.iconLeft}>{icon}</View> : null}
+                    <Text style={[styles.text, { color: palette.fg, fontSize: FONT_SIZE[size] }]} numberOfLines={1}>
+                        {title}
+                    </Text>
+                    {icon && iconPosition === 'right' ? <View style={styles.iconRight}>{icon}</View> : null}
                 </View>
-            </View>
-        </TouchableOpacity>
+            )}
+        </Pressable>
     );
 };
 
 const styles = StyleSheet.create({
-    buttonBase: {
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden', // Ensures inner gradient/blur conforms to border radius
-        justifyContent: 'center',
-        ...theme.shadows.glass,
-    },
-    container: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    // Variants
-    container_primary: {
-        // LinearGradient applied via absoluteFill
-    },
-    container_secondary: {},
-    container_outline: {
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderColor: theme.colors.outlineVariant
-    },
-    container_ghost: {
-        backgroundColor: 'transparent',
-    },
-    container_danger: {
-        backgroundColor: theme.colors.error,
-    },
-
-    // Sizes
-    buttonBase_small: {
-        minHeight: theme.touchTargets.min,
-    },
-    buttonBase_medium: {
-        minHeight: theme.touchTargets.min,
-    },
-    buttonBase_large: {
-        minHeight: theme.touchTargets.comfortable,
-    },
-
-    content: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
+    base: {
+        borderRadius: theme.borderRadius.md,
         paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        width: '100%',
-        height: '100%',
-        zIndex: 1, // Ensure content sits above gradient/blur
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'flex-start',
     },
-
-    // Text styles
-    text: {
-        ...theme.typography.labelMd,
-        fontFamily: theme.typography.fontFamily.headline,
-        textAlign: 'center',
-        letterSpacing: 0.5,
-    },
-    text_primary: {
-        color: theme.colors.onPrimary
-    },
-    text_secondary: {
-        color: theme.colors.primary,
-    },
-    text_outline: {
-        color: theme.colors.onSurface,
-    },
-    text_ghost: {
-        color: theme.colors.onSurface,
-    },
-    text_danger: {
-        color: theme.colors.onPrimary,
-    },
-    text_small: {
-        fontSize: 14,
-    },
-    text_medium: {
-        fontSize: 16,
-    },
-    text_large: {
-        fontSize: 18,
-    },
-
-    // States
-    disabled: {
-        opacity: 0.5,
-    },
-
-    // Layout
-    fullWidth: {
-        width: '100%',
-    },
-    iconLeft: {
-        marginRight: theme.spacing.sm,
-        zIndex: 1,
-    },
-    iconRight: {
-        marginLeft: theme.spacing.sm,
-        zIndex: 1,
-    },
+    fullWidth: { alignSelf: 'stretch' },
+    content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    text: { fontFamily: theme.typography.fontFamily.headline, textAlign: 'center' },
+    iconLeft: { marginRight: 8 },
+    iconRight: { marginLeft: 8 },
 });

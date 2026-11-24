@@ -20,7 +20,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import theme, { spacing, borderRadius } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
 import { legalService, Chapter } from '../../services/legalService';
 import { accountService } from '../../services/account.service';
@@ -244,7 +243,6 @@ export const ConstitutionExplorerScreen: React.FC = () => {
                 </ScrollView>
             )}
 
-            <FloatingChatButton />
         </View>
     );
 };

@@ -17,7 +17,6 @@ import Animated, { FadeInRight } from 'react-native-reanimated';
 import { chatService } from '../../services/chat.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 
 interface ConversationSummary {
     id: string;
@@ -60,7 +59,7 @@ export const ChatHistoryScreen: React.FC = () => {
 
     const handleConversationPress = (id: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        navigation.navigate('Chat', { conversationId: id });
+        navigation.navigate('AskTab', { conversationId: id });
     };
 
     const formatDate = (dateString: string) => {
@@ -127,7 +126,6 @@ export const ChatHistoryScreen: React.FC = () => {
                     }
                 />
             )}
-            <FloatingChatButton />
         </SafeAreaView>
     );
 };

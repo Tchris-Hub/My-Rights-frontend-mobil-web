@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -149,7 +148,6 @@ export const SettingsScreen: React.FC = () => {
                     </View>
                 </View>
             </ScrollView>
-            <FloatingChatButton />
         </SafeAreaView>
     );
 };

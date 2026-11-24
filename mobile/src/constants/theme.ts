@@ -1,81 +1,104 @@
 import { Platform } from 'react-native';
 import { moderateScale, scale, verticalScale } from '../utils/responsive';
 
-// Lincoln College color tokens
+// My Rights design tokens.
+// Identity: Nigerian indigo (adire dye) + danfo yellow. Flat surfaces, hard edges, no glass.
+// Key names are kept from the previous token set so existing screens recolor automatically;
+// new code should prefer the semantic names (ink, paper, card, line, signal, verified).
 export const colors = {
-    // Primary - Emerald Refresh
-    primary: '#047857',
-    primaryContainer: '#ECFDF5',
+    // Brand
+    primary: '#1E2A5E',
+    primaryContainer: '#E3E7F5',
     onPrimary: '#FFFFFF',
-    onPrimaryContainer: '#022C22',
-    onPrimaryFixed: '#022C22',
-    onPrimaryFixedVariant: '#059669',
+    onPrimaryContainer: '#121838',
+    onPrimaryFixed: '#121838',
+    onPrimaryFixedVariant: '#34428A',
 
-    // Secondary - Dark Slate / School Blue
-    secondary: '#0B1326',
-    secondaryContainer: '#1B2436',
+    secondary: '#121838',
+    secondaryContainer: '#E8EAF3',
     onSecondary: '#FFFFFF',
-    onSecondaryContainer: '#D1E4FF',
-    onSecondaryFixed: '#001D36',
-    onSecondaryFixedVariant: '#004A77',
+    onSecondaryContainer: '#121838',
+    onSecondaryFixed: '#121838',
+    onSecondaryFixedVariant: '#34428A',
 
-    // Tertiary - Gold Accent (Legacy)
-    tertiary: '#E9C349',
-    tertiaryContainer: '#AF8D11',
-    onTertiary: '#3C2F00',
-    onTertiaryContainer: '#342800',
+    // Danfo yellow
+    tertiary: '#F5B800',
+    tertiaryContainer: '#FFE9A6',
+    onTertiary: '#2A2000',
+    onTertiaryContainer: '#2A2000',
 
-    // Surfaces (Physical Layers) - High Contrast White/Grey
-    surface: '#FFFFFF',                  // Base Layer
-    surfaceBright: '#F8F9FA',
-    surfaceDim: '#EDF1F5',
+    // Surfaces: paper behind, white cards on top, separated by a line not a shadow
+    surface: '#F2F4F9',
+    surfaceBright: '#FFFFFF',
+    surfaceDim: '#E6E9F2',
     surfaceContainerLowest: '#FFFFFF',
-    surfaceContainerLow: '#F8F9FA',      // Sectional Layer
-    surfaceContainer: '#F1F3F5',         
-    surfaceContainerHigh: '#E9ECEF',     // Actionable Layer
-    surfaceContainerHighest: '#DEE2E6',  // Peak Layer / Input Fields
-    surfaceVariant: '#E1E2EC',
+    surfaceContainerLow: '#F8F9FC',
+    surfaceContainer: '#ECEFF6',
+    surfaceContainerHigh: '#E3E7F1',
+    surfaceContainerHighest: '#D9DEEB',
+    surfaceVariant: '#E3E7F1',
 
-    // Text & Outlines
-    onSurface: '#191C1E',
-    onSurfaceVariant: '#44474E',
-    outline: '#74777F',
-    outlineVariant: '#C4C7CF',           // Ghost border fallback (20% opacity)
+    onSurface: '#121838',
+    onSurfaceVariant: '#4A5273',
+    outline: '#7C84A3',
+    outlineVariant: '#D3D8E8',
 
-    error: '#BA1A1A',
-    errorContainer: '#FFDAD6',
+    error: '#D7332B',
+    errorContainer: '#FCE4E2',
     onError: '#FFFFFF',
-    onErrorContainer: '#410002',
+    onErrorContainer: '#5A0F0B',
 
-    // Glassmorphism Values (Light Mode)
-    glassBackground: 'rgba(255, 255, 255, 0.7)', 
-    ghostBorder: 'rgba(116, 119, 127, 0.2)',     
-    
-    // Tab Bar
-    tabBarBackground: 'rgba(255, 255, 255, 0.9)', 
-    tabBarBorder: 'rgba(116, 119, 127, 0.2)',      
-    tabBarIconInactive: '#44474E',
-    tabBarIconActive: '#047857',                // Emerald Primary
+    // Kept so old call sites compile; values are now flat, not translucent
+    glassBackground: '#FFFFFF',
+    ghostBorder: '#D3D8E8',
 
-    // Compat layers for any old usages still floating around
-    background: '#FFFFFF',    // maps to surface
-    backgroundDark: '#F1F3F5',
-    border: '#C4C7CF',
-    borderDark: '#74777F',
-    text: '#191C1E',
-    textSecondary: '#44474E',
-    success: '#2E7D32',
-    warning: '#FBC02D',
+    tabBarBackground: '#FFFFFF',
+    tabBarBorder: '#D3D8E8',
+    tabBarIconInactive: '#7C84A3',
+    tabBarIconActive: '#1E2A5E',
+
+    background: '#F2F4F9',
+    backgroundDark: '#E6E9F2',
+    border: '#D3D8E8',
+    borderDark: '#7C84A3',
+    text: '#121838',
+    textSecondary: '#4A5273',
+    success: '#1F7A4D',
+    warning: '#B27A00',
+
+    // Semantic names for new code
+    ink: '#121838',
+    paper: '#F2F4F9',
+    card: '#FFFFFF',
+    line: '#D3D8E8',
+    signal: '#D7332B',
+    verified: '#1F7A4D',
+    verifiedContainer: '#DDF1E7',
+    danfo: '#F5B800',
 };
 
-// Precise styling for Fonts - Requires Inter & PlusJakartaSans 
+const FONT = {
+    display: 'BricolageGrotesque_800ExtraBold',
+    headline: 'BricolageGrotesque_700Bold',
+    headlineMedium: 'BricolageGrotesque_600SemiBold',
+    ui: 'BricolageGrotesque_500Medium',
+    uiRegular: 'BricolageGrotesque_400Regular',
+    reading: 'Literata_400Regular',
+    readingMedium: 'Literata_500Medium',
+    readingBold: 'Literata_600SemiBold',
+};
+
 export const typography = {
     fontFamily: {
-        headline: 'PlusJakartaSans_700Bold',
-        headlineMedium: 'PlusJakartaSans_600SemiBold',
-        body: 'Inter_400Regular',
-        bodyMedium: 'Inter_500Medium',
-        bodyBold: 'Inter_700Bold',
+        headline: FONT.headline,
+        headlineMedium: FONT.headlineMedium,
+        body: FONT.uiRegular,
+        bodyMedium: FONT.ui,
+        bodyBold: FONT.headline,
+        display: FONT.display,
+        reading: FONT.reading,
+        readingMedium: FONT.readingMedium,
+        readingBold: FONT.readingBold,
     },
 
     weights: {
@@ -85,93 +108,23 @@ export const typography = {
         bold: '700' as const,
     },
 
-    // Outfit/PlusJakartaSans - "The Statement" tight spacing
-    displayLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(32),
-        lineHeight: moderateScale(40),
-        letterSpacing: -0.64, // -0.02em mandate
-        color: colors.onSurface,
-    },
-    displayMd: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(28),
-        lineHeight: moderateScale(36),
-        letterSpacing: -0.56,
-        color: colors.onSurface,
-    },
-    displaySm: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(24),
-        lineHeight: moderateScale(32),
-        letterSpacing: -0.48,
-        color: colors.onSurface,
-    },
-    headlineLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(22),
-        lineHeight: moderateScale(28),
-        letterSpacing: -0.44,
-        color: colors.onSurface,
-    },
-    titleLg: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: moderateScale(24),
-        lineHeight: moderateScale(32),
-        letterSpacing: -0.48,
-        color: colors.onSurface,
-    },
-    titleMd: {
-        fontFamily: 'PlusJakartaSans_600SemiBold',
-        fontSize: moderateScale(20),
-        lineHeight: moderateScale(28),
-        letterSpacing: -0.4,
-        color: colors.onSurface,
-    },
+    displayLg: { fontFamily: FONT.display, fontSize: moderateScale(34), lineHeight: moderateScale(38), letterSpacing: -0.8, color: colors.onSurface },
+    displayMd: { fontFamily: FONT.display, fontSize: moderateScale(28), lineHeight: moderateScale(32), letterSpacing: -0.6, color: colors.onSurface },
+    displaySm: { fontFamily: FONT.headline, fontSize: moderateScale(24), lineHeight: moderateScale(29), letterSpacing: -0.4, color: colors.onSurface },
+    headlineLg: { fontFamily: FONT.headline, fontSize: moderateScale(22), lineHeight: moderateScale(27), letterSpacing: -0.3, color: colors.onSurface },
+    titleLg: { fontFamily: FONT.headline, fontSize: moderateScale(20), lineHeight: moderateScale(25), letterSpacing: -0.2, color: colors.onSurface },
+    titleMd: { fontFamily: FONT.headlineMedium, fontSize: moderateScale(17), lineHeight: moderateScale(22), letterSpacing: -0.1, color: colors.onSurface },
 
-    // Inter - "The Evidence" precise legibility
-    bodyLg: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: moderateScale(16),
-        lineHeight: moderateScale(24),
-        letterSpacing: 0,
-        color: colors.onSurfaceVariant,
-    },
-    labelLg: {
-        fontFamily: 'Inter_500Medium',
-        fontSize: moderateScale(16),
-        lineHeight: moderateScale(24),
-        letterSpacing: 0.1,
-        color: colors.onSurface,
-    },
-    bodyMd: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: moderateScale(14),
-        lineHeight: moderateScale(20),
-        letterSpacing: 0,
-        color: colors.onSurfaceVariant,
-    },
-    labelMd: {
-        fontFamily: 'Inter_500Medium',
-        fontSize: moderateScale(14),
-        lineHeight: moderateScale(20),
-        letterSpacing: 0.1, 
-        color: colors.onSurface,
-    },
-    labelSm: {
-        fontFamily: 'Inter_500Medium',
-        fontSize: moderateScale(12),
-        lineHeight: moderateScale(16),
-        letterSpacing: 0.1,
-        color: colors.onSurface,
-    },
-    caption: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: moderateScale(12),
-        lineHeight: moderateScale(16),
-        letterSpacing: 0,
-        color: colors.onSurfaceVariant,
-    },
+    bodyLg: { fontFamily: FONT.uiRegular, fontSize: moderateScale(16), lineHeight: moderateScale(23), letterSpacing: 0, color: colors.onSurface },
+    bodyMd: { fontFamily: FONT.uiRegular, fontSize: moderateScale(14), lineHeight: moderateScale(20), letterSpacing: 0, color: colors.onSurfaceVariant },
+    labelLg: { fontFamily: FONT.ui, fontSize: moderateScale(16), lineHeight: moderateScale(22), letterSpacing: 0, color: colors.onSurface },
+    labelMd: { fontFamily: FONT.ui, fontSize: moderateScale(14), lineHeight: moderateScale(19), letterSpacing: 0, color: colors.onSurface },
+    labelSm: { fontFamily: FONT.ui, fontSize: moderateScale(12), lineHeight: moderateScale(16), letterSpacing: 0.1, color: colors.onSurface },
+    caption: { fontFamily: FONT.uiRegular, fontSize: moderateScale(12), lineHeight: moderateScale(16), letterSpacing: 0.1, color: colors.onSurfaceVariant },
+
+    // Serif for answers and statute text, set looser for reading
+    reading: { fontFamily: FONT.reading, fontSize: moderateScale(16.5), lineHeight: moderateScale(26), letterSpacing: 0, color: colors.onSurface },
+    readingSm: { fontFamily: FONT.reading, fontSize: moderateScale(14.5), lineHeight: moderateScale(22), letterSpacing: 0, color: colors.onSurface },
 };
 
 export const spacing = {
@@ -185,37 +138,22 @@ export const spacing = {
 };
 
 export const borderRadius = {
-    sm: 8,
-    md: 12,
-    lg: 16, // All cards and containers MUST use 16px
-    xl: 24,
+    sm: 6,
+    md: 10,
+    lg: 14, // cards
+    xl: 20, // sheets
     full: 9999,
 };
 
+// Flat design: depth comes from lines and paper vs card contrast. Only the sheet
+// and the emergency button cast a shadow.
+const noShadow = { shadowColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 };
 export const shadows = {
-    none: {
-        shadowColor: 'transparent',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0,
-        shadowRadius: 0,
-        elevation: 0,
-    },
-    // Ambient light - Tonal shadows (never pure black)
-    // Tinted ambient shadow for floating elements (0px 20px 40px rgba(x,x,x, 0.4))
-    ambientFloat: {
-        shadowColor: '#0b1326', 
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.4,
-        shadowRadius: 40,
-        elevation: 15,
-    },
-    glass: {
-        shadowColor: '#0b1326',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 8,
-    }
+    none: noShadow,
+    sheet: { shadowColor: '#121838', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 12 },
+    // Compat aliases for old call sites; intentionally flat now
+    ambientFloat: noShadow,
+    glass: noShadow,
 };
 
 export const animations = {

@@ -29,7 +29,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 
 import { Button } from '../../components/ui/Button';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import { documentService } from '../../services/document.service';
 import { usageService } from '../../services/usage.service';
 import theme from '../../constants/theme';
@@ -439,7 +438,6 @@ export const DocumentReviewScreen: React.FC = () => {
                 </View>
             )}
 
-            <FloatingChatButton />
         </View>
     );
 };

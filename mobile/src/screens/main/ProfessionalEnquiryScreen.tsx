@@ -15,12 +15,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import type { ToolsStackParamList } from '../../navigation/types';
+import type { HelpStackParamList } from '../../navigation/types';
 import { legalService } from '../../services/legalService';
 import { useTheme } from '../../contexts/ThemeContext';
 import theme from '../../constants/theme';
 
-type Route = RouteProp<ToolsStackParamList, 'ProfessionalEnquiry'>;
+type Route = RouteProp<HelpStackParamList, 'ProfessionalEnquiry'>;
 
 export const ProfessionalEnquiryScreen: React.FC = () => {
   const navigation = useNavigation<any>();

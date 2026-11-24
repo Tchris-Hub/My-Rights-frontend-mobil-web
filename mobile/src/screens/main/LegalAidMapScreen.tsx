@@ -24,7 +24,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FloatingChatButton } from '../../components/common/FloatingChatButton';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { legalService, Center, Lawyer } from '../../services/legalService';
@@ -485,7 +484,6 @@ export const LegalAidMapScreen: React.FC = () => {
                 />
             )}
             
-            <FloatingChatButton />
         </SafeAreaView>
     );
 };

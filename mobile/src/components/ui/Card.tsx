@@ -1,88 +1,61 @@
 /**
- * Premium Card Component
- * Elevated container with press states and shadows
+ * Card. A white block on paper with a 1px line. No shadow, no blur.
+ * `variant` values are kept for existing call sites: solid = tinted block, others = outlined card.
  */
 
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ViewStyle, StyleProp } from 'react-native';
+import { View, StyleSheet, Pressable, ViewStyle, StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 
-type CardElevation = 'none' | 'ambientFloat' | 'glass';
-type CardVariant = 'solid' | 'glass' | 'elevated';
+type CardVariant = 'solid' | 'glass' | 'elevated' | 'outlined';
 
 interface CardProps {
     children: React.ReactNode;
-    elevation?: CardElevation;
+    /** @deprecated no effect; the design is flat */
+    elevation?: 'none' | 'ambientFloat' | 'glass';
     variant?: CardVariant;
     onPress?: () => void;
     style?: StyleProp<ViewStyle>;
+    padded?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({
-    children,
-    elevation = 'ambientFloat',
-    variant = 'elevated',
-    onPress,
-    style,
-}) => {
+export const Card: React.FC<CardProps> = ({ children, variant = 'outlined', onPress, style, padded = true }) => {
     const { colors } = useTheme();
+    const tinted = variant === 'solid';
 
-    const handlePress = () => {
-        if (onPress) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onPress();
-        }
+    const base: ViewStyle = {
+        backgroundColor: tinted ? colors.surfaceContainer : colors.card,
+        borderColor: tinted ? 'transparent' : colors.line,
+        borderWidth: tinted ? 0 : 1,
     };
-    
-    // Solid cards use surfaceContainer, Elevated uses shadow+surfaceContainerLow, Glass uses blur
-    const backgroundColor = variant === 'solid' 
-        ? colors.surfaceContainer 
-        : variant === 'elevated' 
-            ? colors.surfaceContainerLow 
-            : colors.glassBackground;
 
-    const cardStyle = [
-        styles.cardBase,
-        variant !== 'glass' && { backgroundColor },
-        variant === 'elevated' && elevation !== 'none' && theme.shadows[elevation],
-        variant === 'glass' && theme.shadows.glass,
-        style,
-    ];
-
-    const content = variant === 'glass' ? (
-        <BlurView intensity={24} tint="dark" style={[StyleSheet.absoluteFill, { borderRadius: theme.borderRadius.lg }]}>
-            <View style={styles.cardContent}>{children}</View>
-        </BlurView>
-    ) : (
-        <View style={styles.cardContent}>{children}</View>
-    );
-
-    if (onPress) {
-        return (
-            <TouchableOpacity
-                style={cardStyle}
-                onPress={handlePress}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-            >
-                {content}
-            </TouchableOpacity>
-        );
+    if (!onPress) {
+        return <View style={[styles.card, base, padded && styles.padded, style]}>{children}</View>;
     }
 
-    return <View style={cardStyle}>{content}</View>;
+    return (
+        <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onPress();
+            }}
+            style={({ pressed }) => [
+                styles.card,
+                base,
+                padded && styles.padded,
+                pressed && { backgroundColor: colors.surfaceContainer },
+                style,
+            ]}
+        >
+            {children}
+        </Pressable>
+    );
 };
 
 const styles = StyleSheet.create({
-    cardBase: {
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden', // Contain the blur view
-        borderWidth: 0, // Stitch strict No-Line rule
-    },
-    cardContent: {
-        padding: theme.spacing.md,
-    }
+    card: { borderRadius: theme.borderRadius.lg, overflow: 'hidden' },
+    padded: { padding: theme.spacing.md },
 });

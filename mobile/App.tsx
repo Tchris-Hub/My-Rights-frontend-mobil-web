@@ -9,6 +9,19 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LogBox } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import {
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+} from '@expo-google-fonts/bricolage-grotesque';
+import {
+  Literata_400Regular,
+  Literata_500Medium,
+  Literata_600SemiBold,
+} from '@expo-google-fonts/literata';
 
 import * as Linking from 'expo-linking';
 // React Native LogBox suppression
@@ -42,6 +55,19 @@ const linking = {
 };
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    BricolageGrotesque_400Regular,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
+    Literata_400Regular,
+    Literata_500Medium,
+    Literata_600SemiBold,
+  });
+
+  // Fonts are bundled, so this resolves in well under a second. On error, fall through to system fonts.
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
