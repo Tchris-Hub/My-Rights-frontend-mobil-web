@@ -150,7 +150,7 @@ export const ChatScreen: React.FC = () => {
         if (!messageText || isLoading || isSubmitting.current) return;
 
         if (!isAuthenticated) {
-            Alert.alert('Sign in required', 'Sign in to use the Legal Agent. Guest mode does not send legal queries to the AI service.');
+            Alert.alert('Sign in required', 'Sign in to ask questions. Guests can read the law and use the emergency guide.');
             return;
         }
 

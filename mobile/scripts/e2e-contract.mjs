@@ -21,8 +21,9 @@ for (const flow of requiredFlows) {
   if (!exists(flow)) failures.push(`Missing E2E flow: ${flow}`);
 }
 
-requireText('src/screens/auth/OnboardingScreen.tsx', 'testID="onboarding-skip"');
-requireText('src/screens/auth/OnboardingScreen.tsx', 'testID="onboarding-primary"');
+requireText('src/screens/auth/OnboardingScreen.tsx', 'testID="onboarding-start"');
+requireText('src/screens/main/HomeScreen.tsx', 'testID="home-emergency"');
+requireText('src/navigation/TabBar.tsx', 'testID={`tab-${route.name}`}');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-email"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-magic-link"');
 requireText('src/screens/auth/LoginScreen.tsx', 'testID="auth-google"');

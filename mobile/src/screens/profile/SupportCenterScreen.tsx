@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { ActivityIndicator, Alert, Linking, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -26,15 +27,15 @@ export const SupportCenterScreen: React.FC = () => {
     finally { setSending(false); }
   };
 
-  return <SafeAreaView style={[styles.container,{backgroundColor:colors.surface}]} edges={['top']}>
-    <View style={styles.header}><TouchableOpacity onPress={()=>navigation.goBack()} style={[styles.back,{backgroundColor:colors.surfaceContainer}]}><Ionicons name="chevron-back" size={24} color={colors.onSurface}/></TouchableOpacity><View style={styles.headerText}><Text style={[styles.title,{color:colors.onSurface}]}>Support Center</Text><Text style={[styles.subtitle,{color:colors.onSurfaceVariant}]}>Get help or report a problem</Text></View></View>
+  return <View style={[styles.container, { backgroundColor: colors.surface }]}>
+    <ScreenHeader title="Help and feedback" />
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-      <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
+      <View style={[styles.card,{backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Contact support</Text>
         <Text style={[styles.body,{color:colors.onSurfaceVariant}]}>For account or app assistance, email our support team.</Text>
         <TouchableOpacity onPress={()=>void Linking.openURL(`mailto:${APP_CONFIG.SUPPORT_EMAIL}`)}><Text style={[styles.link,{color:colors.primary}]}>{APP_CONFIG.SUPPORT_EMAIL}</Text></TouchableOpacity>
       </View>
-      <View style={[styles.card,{backgroundColor:colors.surfaceContainer}]}>
+      <View style={[styles.card,{backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
         <Text style={[styles.cardTitle,{color:colors.onSurface}]}>Report a problem</Text>
         <View style={styles.categoryRow}>{['general','content','privacy','professional'].map(value=><TouchableOpacity key={value} onPress={()=>setCategory(value)} style={[styles.category,{backgroundColor:category===value?colors.primary:colors.surfaceContainerHighest}]}><Text style={[styles.categoryText,{color:category===value?colors.onPrimary:colors.onSurfaceVariant}]}>{value}</Text></TouchableOpacity>)}</View>
         <TextInput value={message} onChangeText={setMessage} multiline maxLength={4000} placeholder="Describe the issue..." placeholderTextColor={colors.onSurfaceVariant} style={[styles.input,{color:colors.onSurface,backgroundColor:colors.surface,borderColor:colors.outlineVariant}]}/>
@@ -42,9 +43,9 @@ export const SupportCenterScreen: React.FC = () => {
       </View>
     </ScrollView>
     </KeyboardAvoidingView>
-  </SafeAreaView>;
+  </View>;
 };
 const styles=StyleSheet.create({
- container:{flex:1},header:{flexDirection:'row',alignItems:'center',padding:24,gap:14},back:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},headerText:{flex:1},title:{...theme.typography.titleLg,fontWeight:'900'},subtitle:{...theme.typography.bodyMd,marginTop:3},
- content:{padding:24,gap:14,paddingBottom:50},card:{borderRadius:20,padding:18,gap:12},cardTitle:{...theme.typography.titleMd,fontWeight:'900'},body:{...theme.typography.bodyMd,lineHeight:21},link:{...theme.typography.labelLg,fontWeight:'900'},categoryRow:{flexDirection:'row',flexWrap:'wrap',gap:8},category:{paddingHorizontal:12,paddingVertical:10,borderRadius:13},categoryText:{...theme.typography.caption,fontWeight:'900',textTransform:'capitalize'},input:{minHeight:130,borderWidth:1,borderRadius:14,padding:12,...theme.typography.bodyMd,textAlignVertical:'top'},action:{minHeight:50,borderRadius:15,alignItems:'center',justifyContent:'center'},actionText:{...theme.typography.labelLg,fontWeight:'900'}
+ container:{flex:1},header:{flexDirection:'row',alignItems:'center',padding:24,gap:14},back:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},headerText:{flex:1},title:{...theme.typography.titleLg},subtitle:{...theme.typography.bodyMd,marginTop:3},
+ content:{padding:16,gap:14,paddingBottom:50},card:{borderRadius:14,padding:18,gap:12},cardTitle:{...theme.typography.titleMd},body:{...theme.typography.bodyMd,lineHeight:21},link:{...theme.typography.labelLg},categoryRow:{flexDirection:'row',flexWrap:'wrap',gap:8},category:{paddingHorizontal:12,paddingVertical:10,borderRadius:13},categoryText:{...theme.typography.caption,textTransform:'capitalize'},input:{minHeight:130,borderWidth:1,borderRadius:14,padding:12,...theme.typography.bodyMd,textAlignVertical:'top'},action:{minHeight:50,borderRadius:15,alignItems:'center',justifyContent:'center'},actionText:{...theme.typography.labelLg}
 });

@@ -1,6 +1,6 @@
 /**
  * My Rights Mobile App
- * Premium, investor-grade legal assistant
+ * My Rights mobile app
  */
 
 import React from 'react';

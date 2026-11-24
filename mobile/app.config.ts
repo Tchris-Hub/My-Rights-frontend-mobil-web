@@ -28,7 +28,7 @@ export default {
             usesCleartextTraffic: false,
             adaptiveIcon: {
                 foregroundImage: './assets/adaptive_icon.png',
-                backgroundColor: '#006B3F',
+                backgroundColor: '#1E2A5E',
             },
             package: 'com.myrights.app',
             softwareKeyboardLayoutMode: 'resize',
@@ -39,7 +39,7 @@ export default {
         splash: {
             image: './assets/splash_icon.png',
             resizeMode: 'contain',
-            backgroundColor: '#FFFFFF',
+            backgroundColor: '#1E2A5E',
         },
         plugins: [
             'react-native-document-scanner-plugin',

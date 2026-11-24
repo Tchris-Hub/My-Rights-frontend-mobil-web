@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import {
   ActivityIndicator,
   Alert,
@@ -87,20 +88,12 @@ export const ProfessionalProfileScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.header}>
-          <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.onSurface }]}>Professional profile</Text>
-            <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>Directory information and verification</Text>
-          </View>
-        </View>
+        <ScreenHeader title="Professional profile" />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-          <View style={[styles.notice, { backgroundColor: colors.surfaceContainer }]}>
+          <View style={[styles.notice, { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
             <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
             <Text style={[styles.noticeText, { color: colors.onSurfaceVariant }]}>
               Verification is controlled by My Rights administrators. A law student or legal support profile is not presented as a practising lawyer.
@@ -134,7 +127,7 @@ export const ProfessionalProfileScreen: React.FC = () => {
                 onChangeText={setter as (value: string) => void}
                 placeholder={placeholder as string}
                 placeholderTextColor={colors.onSurfaceVariant}
-                style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]}
+                style={[styles.input, { color: colors.onSurface, backgroundColor: colors.card, borderColor: colors.outlineVariant }]}
               />
             </View>
           ))}
@@ -147,17 +140,17 @@ export const ProfessionalProfileScreen: React.FC = () => {
             maxLength={3000}
             placeholder="Factual professional biography"
             placeholderTextColor={colors.onSurfaceVariant}
-            style={[styles.input, styles.bio, { color: colors.onSurface, backgroundColor: colors.surfaceContainer, borderColor: colors.outlineVariant }]}
+            style={[styles.input, styles.bio, { color: colors.onSurface, backgroundColor: colors.card, borderColor: colors.outlineVariant }]}
           />
 
-          <Text style={[styles.verification, { color: colors.onSurfaceVariant }]}>Verification status: <Text style={{ color: colors.primary, fontWeight: '800' }}>{verification}</Text></Text>
+          <Text style={[styles.verification, { color: colors.onSurfaceVariant }]}>Verification status: <Text style={{ color: colors.primary }}>{verification}</Text></Text>
 
           <TouchableOpacity style={[styles.save, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]} disabled={saving} onPress={save}>
             {saving ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={[styles.saveText, { color: colors.onPrimary }]}>Save professional profile</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -165,20 +158,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', padding: 24, gap: 14 },
-  back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  back: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   headerText: { flex: 1 },
-  title: { ...theme.typography.titleLg, fontWeight: '900' },
+  title: { ...theme.typography.titleLg },
   subtitle: { ...theme.typography.bodyMd, marginTop: 3 },
   content: { padding: 24, gap: 12, paddingBottom: 60 },
   notice: { flexDirection: 'row', padding: 16, borderRadius: 18, gap: 10, marginBottom: 6 },
   noticeText: { flex: 1, ...theme.typography.bodyMd, lineHeight: 20 },
-  label: { ...theme.typography.labelLg, fontWeight: '800', marginTop: 6 },
+  label: { ...theme.typography.labelLg, marginTop: 6 },
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   role: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 13 },
-  roleText: { ...theme.typography.caption, fontWeight: '800', textTransform: 'capitalize' },
+  roleText: { ...theme.typography.caption, textTransform: 'capitalize' },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 15, paddingHorizontal: 14, paddingVertical: 12, ...theme.typography.bodyMd },
   bio: { minHeight: 130, textAlignVertical: 'top' },
   verification: { ...theme.typography.bodyMd, marginTop: 4 },
   save: { minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  saveText: { ...theme.typography.labelLg, fontWeight: '900' },
+  saveText: { ...theme.typography.labelLg },
 });

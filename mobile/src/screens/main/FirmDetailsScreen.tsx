@@ -1,4 +1,5 @@
 import React from 'react';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,15 +26,10 @@ export const FirmDetailsScreen: React.FC = () => {
   const firm = route.params.firm as Firm;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={[styles.back, { backgroundColor: colors.surfaceContainer }]} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.onSurface }]}>Firm details</Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
+      <ScreenHeader title="Firm details" />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.hero, { backgroundColor: colors.surfaceContainer }]}>
+        <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
           <View style={[styles.icon, { backgroundColor: colors.primary + '15' }]}>
             <Ionicons name="business" size={30} color={colors.primary} />
           </View>
@@ -44,7 +40,7 @@ export const FirmDetailsScreen: React.FC = () => {
           </View>
         </View>
         {firm.description ? <Text style={[styles.description, { color: colors.onSurfaceVariant }]}>{firm.description}</Text> : null}
-        <View style={[styles.infoCard, { backgroundColor: colors.surfaceContainer }]}>
+        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
           {firm.location ? <Info icon="location-outline" label="Location" value={firm.location} colors={colors} /> : null}
           {firm.practice_areas?.length ? <Info icon="briefcase-outline" label="Practice areas" value={firm.practice_areas.join(' • ')} colors={colors} /> : null}
           {firm.service_areas?.length ? <Info icon="map-outline" label="Service areas" value={firm.service_areas.join(' • ')} colors={colors} /> : null}
@@ -54,7 +50,7 @@ export const FirmDetailsScreen: React.FC = () => {
         {firm.professionals?.length ? (
           <View>
             <Text style={[styles.section, { color: colors.onSurface }]}>Verified professionals</Text>
-            <View style={[styles.infoCard, { backgroundColor: colors.surfaceContainer }]}>
+            <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1 }]}>
               {firm.professionals.map((professional) => (
                 <View key={professional.id} style={styles.member}>
                   <Ionicons name="person-circle-outline" size={26} color={colors.primary} />
@@ -81,7 +77,7 @@ export const FirmDetailsScreen: React.FC = () => {
           <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Send enquiry to firm</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -100,25 +96,25 @@ function Info({ icon, label, value, colors }: { icon: keyof typeof Ionicons.glyp
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 24, gap: 14 },
-  back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  title: { ...theme.typography.titleLg, fontWeight: '900' },
+  back: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  title: { ...theme.typography.titleLg },
   content: { padding: 24, gap: 16, paddingBottom: 50 },
-  hero: { alignItems: 'center', padding: 24, borderRadius: 22 },
+  hero: { alignItems: 'center', padding: 24, borderRadius: 14 },
   icon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  name: { ...theme.typography.titleLg, fontWeight: '900', textAlign: 'center' },
+  name: { ...theme.typography.titleLg, textAlign: 'center' },
   verified: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, marginTop: 10 },
-  verifiedText: { ...theme.typography.caption, fontWeight: '800' },
+  verifiedText: { ...theme.typography.caption },
   description: { ...theme.typography.bodyMd, lineHeight: 22 },
-  infoCard: { borderRadius: 20, padding: 18, gap: 16 },
+  infoCard: { borderRadius: 14, padding: 18, gap: 16 },
   infoRow: { flexDirection: 'row', gap: 12 },
   infoText: { flex: 1 },
-  infoLabel: { ...theme.typography.caption, fontWeight: '700' },
+  infoLabel: { ...theme.typography.caption },
   infoValue: { ...theme.typography.bodyMd, marginTop: 2 },
-  section: { ...theme.typography.titleMd, fontWeight: '900', marginBottom: 10 },
+  section: { ...theme.typography.titleMd, marginBottom: 10 },
   member: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   memberText: { flex: 1 },
-  memberName: { ...theme.typography.bodyMd, fontWeight: '800' },
+  memberName: { ...theme.typography.bodyMd },
   memberRole: { ...theme.typography.caption, marginTop: 2, textTransform: 'capitalize' },
   button: { minHeight: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  buttonText: { ...theme.typography.labelLg, fontWeight: '900' },
+  buttonText: { ...theme.typography.labelLg },
 });

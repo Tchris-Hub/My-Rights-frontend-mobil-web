@@ -28,8 +28,7 @@ const phase12Contracts = [
   ['src/components/common/ErrorBoundary.tsx', 'export class ErrorBoundary'],
   ['src/utils/logger.ts', 'const SENSITIVE_KEYS'],
   ['src/components/common/BackgroundJobOverlay.tsx', 'useSafeAreaInsets'],
-  ['src/components/common/FloatingChatButton.tsx', 'Keyboard'],
-  ['src/navigation/GlassmorphicTabBar.tsx', 'Keyboard'],
+  ['src/navigation/TabBar.tsx', 'Keyboard'],
   ['src/screens/main/ChatScreen.tsx', 'keyboardShouldPersistTaps'],
 ];
 

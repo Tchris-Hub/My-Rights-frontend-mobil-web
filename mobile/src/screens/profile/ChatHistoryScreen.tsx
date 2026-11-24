@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
-    TouchableOpacity,
+    Pressable,
     ActivityIndicator,
     RefreshControl,
     Dimensions,
@@ -13,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInRight } from 'react-native-reanimated';
 import { chatService } from '../../services/chat.service';
 import theme from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -62,43 +62,28 @@ export const ChatHistoryScreen: React.FC = () => {
         navigation.navigate('AskTab', { conversationId: id });
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric' 
-        }).toUpperCase();
-    };
+    const formatDate = (dateString: string) =>
+        new Date(dateString).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    const renderItem = ({ item, index }: { item: ConversationSummary; index: number }) => (
-        <Animated.View entering={FadeInRight.delay(index * 100).duration(500).springify()}>
-            <TouchableOpacity
-                style={[styles.card, { backgroundColor: colors.surface }]}
-                onPress={() => handleConversationPress(item.id)}
-                activeOpacity={0.8}
-            >
-                <View style={styles.cardTop}>
-                    <Text style={[styles.dateText, { color: colors.primary }]}>{formatDate(item.updated_at)}</Text>
-                </View>
+    const renderItem = ({ item }: { item: ConversationSummary }) => (
+        <Pressable
+            accessibilityRole="button"
+            onPress={() => handleConversationPress(item.id)}
+            style={({ pressed }) => [styles.card, { backgroundColor: pressed ? colors.surfaceContainer : colors.card, borderColor: colors.line }]}
+        >
+            <View style={styles.cardText}>
                 <Text style={[styles.cardTitle, { color: colors.onSurface }]} numberOfLines={2}>
-                    {item.title || 'Legal Consultation'}
+                    {item.title || 'Untitled question'}
                 </Text>
-            </TouchableOpacity>
-        </Animated.View>
+                <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>{formatDate(item.updated_at)}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.outline} />
+        </Pressable>
     );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-                </TouchableOpacity>
-                <View>
-                    <Text style={[styles.headerSubtitle, { color: colors.primary }]}>CASE FILES</Text>
-                    <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Vault Archive</Text>
-                </View>
-            </View>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+            <ScreenHeader title="Past conversations" />
 
             {isLoading ? (
                 <View style={styles.centered}>
@@ -109,9 +94,9 @@ export const ChatHistoryScreen: React.FC = () => {
                     <View style={[styles.emptyIconBox, { backgroundColor: colors.surface }]}>
                         <Ionicons name="archive-outline" size={48} color={colors.primary} />
                     </View>
-                    <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>The Vault is Empty</Text>
+                    <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>No conversations yet</Text>
                     <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
-                        Your legal history will be documented here once sessions are initiated.
+                        Questions you ask while signed in show up here so you can go back to them.
                     </Text>
                 </View>
             ) : (
@@ -126,110 +111,19 @@ export const ChatHistoryScreen: React.FC = () => {
                     }
                 />
             )}
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 24,
-        paddingBottom: 16,
-        gap: 16,
-    },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerSubtitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 12,
-        fontWeight: '800',
-        letterSpacing: 2,
-        marginBottom: 4,
-    },
-    headerTitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 32,
-        fontWeight: '800',
-        letterSpacing: -0.5,
-    },
-    centered: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 40,
-    },
-    emptyIconBox: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-    },
-    emptyTitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 24,
-        fontWeight: '800',
-        marginBottom: 12,
-    },
-    emptySubtitle: {
-        ...theme.typography.bodyMd,
-        textAlign: 'center',
-        opacity: 0.7,
-        lineHeight: 22,
-    },
-    listContent: {
-        padding: 24,
-        paddingTop: 16,
-        paddingBottom: 100,
-        gap: 20,
-    },
-    card: {
-        borderRadius: 28,
-        padding: 20,
-        paddingBottom: 0,
-        overflow: 'hidden',
-    },
-    cardTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-
-    dateText: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 10,
-        fontWeight: '900',
-        letterSpacing: 1,
-    },
-
-
-
-
-    cardTitle: {
-        fontFamily: theme.typography.fontFamily.headline,
-        fontSize: 22,
-        fontWeight: '800',
-        lineHeight: 28,
-        letterSpacing: -0.4,
-        marginBottom: 24,
-    },
-
-
-
-
-
-
-
+    container: { flex: 1 },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+    emptyIconBox: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+    emptyTitle: { ...theme.typography.titleLg, marginBottom: 8 },
+    emptySubtitle: { ...theme.typography.bodyMd, textAlign: 'center' },
+    listContent: { padding: 16, paddingBottom: 32, gap: 10 },
+    card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: theme.borderRadius.lg, borderWidth: 1, padding: 14, minHeight: 68 },
+    cardText: { flex: 1 },
+    cardTitle: { ...theme.typography.titleMd },
+    dateText: { ...theme.typography.caption, marginTop: 4 },
 });

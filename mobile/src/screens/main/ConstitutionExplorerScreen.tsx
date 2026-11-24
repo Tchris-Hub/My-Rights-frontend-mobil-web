@@ -4,24 +4,21 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
+    Pressable,
     TextInput,
-    Platform,
-    Image,
     Alert,
     ActivityIndicator,
     Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { Button } from '../../components/ui/Button';
 import theme, { spacing, borderRadius } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
-import { legalService, Chapter } from '../../services/legalService';
+import { legalService, Chapter, Section } from '../../services/legalService';
 import { accountService } from '../../services/account.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -53,7 +50,7 @@ export const ConstitutionExplorerScreen: React.FC = () => {
             }
         } catch (error) {
             console.error('Error loading constitution:', error);
-            Alert.alert('Connection Error', 'Failed to load constitution data from the cloud.');
+            Alert.alert('Could not load the Constitution', 'Check your connection and try again.');
         } finally {
             setIsLoading(false);
         }
@@ -88,350 +85,126 @@ export const ConstitutionExplorerScreen: React.FC = () => {
         }
     }, [searchQuery, filteredChapters]);
 
+    const saveSection = async (section: Section) => {
+        try {
+            await accountService.saveRight({
+                source_type: 'constitution_section',
+                source_id: String(section.id),
+                title: section.title,
+                citation: `Constitution 1999, section ${section.section_number}`,
+                summary: section.key_takeaway || section.content.slice(0, 500),
+            });
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert('Saved', 'Find it under Me, Saved rights.');
+        } catch (error) {
+            Alert.alert('Could not save', error instanceof Error ? error.message : 'Sign in and try again.');
+        }
+    };
+
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            <View style={StyleSheet.absoluteFill}>
-                <Image 
-                    source={require('../../../assets/onboarding/classroom_bg.png')} 
-                    style={styles.globalBackground} 
-                    resizeMode="cover"
-                />
-                <View style={[styles.overlay, { backgroundColor: colors.surface + 'F0' }]} />
+            <ScreenHeader title="The Constitution" subtitle="Federal Republic of Nigeria, 1999" />
+
+            <View style={[styles.searchWrap, { backgroundColor: colors.card, borderBottomColor: colors.line }]}>
+                <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
+                    <Ionicons name="search" size={20} color={colors.onSurfaceVariant} />
+                    <TextInput
+                        testID="constitution-search"
+                        accessibilityLabel="Search the Constitution"
+                        style={[styles.searchInput, { color: colors.onSurface }]}
+                        placeholder="Search a right, a duty or a section number"
+                        placeholderTextColor={colors.outline}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        clearButtonMode="while-editing"
+                    />
+                </View>
             </View>
 
-            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint={isDark ? 'dark' : 'light'} style={styles.blurHeader}>
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.header}>
-                        <View style={styles.headerTop}>
-                            <TouchableOpacity
-                                style={[styles.backButton, { backgroundColor: colors.surfaceContainerHigh }]}
-                                onPress={() => navigation.goBack()}
-                            >
-                                <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-                            </TouchableOpacity>
-                            <View style={styles.titleContainer}>
-                                <Text style={[styles.heroPreTitle, { color: colors.primary }]}>Institutional Index</Text>
-                                <Text style={[theme.typography.displaySm, { color: colors.onSurface }]}>1999 Constitution</Text>
-                            </View>
-                            <View style={{ width: 44 }} />
-                        </View>
-
-                        <View style={[styles.searchBar, { backgroundColor: colors.surfaceContainerLow }]}>
-                            <Ionicons name="search" size={20} color={colors.onSurfaceVariant} />
-                            <TextInput
-                                style={[theme.typography.bodyMd, styles.searchInput, { color: colors.onSurface }]}
-                                placeholder="Search rights, duties, or citations..."
-                                placeholderTextColor={colors.onSurfaceVariant}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                clearButtonMode="while-editing"
-                            />
-                        </View>
-                    </View>
-                </SafeAreaView>
-            </BlurView>
-
             {isLoading ? (
-                <View style={styles.loadingContainer}>
+                <View style={styles.centered}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.onSurfaceVariant }]}>Consulting the Archives...</Text>
+                    <Text style={[styles.centeredText, { color: colors.onSurfaceVariant }]}>Loading the Constitution</Text>
                 </View>
             ) : filteredChapters.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="search-outline" size={48} color={colors.onSurfaceVariant} />
-                    <Text style={[styles.emptyText, { color: colors.onSurfaceVariant }]}>No matches found in the Constitution</Text>
-                    <TouchableOpacity onPress={() => setSearchQuery('')} style={{ marginTop: 20 }}>
-                         <Text style={{ ...theme.typography.labelLg, color: colors.primary, fontWeight: '900' }}>CLEAR SEARCH</Text>
-                    </TouchableOpacity>
+                <View style={styles.centered}>
+                    <Ionicons name="search-outline" size={44} color={colors.outline} />
+                    <Text style={[styles.centeredTitle, { color: colors.onSurface }]}>Nothing matches “{searchQuery}”</Text>
+                    <Text style={[styles.centeredText, { color: colors.onSurfaceVariant }]}>Try a shorter word, like “arrest” or “property”.</Text>
+                    <Button title="Clear search" variant="secondary" onPress={() => setSearchQuery('')} style={styles.clear} />
                 </View>
             ) : (
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-                    {filteredChapters.map(chapter => (
-                        <View key={chapter.id.toString()} style={styles.chapterWrapper}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.chapterHeader,
-                                    { backgroundColor: expandedChapter === chapter.id.toString() ? colors.surfaceContainerHigh : colors.surfaceContainerLow }
-                                ]}
-                                onPress={() => handleToggleChapter(chapter.id.toString())}
-                                activeOpacity={0.8}
-                            >
-                                <View style={styles.chapterTitleRow}>
-                                    <View style={styles.chapterMarker}>
-                                        <Text style={[styles.chapterNumber, { color: colors.primary }]}>
-                                            {chapter.chapter_number.toString().padStart(2, '0')}
-                                        </Text>
-                                        <View style={[styles.markerDot, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.notice, { color: colors.onSurfaceVariant }]}>
+                        Text is shown for reading. Check the official gazette before you rely on it in court.
+                    </Text>
+                    {filteredChapters.map((chapter) => {
+                        const open = expandedChapter === chapter.id.toString();
+                        return (
+                            <View key={chapter.id.toString()} style={[styles.chapter, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                                <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityState={{ expanded: open }}
+                                    onPress={() => handleToggleChapter(chapter.id.toString())}
+                                    style={({ pressed }) => [styles.chapterHeader, pressed && { backgroundColor: colors.surfaceContainer }]}
+                                >
+                                    <View style={[styles.chapterNum, { backgroundColor: open ? colors.primary : colors.primaryContainer }]}>
+                                        <Text style={[styles.chapterNumText, { color: open ? colors.onPrimary : colors.primary }]}>{chapter.chapter_number}</Text>
                                     </View>
                                     <Text style={[styles.chapterTitle, { color: colors.onSurface }]} numberOfLines={2}>
                                         {chapter.title}
                                     </Text>
-                                </View>
-                                <Ionicons 
-                                    name={expandedChapter === chapter.id.toString() ? "remove" : "add"} 
-                                    size={24} 
-                                    color={colors.onSurfaceVariant} 
-                                />
-                            </TouchableOpacity>
+                                    <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={colors.onSurfaceVariant} />
+                                </Pressable>
 
-                             {expandedChapter === chapter.id.toString() && (
-                                <View style={[styles.sectionsList, { backgroundColor: colors.surfaceContainerLow }]}>
-                                    {chapter.sections?.map((section, idx) => (
-                                        <View
-                                            key={section.id.toString()}
-                                            style={[
-                                                styles.sectionCard, 
-                                                { 
-                                                    backgroundColor: colors.surface,
-                                                    paddingVertical: spacing.lg,
-                                                    paddingHorizontal: spacing.md,
-                                                    marginBottom: spacing.md,
-                                                    borderRadius: borderRadius.lg,
-                                                }
-                                            ]}
-                                        >
-                                            <View style={styles.sectionHeader}>
-                                                <Text style={[theme.typography.labelSm, { color: colors.primary, textTransform: 'uppercase' }]}>
-                                                    Article {section.section_number}
-                                                </Text>
-                                                <Text style={[theme.typography.titleMd, { color: colors.onSurface, marginTop: 4 }]}>
-                                                    {section.title}
-                                                </Text>
-                                            </View>
-                                            <Text style={[theme.typography.bodyMd, styles.sectionText, { color: colors.onSurfaceVariant, marginTop: spacing.sm }]}>
-                                                {section.content}
-                                            </Text>
-                                            
-                                            {section.key_takeaway && (
-                                                <View style={[styles.insightBox, { backgroundColor: colors.primary + '08' }]}>
-                                                    <Text style={[theme.typography.labelSm, { color: colors.primary }]}>DIGITAL JURIST INSIGHT</Text>
-                                                    <Text style={[theme.typography.bodyMd, { color: colors.onSurface, marginTop: 4 }]}>
-                                                        {section.key_takeaway}
-                                                    </Text>
+                                {open
+                                    ? chapter.sections?.map((section) => (
+                                        <View key={section.id.toString()} style={[styles.section, { borderTopColor: colors.line }]}>
+                                            <Text style={[styles.sectionNumber, { color: colors.primary }]}>Section {section.section_number}</Text>
+                                            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>{section.title}</Text>
+                                            <Text style={[styles.sectionText, { color: colors.onSurface }]} selectable>{section.content}</Text>
+
+                                            {section.key_takeaway ? (
+                                                <View style={[styles.inShort, { backgroundColor: colors.tertiaryContainer, borderLeftColor: colors.danfo }]}>
+                                                    <Text style={[styles.inShortLabel, { color: colors.onTertiaryContainer }]}>In short</Text>
+                                                    <Text style={[styles.inShortText, { color: colors.onTertiaryContainer }]}>{section.key_takeaway}</Text>
                                                 </View>
-                                            )}
+                                            ) : null}
 
-                                            <View style={styles.cardFooter}>
-                                                <TouchableOpacity 
-                                                    style={styles.citeButton}
-                                                    onPress={async () => {
-                                                        try {
-                                                            await accountService.saveRight({
-                                                                source_type: 'constitution_section',
-                                                                source_id: String(section.id),
-                                                                title: section.title,
-                                                                citation: `Article ${section.section_number}`,
-                                                                summary: section.key_takeaway || section.content.slice(0, 500),
-                                                            });
-                                                            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                                                            Alert.alert('Citation saved', 'You can find it in Saved Rights from your profile.');
-                                                        } catch (error) {
-                                                            Alert.alert('Unable to save citation', error instanceof Error ? error.message : 'Sign in and try again.');
-                                                        }
-                                                    }}
-                                                >
-                                                    <Ionicons name="bookmark" size={16} color={colors.primary} />
-                                                    <Text style={[theme.typography.labelSm, { color: colors.primary, marginLeft: 8 }]}>SAVE CITATION</Text>
-                                                </TouchableOpacity>
-                                            </View>
+                                            <Button title="Save this section" variant="ghost" size="small" onPress={() => void saveSection(section)} icon={<Ionicons name="bookmark-outline" size={18} color={colors.primary} />} />
                                         </View>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                    ))}
+                                    ))
+                                    : null}
+                            </View>
+                        );
+                    })}
                 </ScrollView>
             )}
-
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    safeHeader: {
-        zIndex: 10,
-    },
-    overlay: {
-        ...StyleSheet.absoluteFill,
-    },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 12,
-        paddingBottom: 16,
-        gap: 24,
-    },
-    headerTop: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    blurHeader: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-    },
-    sectionText: {
-        opacity: 0.9,
-        lineHeight: 22,
-    },
-    insightBox: {
-        padding: spacing.md,
-        borderRadius: borderRadius.md,
-        marginVertical: spacing.md,
-    },
-    titleContainer: {
-        alignItems: 'center',
-    },
-    heroPreTitle: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 2,
-        marginBottom: 2,
-    },
-    title: {
-        ...theme.typography.titleLg,
-        fontSize: 18,
-        fontWeight: '900',
-        letterSpacing: -0.5,
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        height: 56,
-        borderRadius: 18,
-        gap: 12,
-    },
-    searchInput: {
-        flex: 1,
-        ...theme.typography.bodyMd,
-        fontWeight: '600',
-    },
-    content: {
-        paddingHorizontal: 24,
-        paddingBottom: 140,
-    },
-    chapterWrapper: {
-        marginBottom: 12,
-        borderRadius: 24,
-        overflow: 'hidden',
-    },
-    chapterHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 24,
-    },
-    chapterTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-        gap: 20,
-    },
-    chapterMarker: {
-        alignItems: 'center',
-        gap: 4,
-    },
-    chapterNumber: {
-        ...theme.typography.displaySm,
-        fontSize: 24,
-        fontWeight: '900',
-        letterSpacing: -1,
-    },
-    markerDot: {
-        width: 4,
-        height: 4,
-        borderRadius: 2,
-        opacity: 0.5,
-    },
-    chapterTitle: {
-        ...theme.typography.titleMd,
-        fontWeight: '800',
-        fontSize: 17,
-        flex: 1,
-        lineHeight: 22,
-    },
-    sectionsList: {
-        padding: 16,
-        paddingTop: 0,
-    },
-    sectionCard: {
-        padding: 24,
-        borderRadius: 20,
-    },
-    sectionHeader: {
-        marginBottom: 12,
-        gap: 4,
-    },
-    sectionId: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        letterSpacing: 1.5,
-    },
-    sectionTitleText: {
-        ...theme.typography.titleMd,
-        fontWeight: '900',
-        fontSize: 18,
-    },
-    sectionPreview: {
-        ...theme.typography.bodyMd,
-        lineHeight: 24,
-        opacity: 0.8,
-    },
-    cardFooter: {
-        marginTop: 20,
-        paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.03)',
-    },
-    citeButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    citeText: {
-        ...theme.typography.labelSm,
-        fontWeight: '900',
-        letterSpacing: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        ...theme.typography.bodyMd,
-        marginTop: 16,
-        opacity: 0.6,
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 40,
-    },
-    emptyText: {
-        ...theme.typography.bodyLg,
-        marginTop: 16,
-        textAlign: 'center',
-        opacity: 0.5,
-    },
-    globalBackground: {
-        ...StyleSheet.absoluteFill,
-        opacity: 0.05,
-    },
+    container: { flex: 1 },
+    searchWrap: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
+    searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: theme.borderRadius.md, borderWidth: 1, paddingHorizontal: 12, minHeight: 46 },
+    searchInput: { flex: 1, fontFamily: theme.typography.fontFamily.body, fontSize: 16, paddingVertical: 8 },
+    content: { padding: 16, paddingBottom: 32, gap: 10 },
+    notice: { ...theme.typography.caption, marginBottom: 4 },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
+    centeredTitle: { ...theme.typography.titleMd, textAlign: 'center' },
+    centeredText: { ...theme.typography.bodyMd, textAlign: 'center' },
+    clear: { marginTop: 8 },
+    chapter: { borderWidth: 1, borderRadius: theme.borderRadius.lg, overflow: 'hidden' },
+    chapterHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, minHeight: 64 },
+    chapterNum: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+    chapterNumText: { fontFamily: theme.typography.fontFamily.headline, fontSize: 15 },
+    chapterTitle: { ...theme.typography.titleMd, flex: 1 },
+    section: { borderTopWidth: 1, padding: 14, gap: 6 },
+    sectionNumber: { ...theme.typography.labelMd, fontFamily: theme.typography.fontFamily.headline },
+    sectionTitle: { ...theme.typography.titleMd },
+    sectionText: { ...theme.typography.readingSm, marginTop: 2 },
+    inShort: { borderLeftWidth: 4, padding: 10, borderRadius: 6, marginTop: 6 },
+    inShortLabel: { ...theme.typography.labelSm, fontFamily: theme.typography.fontFamily.headline },
+    inShortText: { ...theme.typography.bodyMd, marginTop: 2, color: undefined },
 });

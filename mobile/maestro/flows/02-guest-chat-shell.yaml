@@ -2,21 +2,23 @@ appId: com.myrights.app
 ---
 - launchApp:
     clearState: true
-- assertVisible:
-    id: "onboarding-primary"
 - tapOn:
-    id: "onboarding-skip"
-- assertVisible:
-    id: "auth-guest"
+    id: "onboarding-start"
 - tapOn:
     id: "auth-guest"
 - assertVisible:
-    id: "chat-input"
+    text: "What is happening?"
 - assertVisible:
-    text: "How can I help you today?"
+    id: "home-emergency"
+- tapOn:
+    id: "tab-AskTab"
+- assertVisible:
+    id: "chat-input"
 - tapOn:
     id: "chat-input"
-- inputText: "Test keyboard layout"
+- inputText: "Layout check"
 - hideKeyboard
 - assertVisible:
     id: "chat-input"
+- assertVisible:
+    id: "tab-HomeTab"
