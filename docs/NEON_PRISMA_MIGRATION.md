@@ -1,5 +1,7 @@
 # Neon + Prisma Migration Plan
 
+> **Historical.** The backend this plan describes now lives only in the separate `Tchris-Hub/alpha01` repo. The `backend/` folder referenced below was removed from this repo on 2026-11-26.
+
 **Date:** 2026-09-22 · **Branch:** `security-hardening-v1`
 
 ## Goal
